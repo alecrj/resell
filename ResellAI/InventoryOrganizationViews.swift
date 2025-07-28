@@ -1,4 +1,5 @@
 import SwiftUI
+import PhotosUI
 
 // MARK: - Smart Inventory Organization Views
 
@@ -673,59 +674,546 @@ struct ActionButton: View {
     }
 }
 
-// MARK: - Item Detail View (Simple version for inventory management)
-struct ItemDetailView: View {
-    @State var item: InventoryItem
+// MARK: - Smart Inventory List View with Editing
+struct SmartInventoryListView: View {
+    @EnvironmentObject var inventoryManager: InventoryManager
+    @EnvironmentObject var googleSheetsService: GoogleSheetsService
+    @State private var searchText = ""
+    @State private var filterStatus: ItemStatus?
+    @State private var showingFilters = false
+    @State private var showingBarcodeLookup = false
+    @State private var scannedBarcode: String?
+    @State private var selectedItem: InventoryItem?
+    @State private var showingAutoListing = false
+    @State private var showingItemEditor = false
+    @State private var itemToEdit: InventoryItem?
+    
+    var filteredItems: [InventoryItem] {
+        inventoryManager.items
+            .filter { item in
+                if let status = filterStatus {
+                    return item.status == status
+                }
+                return true
+            }
+            .filter { item in
+                if searchText.isEmpty {
+                    return true
+                }
+                return item.name.localizedCaseInsensitiveContains(searchText) ||
+                       item.source.localizedCaseInsensitiveContains(searchText) ||
+                       item.inventoryCode.localizedCaseInsensitiveContains(searchText) ||
+                       item.brand.localizedCaseInsensitiveContains(searchText)
+            }
+    }
+    
+    var body: some View {
+        NavigationView {
+            VStack {
+                // Smart Search Bar with Barcode Scanner
+                HStack {
+                    SearchBarView(text: $searchText)
+                    
+                    Button(action: {
+                        showingBarcodeLookup = true
+                    }) {
+                        Image(systemName: "barcode.viewfinder")
+                            .font(.title2)
+                            .foregroundColor(.blue)
+                            .padding(.trailing, 8)
+                    }
+                }
+                
+                // Filter Status Bar
+                if filteredItems.count != inventoryManager.items.count || filterStatus != nil {
+                    HStack {
+                        if let status = filterStatus {
+                            Text("Filtered by: \(status.rawValue)")
+                                .font(.caption)
+                                .foregroundColor(.blue)
+                        }
+                        
+                        Text("Showing \(filteredItems.count) of \(inventoryManager.items.count) items")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                        
+                        Spacer()
+                        
+                        if filterStatus != nil {
+                            Button("Clear Filter") {
+                                filterStatus = nil
+                            }
+                            .font(.caption)
+                            .foregroundColor(.red)
+                        }
+                    }
+                    .padding(.horizontal)
+                    .padding(.vertical, 4)
+                    .background(Color.gray.opacity(0.1))
+                }
+                
+                List {
+                    ForEach(filteredItems) { item in
+                        InventoryItemRowView(item: item) { updatedItem in
+                            inventoryManager.updateItem(updatedItem)
+                            googleSheetsService.updateItem(updatedItem)
+                        } onAutoList: { item in
+                            selectedItem = item
+                            showingAutoListing = true
+                        } onEdit: { item in
+                            itemToEdit = item
+                            showingItemEditor = true
+                        }
+                    }
+                    .onDelete(perform: deleteItems)
+                }
+            }
+            .navigationTitle("Smart Inventory (\(filteredItems.count))")
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Menu {
+                        Button("All Items") {
+                            filterStatus = nil
+                        }
+                        ForEach(ItemStatus.allCases, id: \.self) { status in
+                            Button(status.rawValue) {
+                                filterStatus = status
+                            }
+                        }
+                        Divider()
+                        Button("📊 Export to CSV") {
+                            exportToCSV()
+                        }
+                        Button("🔄 Sync to Google Sheets") {
+                            googleSheetsService.syncAllItems(inventoryManager.items)
+                        }
+                    } label: {
+                        Image(systemName: "line.horizontal.3.decrease.circle")
+                    }
+                }
+            }
+        }
+        .sheet(isPresented: $showingBarcodeLookup) {
+            BarcodeScannerView(scannedCode: $scannedBarcode)
+                .onDisappear {
+                    if let barcode = scannedBarcode {
+                        lookupItemByBarcode(barcode: barcode)
+                    }
+                }
+        }
+        .sheet(isPresented: $showingAutoListing) {
+            if let item = selectedItem {
+                AutoListingView(item: item)
+            }
+        }
+        .sheet(isPresented: $showingItemEditor) {
+            if let item = itemToEdit {
+                InventoryItemEditorView(item: item) { updatedItem in
+                    inventoryManager.updateItem(updatedItem)
+                    googleSheetsService.updateItem(updatedItem)
+                    showingItemEditor = false
+                    itemToEdit = nil
+                }
+                .environmentObject(inventoryManager)
+            }
+        }
+    }
+    
+    private func deleteItems(offsets: IndexSet) {
+        inventoryManager.deleteItems(at: offsets, from: filteredItems)
+    }
+    
+    private func exportToCSV() {
+        let csv = inventoryManager.exportCSV()
+        print("📄 CSV Export generated with smart inventory codes")
+    }
+    
+    private func lookupItemByBarcode(barcode: String) {
+        // Find item by barcode or inventory code
+        if let item = inventoryManager.findItem(byInventoryCode: barcode) {
+            selectedItem = item
+            showingAutoListing = true
+        } else {
+            print("🔍 Item not found with code: \(barcode)")
+        }
+    }
+}
+
+// MARK: - Inventory Item Row with Edit Button
+struct InventoryItemRowView: View {
+    let item: InventoryItem
     let onUpdate: (InventoryItem) -> Void
+    let onAutoList: (InventoryItem) -> Void
+    let onEdit: (InventoryItem) -> Void
+    @State private var showingDetail = false
+    
+    var body: some View {
+        HStack {
+            // Item Image
+            if let imageData = item.imageData, let uiImage = UIImage(data: imageData) {
+                Image(uiImage: uiImage)
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+                    .frame(width: 65, height: 65)
+                    .cornerRadius(8)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 8)
+                            .stroke(Color.blue.opacity(0.3), lineWidth: 1)
+                    )
+            } else {
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(Color.gray.opacity(0.2))
+                    .frame(width: 65, height: 65)
+                    .overlay(
+                        Image(systemName: "photo")
+                            .foregroundColor(.gray)
+                    )
+            }
+            
+            // Item Details
+            VStack(alignment: .leading, spacing: 4) {
+                // Smart Inventory Code Display
+                HStack {
+                    Text(item.inventoryCode.isEmpty ? "No Code" : item.inventoryCode)
+                        .font(.caption)
+                        .fontWeight(.bold)
+                        .foregroundColor(item.inventoryCode.isEmpty ? .red : .blue)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(item.inventoryCode.isEmpty ? Color.red.opacity(0.1) : Color.blue.opacity(0.1))
+                        .cornerRadius(4)
+                    
+                    Spacer()
+                    
+                    // Item Number
+                    Text("#\(item.itemNumber)")
+                        .font(.caption2)
+                        .foregroundColor(.secondary)
+                }
+                
+                // Item Name and Brand
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(item.name)
+                        .font(.headline)
+                        .lineLimit(2)
+                    
+                    if !item.brand.isEmpty {
+                        Text(item.brand)
+                            .font(.subheadline)
+                            .foregroundColor(.blue)
+                    }
+                }
+                
+                // Purchase Info and Storage
+                HStack {
+                    Text("\(item.source) • $\(String(format: "%.2f", item.purchasePrice))")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    
+                    if !item.storageLocation.isEmpty {
+                        Text("📍 \(item.storageLocation)")
+                            .font(.caption)
+                            .foregroundColor(.green)
+                    }
+                }
+                
+                // Profit Display
+                if item.estimatedProfit > 0 {
+                    HStack {
+                        Text("Est. Profit: $\(String(format: "%.2f", item.estimatedProfit))")
+                            .font(.caption)
+                            .foregroundColor(.green)
+                        
+                        Text("(\(String(format: "%.0f", item.estimatedROI))% ROI)")
+                            .font(.caption)
+                            .foregroundColor(item.estimatedROI > 100 ? .green : item.estimatedROI > 50 ? .orange : .red)
+                    }
+                }
+            }
+            
+            Spacer()
+            
+            // Action Buttons
+            VStack(alignment: .trailing, spacing: 8) {
+                // Status Badge
+                Text(item.status.rawValue)
+                    .font(.caption)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(item.status.color.opacity(0.2))
+                    .foregroundColor(item.status.color)
+                    .cornerRadius(12)
+                
+                // Suggested Price
+                Text("$\(String(format: "%.2f", item.suggestedPrice))")
+                    .font(.headline)
+                    .fontWeight(.bold)
+                    .foregroundColor(.green)
+                
+                // Action Buttons Row
+                HStack(spacing: 8) {
+                    // Edit Button
+                    Button(action: {
+                        onEdit(item)
+                    }) {
+                        Image(systemName: "pencil")
+                            .font(.caption)
+                            .foregroundColor(.orange)
+                            .padding(6)
+                            .background(Color.orange.opacity(0.1))
+                            .cornerRadius(6)
+                    }
+                    
+                    // Auto-List Button
+                    Button(action: {
+                        onAutoList(item)
+                    }) {
+                        Image(systemName: "wand.and.stars")
+                            .font(.caption)
+                            .foregroundColor(.blue)
+                            .padding(6)
+                            .background(Color.blue.opacity(0.1))
+                            .cornerRadius(6)
+                    }
+                }
+            }
+        }
+        .contentShape(Rectangle())
+        .onTapGesture {
+            showingDetail = true
+        }
+        .sheet(isPresented: $showingDetail) {
+            ItemDetailView(item: item, onUpdate: onUpdate)
+        }
+    }
+}
+
+// MARK: - Complete Inventory Item Editor
+struct InventoryItemEditorView: View {
+    @State var item: InventoryItem
+    let onSave: (InventoryItem) -> Void
+    @EnvironmentObject var inventoryManager: InventoryManager
     @Environment(\.presentationMode) var presentationMode
+    
+    // Edit states
+    @State private var editingImages: [UIImage] = []
+    @State private var showingImagePicker = false
+    @State private var showingCamera = false
+    @State private var editingName = ""
+    @State private var editingBrand = ""
+    @State private var editingTitle = ""
+    @State private var editingDescription = ""
+    @State private var editingKeywords = ""
+    @State private var editingCondition = ""
+    @State private var editingSize = ""
+    @State private var editingColorway = ""
+    @State private var editingPurchasePrice: Double = 0
+    @State private var editingSuggestedPrice: Double = 0
+    @State private var editingSource = ""
+    @State private var editingStorageLocation = ""
+    @State private var editingBinNumber = ""
+    @State private var editingStatus: ItemStatus = .analyzed
+    @State private var editingNotes = ""
+    
+    let sources = ["Thrift Store", "Goodwill Bins", "Estate Sale", "Yard Sale", "Facebook Marketplace", "OfferUp", "Auction", "Other"]
+    let conditions = ["Like New", "Excellent", "Very Good", "Good", "Fair", "Poor"]
     
     var body: some View {
         NavigationView {
             Form {
-                Section("Item Details") {
+                // Photos Section
+                Section("📸 Photos") {
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack {
+                            // Existing photos
+                            ForEach(0..<editingImages.count, id: \.self) { index in
+                                ZStack(alignment: .topTrailing) {
+                                    Image(uiImage: editingImages[index])
+                                        .resizable()
+                                        .aspectRatio(contentMode: .fill)
+                                        .frame(width: 80, height: 80)
+                                        .cornerRadius(8)
+                                    
+                                    Button(action: {
+                                        editingImages.remove(at: index)
+                                    }) {
+                                        Image(systemName: "xmark.circle.fill")
+                                            .foregroundColor(.red)
+                                            .background(Color.white, in: Circle())
+                                    }
+                                    .offset(x: 5, y: -5)
+                                }
+                            }
+                            
+                            // Add Photo Buttons
+                            Button(action: {
+                                showingCamera = true
+                            }) {
+                                VStack {
+                                    Image(systemName: "camera.fill")
+                                    Text("Camera")
+                                        .font(.caption)
+                                }
+                                .frame(width: 80, height: 80)
+                                .background(Color.blue.opacity(0.1))
+                                .cornerRadius(8)
+                            }
+                            
+                            Button(action: {
+                                showingImagePicker = true
+                            }) {
+                                VStack {
+                                    Image(systemName: "photo.on.rectangle")
+                                    Text("Library")
+                                        .font(.caption)
+                                }
+                                .frame(width: 80, height: 80)
+                                .background(Color.green.opacity(0.1))
+                                .cornerRadius(8)
+                            }
+                        }
+                        .padding(.horizontal)
+                    }
+                    
+                    Text("\(editingImages.count)/8 photos")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+                
+                // Basic Information
+                Section("📋 Basic Information") {
                     HStack {
                         Text("Inventory Code")
+                            .fontWeight(.semibold)
                         Spacer()
-                        Text(item.inventoryCode)
-                            .fontWeight(.bold)
+                        Text(item.inventoryCode.isEmpty ? "Auto-assigned" : item.inventoryCode)
                             .foregroundColor(.blue)
+                            .fontWeight(.bold)
+                    }
+                    
+                    TextField("Item Name", text: $editingName)
+                        .textFieldStyle(RoundedBorderTextFieldStyle())
+                    
+                    TextField("Brand", text: $editingBrand)
+                        .textFieldStyle(RoundedBorderTextFieldStyle())
+                    
+                    Picker("Condition", selection: $editingCondition) {
+                        ForEach(conditions, id: \.self) { condition in
+                            Text(condition).tag(condition)
+                        }
                     }
                     
                     HStack {
-                        Text("Name")
-                        Spacer()
-                        Text(item.name)
+                        Text("Size")
+                        TextField("Size", text: $editingSize)
+                            .textFieldStyle(RoundedBorderTextFieldStyle())
                     }
                     
                     HStack {
-                        Text("Category")
-                        Spacer()
-                        Text(item.category)
-                    }
-                    
-                    HStack {
-                        Text("Condition")
-                        Spacer()
-                        Text(item.condition)
+                        Text("Colorway")
+                        TextField("Color/Style", text: $editingColorway)
+                            .textFieldStyle(RoundedBorderTextFieldStyle())
                     }
                 }
                 
-                Section("Storage") {
-                    TextField("Storage Location", text: $item.storageLocation)
-                    TextField("Bin Number", text: $item.binNumber)
+                // Pricing Information
+                Section("💰 Pricing") {
+                    HStack {
+                        Text("Purchase Price")
+                        Spacer()
+                        Text("$")
+                        TextField("0.00", value: $editingPurchasePrice, format: .number.precision(.fractionLength(2)))
+                            .keyboardType(.decimalPad)
+                            .textFieldStyle(RoundedBorderTextFieldStyle())
+                            .frame(width: 80)
+                    }
                     
-                    Toggle("Packaged for Shipping", isOn: $item.isPackaged)
+                    HStack {
+                        Text("Suggested Price")
+                        Spacer()
+                        Text("$")
+                        TextField("0.00", value: $editingSuggestedPrice, format: .number.precision(.fractionLength(2)))
+                            .keyboardType(.decimalPad)
+                            .textFieldStyle(RoundedBorderTextFieldStyle())
+                            .frame(width: 80)
+                    }
+                    
+                    // Profit Calculation
+                    if editingPurchasePrice > 0 && editingSuggestedPrice > 0 {
+                        let estimatedFees = editingSuggestedPrice * 0.1325 + 8.50 + 0.30
+                        let estimatedProfit = editingSuggestedPrice - editingPurchasePrice - estimatedFees
+                        let estimatedROI = (estimatedProfit / editingPurchasePrice) * 100
+                        
+                        HStack {
+                            Text("Est. Profit")
+                            Spacer()
+                            Text("$\(String(format: "%.2f", estimatedProfit))")
+                                .foregroundColor(estimatedProfit > 0 ? .green : .red)
+                                .fontWeight(.bold)
+                        }
+                        
+                        HStack {
+                            Text("Est. ROI")
+                            Spacer()
+                            Text("\(String(format: "%.1f", estimatedROI))%")
+                                .foregroundColor(estimatedROI > 100 ? .green : estimatedROI > 50 ? .orange : .red)
+                                .fontWeight(.bold)
+                        }
+                    }
                 }
                 
-                Section("Status") {
-                    Picker("Status", selection: $item.status) {
+                // Source and Status
+                Section("📦 Source & Status") {
+                    Picker("Source", selection: $editingSource) {
+                        ForEach(sources, id: \.self) { source in
+                            Text(source).tag(source)
+                        }
+                    }
+                    
+                    Picker("Status", selection: $editingStatus) {
                         ForEach(ItemStatus.allCases, id: \.self) { status in
                             Text(status.rawValue).tag(status)
                         }
                     }
                 }
+                
+                // Storage Location
+                Section("📍 Storage") {
+                    TextField("Storage Location", text: $editingStorageLocation)
+                        .textFieldStyle(RoundedBorderTextFieldStyle())
+                    
+                    TextField("Bin Number", text: $editingBinNumber)
+                        .textFieldStyle(RoundedBorderTextFieldStyle())
+                    
+                    Toggle("Packaged for Shipping", isOn: Binding(
+                        get: { item.isPackaged },
+                        set: { item.isPackaged = $0 }
+                    ))
+                }
+                
+                // Listing Information
+                Section("🏷️ Listing Details") {
+                    TextField("eBay Title", text: $editingTitle, axis: .vertical)
+                        .textFieldStyle(RoundedBorderTextFieldStyle())
+                        .lineLimit(2...3)
+                    
+                    TextField("Description", text: $editingDescription, axis: .vertical)
+                        .textFieldStyle(RoundedBorderTextFieldStyle())
+                        .lineLimit(4...8)
+                    
+                    TextField("Keywords (comma separated)", text: $editingKeywords, axis: .vertical)
+                        .textFieldStyle(RoundedBorderTextFieldStyle())
+                        .lineLimit(2...4)
+                }
+                
+                // Notes
+                Section("📝 Notes") {
+                    TextField("Additional Notes", text: $editingNotes, axis: .vertical)
+                        .textFieldStyle(RoundedBorderTextFieldStyle())
+                        .lineLimit(3...6)
+                }
             }
-            .navigationTitle("Item Details")
+            .navigationTitle("Edit Item")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
@@ -736,11 +1224,387 @@ struct ItemDetailView: View {
                 
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Save") {
-                        onUpdate(item)
+                        saveChanges()
+                    }
+                    .fontWeight(.bold)
+                }
+            }
+        }
+        .onAppear {
+            loadItemData()
+        }
+        .sheet(isPresented: $showingCamera) {
+            CameraView { photos in
+                editingImages.append(contentsOf: photos)
+            }
+        }
+        .sheet(isPresented: $showingImagePicker) {
+            PhotoLibraryPicker { photos in
+                editingImages.append(contentsOf: photos)
+            }
+        }
+    }
+    
+    private func loadItemData() {
+        // Load existing data into editing states
+        editingName = item.name
+        editingBrand = item.brand
+        editingTitle = item.title
+        editingDescription = item.description
+        editingKeywords = item.keywords.joined(separator: ", ")
+        editingCondition = item.condition
+        editingSize = item.size
+        editingColorway = item.colorway
+        editingPurchasePrice = item.purchasePrice
+        editingSuggestedPrice = item.suggestedPrice
+        editingSource = item.source
+        editingStorageLocation = item.storageLocation
+        editingBinNumber = item.binNumber
+        editingStatus = item.status
+        editingNotes = item.marketNotes ?? ""
+        
+        // Load existing images
+        if let imageData = item.imageData, let image = UIImage(data: imageData) {
+            editingImages.append(image)
+        }
+        
+        if let additionalImageData = item.additionalImageData {
+            for data in additionalImageData {
+                if let image = UIImage(data: data) {
+                    editingImages.append(image)
+                }
+            }
+        }
+    }
+    
+    private func saveChanges() {
+        // Convert images to data
+        let imageData = editingImages.first?.jpegData(compressionQuality: 0.8)
+        let additionalImageData = editingImages.dropFirst().compactMap { $0.jpegData(compressionQuality: 0.8) }
+        
+        // Create updated item
+        var updatedItem = item
+        updatedItem.name = editingName
+        updatedItem.brand = editingBrand
+        updatedItem.title = editingTitle
+        updatedItem.description = editingDescription
+        updatedItem.keywords = editingKeywords.split(separator: ",").map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+        updatedItem.condition = editingCondition
+        updatedItem.size = editingSize
+        updatedItem.colorway = editingColorway
+        updatedItem.purchasePrice = editingPurchasePrice
+        updatedItem.suggestedPrice = editingSuggestedPrice
+        updatedItem.source = editingSource
+        updatedItem.storageLocation = editingStorageLocation
+        updatedItem.binNumber = editingBinNumber
+        updatedItem.status = editingStatus
+        updatedItem.marketNotes = editingNotes
+        updatedItem.imageData = imageData
+        updatedItem.additionalImageData = additionalImageData.isEmpty ? nil : additionalImageData
+        
+        onSave(updatedItem)
+    }
+}
+
+// MARK: - Item Detail View with Photo Gallery
+struct ItemDetailView: View {
+    @State var item: InventoryItem
+    let onUpdate: (InventoryItem) -> Void
+    @Environment(\.presentationMode) var presentationMode
+    @State private var showingEditor = false
+    @State private var currentImageIndex = 0
+    
+    var allImages: [UIImage] {
+        var images: [UIImage] = []
+        
+        if let imageData = item.imageData, let image = UIImage(data: imageData) {
+            images.append(image)
+        }
+        
+        if let additionalImageData = item.additionalImageData {
+            for data in additionalImageData {
+                if let image = UIImage(data: data) {
+                    images.append(image)
+                }
+            }
+        }
+        
+        return images
+    }
+    
+    var body: some View {
+        NavigationView {
+            ScrollView {
+                VStack(spacing: 20) {
+                    // Image Gallery
+                    if !allImages.isEmpty {
+                        VStack(spacing: 10) {
+                            TabView(selection: $currentImageIndex) {
+                                ForEach(0..<allImages.count, id: \.self) { index in
+                                    Image(uiImage: allImages[index])
+                                        .resizable()
+                                        .aspectRatio(contentMode: .fit)
+                                        .frame(maxHeight: 300)
+                                        .cornerRadius(12)
+                                        .shadow(radius: 5)
+                                        .tag(index)
+                                }
+                            }
+                            .tabViewStyle(PageTabViewStyle(indexDisplayMode: .always))
+                            .frame(height: 320)
+                            
+                            Text("Image \(currentImageIndex + 1) of \(allImages.count)")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+                    }
+                    
+                    // Item Header
+                    VStack(alignment: .leading, spacing: 12) {
+                        HStack {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(item.inventoryCode)
+                                    .font(.caption)
+                                    .fontWeight(.bold)
+                                    .foregroundColor(.blue)
+                                    .padding(.horizontal, 8)
+                                    .padding(.vertical, 4)
+                                    .background(Color.blue.opacity(0.1))
+                                    .cornerRadius(6)
+                                
+                                Text(item.name)
+                                    .font(.title2)
+                                    .fontWeight(.bold)
+                                
+                                if !item.brand.isEmpty {
+                                    Text(item.brand)
+                                        .font(.headline)
+                                        .foregroundColor(.blue)
+                                }
+                            }
+                            
+                            Spacer()
+                            
+                            VStack(alignment: .trailing, spacing: 4) {
+                                Text("$\(String(format: "%.2f", item.suggestedPrice))")
+                                    .font(.title2)
+                                    .fontWeight(.bold)
+                                    .foregroundColor(.green)
+                                
+                                Text(item.status.rawValue)
+                                    .font(.caption)
+                                    .padding(.horizontal, 8)
+                                    .padding(.vertical, 4)
+                                    .background(item.status.color.opacity(0.2))
+                                    .foregroundColor(item.status.color)
+                                    .cornerRadius(8)
+                            }
+                        }
+                    }
+                    .padding()
+                    .background(Color.gray.opacity(0.05))
+                    .cornerRadius(12)
+                    
+                    // Details Grid
+                    LazyVGrid(columns: [
+                        GridItem(.flexible()),
+                        GridItem(.flexible())
+                    ], spacing: 15) {
+                        
+                        DetailCard(title: "Condition", value: item.condition, icon: "checkmark.seal", color: .green)
+                        DetailCard(title: "Category", value: item.category, icon: "tag", color: .blue)
+                        DetailCard(title: "Source", value: item.source, icon: "location", color: .orange)
+                        DetailCard(title: "Purchase Price", value: "$\(String(format: "%.2f", item.purchasePrice))", icon: "dollarsign.circle", color: .red)
+                        
+                        if !item.size.isEmpty {
+                            DetailCard(title: "Size", value: item.size, icon: "ruler", color: .purple)
+                        }
+                        
+                        if !item.colorway.isEmpty {
+                            DetailCard(title: "Colorway", value: item.colorway, icon: "paintpalette", color: .pink)
+                        }
+                        
+                        if !item.storageLocation.isEmpty {
+                            DetailCard(title: "Storage", value: item.storageLocation, icon: "archivebox", color: .brown)
+                        }
+                        
+                        if item.estimatedProfit > 0 {
+                            DetailCard(title: "Est. Profit", value: "$\(String(format: "%.2f", item.estimatedProfit))", icon: "chart.line.uptrend.xyaxis", color: .green)
+                        }
+                    }
+                    
+                    // Description
+                    if !item.description.isEmpty {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Description")
+                                .font(.headline)
+                                .fontWeight(.bold)
+                            
+                            Text(item.description)
+                                .font(.body)
+                                .foregroundColor(.secondary)
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding()
+                        .background(Color.gray.opacity(0.05))
+                        .cornerRadius(12)
+                    }
+                    
+                    // Keywords
+                    if !item.keywords.isEmpty {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Keywords")
+                                .font(.headline)
+                                .fontWeight(.bold)
+                            
+                            LazyVGrid(columns: [
+                                GridItem(.adaptive(minimum: 80))
+                            ], spacing: 8) {
+                                ForEach(item.keywords, id: \.self) { keyword in
+                                    Text(keyword)
+                                        .font(.caption)
+                                        .padding(.horizontal, 8)
+                                        .padding(.vertical, 4)
+                                        .background(Color.blue.opacity(0.1))
+                                        .foregroundColor(.blue)
+                                        .cornerRadius(8)
+                                }
+                            }
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding()
+                        .background(Color.gray.opacity(0.05))
+                        .cornerRadius(12)
+                    }
+                    
+                    // Action Buttons
+                    VStack(spacing: 12) {
+                        Button(action: {
+                            showingEditor = true
+                        }) {
+                            HStack {
+                                Image(systemName: "pencil")
+                                Text("Edit Item")
+                            }
+                            .frame(maxWidth: .infinity)
+                            .padding()
+                            .background(Color.orange)
+                            .foregroundColor(.white)
+                            .cornerRadius(12)
+                            .font(.headline)
+                        }
+                        
+                        HStack(spacing: 12) {
+                            Button(action: {
+                                markAsPackaged()
+                            }) {
+                                HStack {
+                                    Image(systemName: item.isPackaged ? "checkmark" : "shippingbox")
+                                    Text(item.isPackaged ? "Packaged" : "Mark Packaged")
+                                }
+                                .frame(maxWidth: .infinity)
+                                .padding()
+                                .background(item.isPackaged ? Color.green : Color.blue)
+                                .foregroundColor(.white)
+                                .cornerRadius(12)
+                            }
+                            
+                            Button(action: {
+                                updateStatus()
+                            }) {
+                                HStack {
+                                    Image(systemName: "arrow.up.circle")
+                                    Text("Next Status")
+                                }
+                                .frame(maxWidth: .infinity)
+                                .padding()
+                                .background(Color.purple)
+                                .foregroundColor(.white)
+                                .cornerRadius(12)
+                            }
+                        }
+                    }
+                    
+                    Spacer(minLength: 20)
+                }
+                .padding()
+            }
+            .navigationTitle("Item Details")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("Done") {
                         presentationMode.wrappedValue.dismiss()
                     }
                 }
             }
         }
+        .sheet(isPresented: $showingEditor) {
+            InventoryItemEditorView(item: item, onSave: onUpdate)
+        }
+    }
+    
+    private func markAsPackaged() {
+        item.isPackaged.toggle()
+        if item.isPackaged {
+            item.packagedDate = Date()
+        } else {
+            item.packagedDate = nil
+        }
+        onUpdate(item)
+    }
+    
+    private func updateStatus() {
+        let allCases = ItemStatus.allCases
+        if let currentIndex = allCases.firstIndex(of: item.status) {
+            let nextIndex = (currentIndex + 1) % allCases.count
+            item.status = allCases[nextIndex]
+            onUpdate(item)
+        }
+    }
+}
+
+// MARK: - Detail Card Component
+struct DetailCard: View {
+    let title: String
+    let value: String
+    let icon: String
+    let color: Color
+    
+    var body: some View {
+        VStack(spacing: 8) {
+            Image(systemName: icon)
+                .font(.title2)
+                .foregroundColor(color)
+            
+            Text(title)
+                .font(.caption)
+                .foregroundColor(.secondary)
+            
+            Text(value)
+                .font(.body)
+                .fontWeight(.semibold)
+                .multilineTextAlignment(.center)
+        }
+        .frame(maxWidth: .infinity)
+        .padding()
+        .background(color.opacity(0.1))
+        .cornerRadius(12)
+    }
+}
+
+// MARK: - Search Bar View
+struct SearchBarView: View {
+    @Binding var text: String
+    
+    var body: some View {
+        HStack {
+            Image(systemName: "magnifyingglass")
+                .foregroundColor(.secondary)
+            
+            TextField("Search by name, code, brand, or source...", text: $text)
+                .textFieldStyle(RoundedBorderTextFieldStyle())
+        }
+        .padding(.horizontal)
     }
 }

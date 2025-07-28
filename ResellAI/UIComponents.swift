@@ -359,7 +359,7 @@ class ScannerViewController: UIViewController, AVCaptureMetadataOutputObjectsDel
     }
 }
 
-// MARK: - Improved Prospect Analysis Result View
+// MARK: - Prospect Analysis Result View
 struct ImprovedProspectAnalysisResultView: View {
     let analysis: ProspectAnalysis
     
@@ -755,6 +755,113 @@ struct ProspectStatCard: View {
     }
 }
 
+// MARK: - Photo Placeholder Views
+struct PhotoPlaceholderView: View {
+    let onTakePhotos: () -> Void
+    
+    var body: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: 20)
+                .fill(
+                    LinearGradient(
+                        colors: [.blue.opacity(0.1), .purple.opacity(0.1)],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+                .frame(height: 300)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 20)
+                        .stroke(Color.blue.opacity(0.3), lineWidth: 2)
+                        .strokeBorder(style: StrokeStyle(lineWidth: 2, dash: [10, 5]))
+                )
+            
+            VStack(spacing: 20) {
+                Image(systemName: "camera.fill")
+                    .font(.system(size: 60))
+                    .foregroundColor(.blue)
+                
+                VStack(spacing: 8) {
+                    Text("Take Multiple Photos")
+                        .font(.title2)
+                        .fontWeight(.bold)
+                        .foregroundColor(.primary)
+                    
+                    Text("Take up to 8 photos for complete item analysis")
+                        .font(.body)
+                        .foregroundColor(.secondary)
+                        .multilineTextAlignment(.center)
+                }
+                
+                VStack(spacing: 4) {
+                    Text("✓ AI Computer Vision Analysis")
+                    Text("✓ Real-time Market Research")
+                    Text("✓ Accurate Pricing Strategy")
+                    Text("✓ Direct eBay Listing Generation")
+                }
+                .font(.caption)
+                .foregroundColor(.blue)
+            }
+        }
+        .onTapGesture {
+            onTakePhotos()
+        }
+    }
+}
+
+struct ProspectingPhotoPlaceholderView: View {
+    let onTakePhotos: () -> Void
+    
+    var body: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: 20)
+                .fill(
+                    LinearGradient(
+                        colors: [.purple.opacity(0.1), .pink.opacity(0.1)],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+                .frame(height: 300)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 20)
+                        .stroke(Color.purple.opacity(0.3), lineWidth: 2)
+                        .strokeBorder(style: StrokeStyle(lineWidth: 2, dash: [10, 5]))
+                )
+            
+            VStack(spacing: 20) {
+                Image(systemName: "magnifyingglass.circle.fill")
+                    .font(.system(size: 60))
+                    .foregroundColor(.purple)
+                
+                VStack(spacing: 8) {
+                    Text("Prospecting Analysis")
+                        .font(.title2)
+                        .fontWeight(.bold)
+                        .foregroundColor(.primary)
+                    
+                    Text("Get instant max buy price for any item")
+                        .font(.body)
+                        .foregroundColor(.secondary)
+                        .multilineTextAlignment(.center)
+                }
+                
+                VStack(spacing: 4) {
+                    Text("✓ Instant Item Identification")
+                    Text("✓ Max Buy Price Calculation")
+                    Text("✓ Profit Potential Analysis")
+                    Text("✓ Buy/Research Recommendation")
+                }
+                .font(.caption)
+                .foregroundColor(.purple)
+            }
+        }
+        .onTapGesture {
+            onTakePhotos()
+        }
+    }
+}
+
 // MARK: - Auto Listing View
 struct AutoListingView: View {
     let item: InventoryItem
@@ -779,7 +886,7 @@ struct AutoListingView: View {
                         Button(action: {
                             generateListing()
                         }) {
-                            HStack {
+                            HStack(spacing: 12) {
                                 if isGenerating {
                                     ProgressView()
                                         .scaleEffect(0.8)
@@ -787,15 +894,17 @@ struct AutoListingView: View {
                                     Text("Generating...")
                                 } else {
                                     Image(systemName: "wand.and.stars")
+                                        .font(.title2)
                                     Text("🤖 Generate Complete eBay Listing")
                                 }
                             }
                             .frame(maxWidth: .infinity)
-                            .padding()
+                            .padding(.vertical, 16)
                             .background(LinearGradient(colors: [.blue, .purple], startPoint: .leading, endPoint: .trailing))
                             .foregroundColor(.white)
                             .cornerRadius(12)
                             .font(.headline)
+                            .shadow(color: .blue.opacity(0.3), radius: 4, x: 0, y: 2)
                         }
                         .disabled(isGenerating)
                     } else {
@@ -885,11 +994,11 @@ struct AutoListingView: View {
         
         DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
             isGenerating = false
-            generatedListing = generateEbayListing(for: item)
+            generatedListing = generateOptimizedEbayListing(for: item)
         }
     }
     
-    private func generateEbayListing(for item: InventoryItem) -> String {
+    private func generateOptimizedEbayListing(for item: InventoryItem) -> String {
         return """
         🔥 \(item.title) 🔥
         
@@ -902,6 +1011,9 @@ struct AutoListingView: View {
         
         💎 ITEM DETAILS:
         • Category: \(item.category)
+        • Brand: \(item.brand)
+        • Size: \(item.size)
+        • Colorway: \(item.colorway)
         • Keywords: \(item.keywords.joined(separator: ", "))
         • Authentic & Verified
         • Inventory Code: \(item.inventoryCode)
@@ -911,6 +1023,7 @@ struct AutoListingView: View {
         ✅ 100% authentic items
         ✅ Fast & secure shipping
         ✅ Excellent customer service
+        ✅ Thousands of satisfied customers
         
         📱 QUESTIONS? Message us anytime!
         
@@ -935,20 +1048,29 @@ struct InventoryItemPreviewCard: View {
     let item: InventoryItem
     
     var body: some View {
-        VStack(spacing: 12) {
+        VStack(spacing: 15) {
             if let imageData = item.imageData, let uiImage = UIImage(data: imageData) {
                 Image(uiImage: uiImage)
                     .resizable()
                     .aspectRatio(contentMode: .fit)
                     .frame(maxHeight: 200)
                     .cornerRadius(12)
+                    .shadow(color: .black.opacity(0.2), radius: 4, x: 0, y: 2)
             }
             
-            VStack(alignment: .leading, spacing: 8) {
+            VStack(alignment: .leading, spacing: 12) {
                 HStack {
-                    Text(item.name)
-                        .font(.headline)
-                        .fontWeight(.bold)
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(item.name)
+                            .font(.headline)
+                            .fontWeight(.bold)
+                        
+                        if !item.brand.isEmpty {
+                            Text(item.brand)
+                                .font(.subheadline)
+                                .foregroundColor(.blue)
+                        }
+                    }
                     
                     Spacer()
                     
@@ -957,36 +1079,61 @@ struct InventoryItemPreviewCard: View {
                             .font(.caption)
                             .fontWeight(.bold)
                             .foregroundColor(.blue)
-                            .padding(.horizontal, 6)
-                            .padding(.vertical, 2)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 4)
                             .background(Color.blue.opacity(0.1))
-                            .cornerRadius(4)
+                            .cornerRadius(6)
                     }
                 }
                 
-                HStack {
-                    Text("Price:")
-                    Spacer()
-                    Text(String(format: "$%.2f", item.suggestedPrice))
-                        .fontWeight(.bold)
-                        .foregroundColor(.green)
-                }
-                
-                HStack {
-                    Text("Condition:")
-                    Spacer()
-                    Text(item.condition)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 2)
-                        .background(Color.blue.opacity(0.2))
-                        .cornerRadius(6)
-                        .font(.caption)
+                LazyVGrid(columns: [
+                    GridItem(.flexible()),
+                    GridItem(.flexible())
+                ], spacing: 12) {
+                    
+                    ItemDetailChip(title: "Price", value: "$\(String(format: "%.2f", item.suggestedPrice))", color: .green)
+                    ItemDetailChip(title: "Condition", value: item.condition, color: .blue)
+                    
+                    if !item.size.isEmpty {
+                        ItemDetailChip(title: "Size", value: item.size, color: .purple)
+                    }
+                    
+                    if !item.colorway.isEmpty {
+                        ItemDetailChip(title: "Color", value: item.colorway, color: .orange)
+                    }
                 }
             }
         }
         .padding()
-        .background(Color.gray.opacity(0.05))
-        .cornerRadius(16)
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(Color.gray.opacity(0.05))
+                .stroke(Color.gray.opacity(0.2), lineWidth: 1)
+        )
+    }
+}
+
+// MARK: - Item Detail Chip
+struct ItemDetailChip: View {
+    let title: String
+    let value: String
+    let color: Color
+    
+    var body: some View {
+        VStack(spacing: 4) {
+            Text(title)
+                .font(.caption)
+                .foregroundColor(.secondary)
+            
+            Text(value)
+                .font(.body)
+                .fontWeight(.semibold)
+                .foregroundColor(color)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 8)
+        .background(color.opacity(0.1))
+        .cornerRadius(8)
     }
 }
 
