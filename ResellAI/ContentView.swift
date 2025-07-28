@@ -3,7 +3,7 @@ import UIKit
 import AVFoundation
 import PhotosUI
 
-// MARK: - Main Content View with Enhanced Features
+// MARK: - Main Content View with Business Features
 struct ContentView: View {
     @StateObject private var inventoryManager = InventoryManager()
     @StateObject private var aiService = AIService()
@@ -101,7 +101,7 @@ struct ModeToggleView: View {
     }
 }
 
-// MARK: - Business Tab View with Enhanced Inventory
+// MARK: - Business Tab View
 struct BusinessTabView: View {
     var body: some View {
         TabView {
@@ -117,7 +117,7 @@ struct BusinessTabView: View {
                     Text("📊 Dashboard")
                 }
             
-            EnhancedSmartInventoryListView()
+            SmartInventoryListView()
                 .tabItem {
                     Image(systemName: "list.bullet")
                     Text("📦 Inventory")
@@ -139,7 +139,7 @@ struct BusinessTabView: View {
     }
 }
 
-// MARK: - Enhanced AI Analysis View
+// MARK: - AI Analysis View
 struct AIAnalysisView: View {
     @EnvironmentObject var inventoryManager: InventoryManager
     @EnvironmentObject var aiService: AIService
@@ -202,17 +202,17 @@ struct AIAnalysisView: View {
                         }
                     }
                     
-                    // Photo Interface with Enhanced UI
+                    // Photo Interface
                     if !capturedImages.isEmpty {
-                        EnhancedPhotoGalleryView(images: $capturedImages)
+                        PhotoGalleryView(images: $capturedImages)
                     } else {
                         PhotoPlaceholderView {
                             showingMultiCamera = true
                         }
                     }
                     
-                    // Enhanced Action Buttons
-                    EnhancedActionButtonsView(
+                    // Action Buttons
+                    ActionButtonsView(
                         hasPhotos: !capturedImages.isEmpty,
                         isAnalyzing: aiService.isAnalyzing,
                         photoCount: capturedImages.count,
@@ -223,9 +223,9 @@ struct AIAnalysisView: View {
                         onReset: { resetAnalysis() }
                     )
                     
-                    // Enhanced Analysis Results with Better Layout
+                    // Analysis Results
                     if let result = analysisResult {
-                        EnhancedAnalysisResultView(analysis: result) {
+                        AnalysisResultView(analysis: result) {
                             showingItemForm = true
                         } onDirectList: {
                             showingDirectListing = true
@@ -252,7 +252,7 @@ struct AIAnalysisView: View {
         }
         .sheet(isPresented: $showingItemForm) {
             if let result = analysisResult {
-                EnhancedItemFormView(
+                ItemFormView(
                     analysis: result,
                     onSave: { item in
                         let savedItem = inventoryManager.addItem(item)
@@ -311,14 +311,14 @@ struct AIAnalysisView: View {
     }
 }
 
-// MARK: - Enhanced Photo Gallery View
-struct EnhancedPhotoGalleryView: View {
+// MARK: - Photo Gallery View
+struct PhotoGalleryView: View {
     @Binding var images: [UIImage]
     @State private var selectedIndex = 0
     
     var body: some View {
         VStack(spacing: 15) {
-            // Main Photo Display with Better UI
+            // Main Photo Display
             ZStack {
                 TabView(selection: $selectedIndex) {
                     ForEach(0..<images.count, id: \.self) { index in
@@ -352,7 +352,7 @@ struct EnhancedPhotoGalleryView: View {
                 }
             }
             
-            // Photo Controls with Enhanced UI
+            // Photo Controls
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("📸 Multi-angle Analysis Ready")
@@ -397,8 +397,8 @@ struct EnhancedPhotoGalleryView: View {
     }
 }
 
-// MARK: - Enhanced Action Buttons
-struct EnhancedActionButtonsView: View {
+// MARK: - Action Buttons
+struct ActionButtonsView: View {
     let hasPhotos: Bool
     let isAnalyzing: Bool
     let photoCount: Int
@@ -410,7 +410,7 @@ struct EnhancedActionButtonsView: View {
     
     var body: some View {
         VStack(spacing: 15) {
-            // Photo and Barcode Row with Better Styling
+            // Photo and Barcode Row
             HStack(spacing: 12) {
                 // Take Photos Button
                 Button(action: onTakePhotos) {
@@ -482,7 +482,7 @@ struct EnhancedActionButtonsView: View {
                 }
             }
             
-            // Analysis Button with Enhanced UI
+            // Analysis Button
             if hasPhotos {
                 Button(action: onAnalyze) {
                     HStack(spacing: 12) {
@@ -517,7 +517,7 @@ struct EnhancedActionButtonsView: View {
                 .scaleEffect(isAnalyzing ? 0.98 : 1.0)
                 .animation(.easeInOut(duration: 0.1), value: isAnalyzing)
                 
-                // Reset Button with Better Styling
+                // Reset Button
                 if !isAnalyzing {
                     Button(action: onReset) {
                         HStack {
@@ -536,357 +536,7 @@ struct EnhancedActionButtonsView: View {
     }
 }
 
-// MARK: - Enhanced Analysis Result View
-struct EnhancedAnalysisResultView: View {
-    let analysis: AnalysisResult
-    let onAddToInventory: () -> Void
-    let onDirectList: () -> Void
-    
-    var body: some View {
-        VStack(spacing: 20) {
-            // Analysis Header with Better Design
-            VStack(spacing: 15) {
-                HStack {
-                    VStack(alignment: .leading, spacing: 6) {
-                        Text("✅ ITEM IDENTIFIED")
-                            .font(.caption)
-                            .fontWeight(.bold)
-                            .foregroundColor(.green)
-                        
-                        Text(analysis.itemName)
-                            .font(.title2)
-                            .fontWeight(.bold)
-                            .foregroundColor(.primary)
-                        
-                        if !analysis.brand.isEmpty {
-                            Text(analysis.brand)
-                                .font(.headline)
-                                .foregroundColor(.blue)
-                        }
-                        
-                        HStack {
-                            Text("Confidence: \(String(format: "%.0f", analysis.confidence * 100))%")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                            
-                            Spacer()
-                            
-                            Text("Condition: \(String(format: "%.0f", analysis.conditionScore))/100")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                        }
-                    }
-                    
-                    Spacer()
-                    
-                    VStack(alignment: .trailing, spacing: 6) {
-                        Text("$\(String(format: "%.2f", analysis.realisticPrice))")
-                            .font(.title2)
-                            .fontWeight(.bold)
-                            .foregroundColor(.green)
-                        
-                        Text("Realistic Price")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                        
-                        Text(analysis.actualCondition)
-                            .font(.caption)
-                            .padding(.horizontal, 8)
-                            .padding(.vertical, 4)
-                            .background(Color.blue.opacity(0.1))
-                            .foregroundColor(.blue)
-                            .cornerRadius(6)
-                    }
-                }
-            }
-            .padding()
-            .background(
-                RoundedRectangle(cornerRadius: 16)
-                    .fill(Color.green.opacity(0.05))
-                    .stroke(Color.green.opacity(0.3), lineWidth: 1)
-            )
-            
-            // Enhanced Pricing Strategy
-            PricingStrategyCard(analysis: analysis)
-            
-            // Enhanced Market Intelligence
-            MarketIntelligenceCard(analysis: analysis)
-            
-            // Enhanced Action Buttons
-            VStack(spacing: 12) {
-                Button(action: onAddToInventory) {
-                    HStack(spacing: 12) {
-                        Image(systemName: "plus.circle.fill")
-                            .font(.title2)
-                        Text("📦 Add to Inventory")
-                            .fontWeight(.bold)
-                    }
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 16)
-                    .background(
-                        LinearGradient(
-                            colors: [.blue, .purple],
-                            startPoint: .leading,
-                            endPoint: .trailing
-                        )
-                    )
-                    .foregroundColor(.white)
-                    .cornerRadius(12)
-                    .font(.headline)
-                    .shadow(color: .blue.opacity(0.3), radius: 4, x: 0, y: 2)
-                }
-                
-                Button(action: onDirectList) {
-                    HStack(spacing: 12) {
-                        Image(systemName: "bolt.fill")
-                            .font(.title2)
-                        Text("🚀 Direct List to eBay")
-                            .fontWeight(.bold)
-                    }
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 16)
-                    .background(
-                        LinearGradient(
-                            colors: [.green, .mint],
-                            startPoint: .leading,
-                            endPoint: .trailing
-                        )
-                    )
-                    .foregroundColor(.white)
-                    .cornerRadius(12)
-                    .font(.headline)
-                    .shadow(color: .green.opacity(0.3), radius: 4, x: 0, y: 2)
-                }
-            }
-        }
-        .padding()
-        .background(
-            RoundedRectangle(cornerRadius: 20)
-                .fill(Color.gray.opacity(0.02))
-                .stroke(Color.gray.opacity(0.1), lineWidth: 1)
-        )
-    }
-}
-
-// MARK: - Enhanced Item Form View
-struct EnhancedItemFormView: View {
-    let analysis: AnalysisResult
-    let onSave: (InventoryItem) -> Void
-    @EnvironmentObject var inventoryManager: InventoryManager
-    @Environment(\.presentationMode) var presentationMode
-    
-    @State private var purchasePrice: Double = 0.0
-    @State private var source = "Thrift Store"
-    @State private var notes = ""
-    @State private var storageLocation = ""
-    @State private var binNumber = ""
-    @State private var customTitle = ""
-    @State private var customDescription = ""
-    @State private var customKeywords = ""
-    
-    let sources = ["Thrift Store", "Goodwill Bins", "Estate Sale", "Yard Sale", "Facebook Marketplace", "OfferUp", "Auction", "Other"]
-    
-    var body: some View {
-        NavigationView {
-            Form {
-                Section("Item Details") {
-                    HStack {
-                        Text("Name")
-                        Spacer()
-                        Text(analysis.itemName)
-                            .foregroundColor(.secondary)
-                    }
-                    
-                    HStack {
-                        Text("Brand")
-                        Spacer()
-                        Text(analysis.brand.isEmpty ? "No brand detected" : analysis.brand)
-                            .foregroundColor(.secondary)
-                    }
-                    
-                    HStack {
-                        Text("Suggested Price")
-                        Spacer()
-                        Text("$\(String(format: "%.2f", analysis.realisticPrice))")
-                            .fontWeight(.bold)
-                            .foregroundColor(.green)
-                    }
-                    
-                    HStack {
-                        Text("Inventory Code")
-                        Spacer()
-                        Text("Auto-assigned")
-                            .foregroundColor(.blue)
-                    }
-                }
-                
-                Section("Purchase Information") {
-                    HStack {
-                        Text("Purchase Price")
-                        Spacer()
-                        Text("$")
-                        TextField("0.00", value: $purchasePrice, format: .currency(code: "USD"))
-                            .keyboardType(.decimalPad)
-                            .multilineTextAlignment(.trailing)
-                            .frame(width: 80)
-                    }
-                    
-                    Picker("Source", selection: $source) {
-                        ForEach(sources, id: \.self) { source in
-                            Text(source).tag(source)
-                        }
-                    }
-                }
-                
-                Section("Storage") {
-                    TextField("Storage Location (e.g., Closet A, Shelf 2)", text: $storageLocation)
-                    TextField("Bin Number (optional)", text: $binNumber)
-                }
-                
-                Section("Listing Customization") {
-                    TextField("Custom Title", text: $customTitle, axis: .vertical)
-                        .lineLimit(2...3)
-                    
-                    TextField("Custom Description", text: $customDescription, axis: .vertical)
-                        .lineLimit(3...6)
-                    
-                    TextField("Additional Keywords", text: $customKeywords)
-                }
-                
-                Section("Additional Notes") {
-                    TextField("Notes (optional)", text: $notes, axis: .vertical)
-                        .lineLimit(3...6)
-                }
-                
-                // Enhanced Profit Calculation Preview
-                if purchasePrice > 0 {
-                    Section("💰 Profit Analysis") {
-                        let estimatedFees = analysis.feesBreakdown.totalFees
-                        let estimatedProfit = analysis.realisticPrice - purchasePrice - estimatedFees
-                        let estimatedROI = purchasePrice > 0 ? (estimatedProfit / purchasePrice) * 100 : 0
-                        
-                        HStack {
-                            Text("Purchase Price")
-                            Spacer()
-                            Text("$\(String(format: "%.2f", purchasePrice))")
-                        }
-                        
-                        HStack {
-                            Text("Selling Price")
-                            Spacer()
-                            Text("$\(String(format: "%.2f", analysis.realisticPrice))")
-                                .foregroundColor(.green)
-                        }
-                        
-                        HStack {
-                            Text("Total Fees")
-                            Spacer()
-                            Text("$\(String(format: "%.2f", estimatedFees))")
-                                .foregroundColor(.orange)
-                        }
-                        
-                        Divider()
-                        
-                        HStack {
-                            Text("Estimated Profit")
-                                .fontWeight(.semibold)
-                            Spacer()
-                            Text("$\(String(format: "%.2f", estimatedProfit))")
-                                .fontWeight(.bold)
-                                .foregroundColor(estimatedProfit > 0 ? .green : .red)
-                        }
-                        
-                        HStack {
-                            Text("Estimated ROI")
-                                .fontWeight(.semibold)
-                            Spacer()
-                            Text("\(String(format: "%.1f", estimatedROI))%")
-                                .fontWeight(.bold)
-                                .foregroundColor(estimatedROI > 100 ? .green : estimatedROI > 50 ? .orange : .red)
-                        }
-                    }
-                }
-            }
-            .navigationTitle("Add to Inventory")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Button("Cancel") {
-                        presentationMode.wrappedValue.dismiss()
-                    }
-                }
-                
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Save") {
-                        saveItem()
-                    }
-                    .disabled(purchasePrice <= 0)
-                    .fontWeight(.bold)
-                }
-            }
-        }
-        .onAppear {
-            // Pre-populate custom fields with AI analysis
-            customTitle = analysis.ebayTitle
-            customDescription = analysis.description
-            customKeywords = analysis.keywords.joined(separator: ", ")
-        }
-    }
-    
-    private func saveItem() {
-        // Convert first image to Data
-        let imageData = analysis.images.first?.jpegData(compressionQuality: 0.8)
-        
-        // Convert additional images to Data
-        let additionalImageData = analysis.images.dropFirst().compactMap { $0.jpegData(compressionQuality: 0.8) }
-        
-        // Combine original keywords with custom ones
-        var allKeywords = analysis.keywords
-        if !customKeywords.isEmpty {
-            let customKeywordArray = customKeywords.split(separator: ",").map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
-            allKeywords.append(contentsOf: customKeywordArray)
-        }
-        
-        let item = InventoryItem(
-            itemNumber: inventoryManager.nextItemNumber,
-            name: analysis.itemName,
-            category: analysis.category,
-            purchasePrice: purchasePrice,
-            suggestedPrice: analysis.realisticPrice,
-            source: source,
-            condition: analysis.actualCondition,
-            title: customTitle.isEmpty ? analysis.ebayTitle : customTitle,
-            description: customDescription.isEmpty ? analysis.description : customDescription,
-            keywords: allKeywords,
-            status: .analyzed,
-            dateAdded: Date(),
-            imageData: imageData,
-            additionalImageData: additionalImageData.isEmpty ? nil : additionalImageData,
-            resalePotential: analysis.resalePotential,
-            marketNotes: notes,
-            conditionScore: analysis.conditionScore,
-            aiConfidence: analysis.confidence,
-            competitorCount: analysis.competitorCount,
-            demandLevel: analysis.demandLevel,
-            listingStrategy: analysis.listingStrategy,
-            sourcingTips: analysis.sourcingTips,
-            barcode: analysis.barcode,
-            brand: analysis.brand,
-            size: analysis.size,
-            colorway: analysis.colorway,
-            releaseYear: analysis.releaseYear,
-            subcategory: analysis.subcategory,
-            authenticationNotes: analysis.authenticationNotes,
-            storageLocation: storageLocation,
-            binNumber: binNumber
-        )
-        
-        onSave(item)
-        presentationMode.wrappedValue.dismiss()
-    }
-}
-
-// MARK: - Improved Prospecting View
+// MARK: - Prospecting View
 struct ProspectingView: View {
     @EnvironmentObject var inventoryManager: InventoryManager
     @EnvironmentObject var aiService: AIService
@@ -955,7 +605,7 @@ struct ProspectingView: View {
                     
                     // Photo Interface
                     if !capturedImages.isEmpty {
-                        EnhancedPhotoGalleryView(images: $capturedImages)
+                        PhotoGalleryView(images: $capturedImages)
                     } else {
                         ProspectingPhotoPlaceholderView {
                             showingMultiCamera = true
