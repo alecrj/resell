@@ -293,7 +293,7 @@ struct AIAnalysisView: View {
     }
 }
 
-// MARK: - Prospecting View
+// MARK: - Improved Prospecting View
 struct ProspectingView: View {
     @EnvironmentObject var inventoryManager: InventoryManager
     @EnvironmentObject var aiService: AIService
@@ -312,17 +312,34 @@ struct ProspectingView: View {
         NavigationView {
             ScrollView {
                 VStack(spacing: 20) {
-                    // Prospecting Header
+                    // Prospecting Header with Refresh
                     VStack(spacing: 12) {
-                        Text("🔍 PROSPECTING MODE")
-                            .font(.largeTitle)
-                            .fontWeight(.bold)
-                            .foregroundColor(.purple)
-                        
-                        Text("Instant analysis • Max buy price • Perfect for sourcing")
-                            .font(.headline)
-                            .foregroundColor(.secondary)
-                            .multilineTextAlignment(.center)
+                        HStack {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("🔍 PROSPECTING MODE")
+                                    .font(.largeTitle)
+                                    .fontWeight(.bold)
+                                    .foregroundColor(.purple)
+                                
+                                Text("Instant analysis • Get max buy price • Perfect for sourcing")
+                                    .font(.headline)
+                                    .foregroundColor(.secondary)
+                            }
+                            
+                            Spacer()
+                            
+                            // Refresh Button
+                            Button(action: {
+                                refreshAnalysis()
+                            }) {
+                                Image(systemName: "arrow.clockwise")
+                                    .font(.title2)
+                                    .foregroundColor(.purple)
+                                    .padding(12)
+                                    .background(Color.purple.opacity(0.1))
+                                    .cornerRadius(12)
+                            }
+                        }
                     }
                     
                     // Analysis Progress
@@ -364,7 +381,7 @@ struct ProspectingView: View {
                                 VStack(alignment: .leading) {
                                     Text("📸 Take Photos")
                                         .fontWeight(.bold)
-                                    Text("Take up to 8 photos for analysis")
+                                    Text("Identify item and get pricing")
                                         .font(.caption)
                                 }
                                 Spacer()
@@ -420,7 +437,7 @@ struct ProspectingView: View {
                                 VStack(alignment: .leading) {
                                     Text("📱 Barcode Scanner")
                                         .fontWeight(.bold)
-                                    Text("Scan UPC/ISBN for instant lookup")
+                                    Text("Scan for instant identification")
                                         .font(.caption)
                                 }
                                 Spacer()
@@ -446,7 +463,7 @@ struct ProspectingView: View {
                             }) {
                                 HStack {
                                     Image(systemName: "brain.head.profile")
-                                    Text("🔍 GET MAX BUY PRICE (\(capturedImages.count) photos)")
+                                    Text("🔍 ANALYZE ITEM (\(capturedImages.count) photos)")
                                         .fontWeight(.bold)
                                 }
                                 .frame(maxWidth: .infinity)
@@ -468,7 +485,7 @@ struct ProspectingView: View {
                     
                     // Analysis Results
                     if let analysis = prospectAnalysis {
-                        ProspectAnalysisResultView(analysis: analysis)
+                        ImprovedProspectAnalysisResultView(analysis: analysis)
                     }
                     
                     Spacer(minLength: 20)
@@ -518,6 +535,13 @@ struct ProspectingView: View {
                 prospectAnalysis = analysis
             }
         }
+    }
+    
+    private func refreshAnalysis() {
+        capturedImages = []
+        prospectAnalysis = nil
+        scannedBarcode = nil
+        print("🔄 Prospecting analysis refreshed")
     }
 }
 
@@ -729,7 +753,7 @@ struct ProspectingPhotoPlaceholderView: View {
                     Text("✓ Instant item identification")
                     Text("✓ Max buy price calculation")
                     Text("✓ Profit potential analysis")
-                    Text("✓ Buy/Avoid recommendation")
+                    Text("✓ Buy/Research recommendation")
                 }
                 .font(.caption)
                 .foregroundColor(.purple)

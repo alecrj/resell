@@ -359,121 +359,259 @@ class ScannerViewController: UIViewController, AVCaptureMetadataOutputObjectsDel
     }
 }
 
-// MARK: - Prospect Analysis Result View
-struct ProspectAnalysisResultView: View {
+// MARK: - Improved Prospect Analysis Result View
+struct ImprovedProspectAnalysisResultView: View {
     let analysis: ProspectAnalysis
     
     var body: some View {
         VStack(spacing: 20) {
-            // Main Decision Header
-            VStack(spacing: 12) {
-                HStack {
-                    Text(analysis.recommendation.emoji)
-                        .font(.system(size: 40))
+            // Item Identification Header
+            VStack(spacing: 15) {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("🔍 ITEM IDENTIFIED")
+                        .font(.headline)
+                        .fontWeight(.bold)
+                        .foregroundColor(.purple)
                     
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(analysis.recommendation.title)
-                            .font(.title)
-                            .fontWeight(.bold)
-                            .foregroundColor(analysis.recommendation.color)
+                    Text(analysis.itemName)
+                        .font(.title2)
+                        .fontWeight(.bold)
+                        .foregroundColor(.primary)
+                    
+                    HStack {
+                        if !analysis.brand.isEmpty {
+                            Text("Brand: \(analysis.brand)")
+                                .font(.body)
+                                .foregroundColor(.blue)
+                        }
                         
-                        Text("Risk: \(analysis.riskLevel)")
+                        Spacer()
+                        
+                        Text("Confidence: \(String(format: "%.0f", analysis.confidence * 100))%")
                             .font(.caption)
                             .foregroundColor(.secondary)
                     }
                     
-                    Spacer()
-                    
-                    VStack(alignment: .trailing, spacing: 4) {
-                        Text("ROI")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                        Text("\(String(format: "%.1f", analysis.expectedROI))%")
-                            .font(.title2)
-                            .fontWeight(.bold)
-                            .foregroundColor(analysis.expectedROI > 100 ? .green : analysis.expectedROI > 50 ? .orange : .red)
+                    // Product details row
+                    HStack {
+                        if !analysis.category.isEmpty {
+                            Text(analysis.category)
+                                .font(.caption)
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 4)
+                                .background(Color.blue.opacity(0.1))
+                                .cornerRadius(6)
+                        }
+                        
+                        if !analysis.size.isEmpty {
+                            Text("Size: \(analysis.size)")
+                                .font(.caption)
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 4)
+                                .background(Color.green.opacity(0.1))
+                                .cornerRadius(6)
+                        }
+                        
+                        if !analysis.condition.isEmpty {
+                            Text(analysis.condition)
+                                .font(.caption)
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 4)
+                                .background(Color.orange.opacity(0.1))
+                                .cornerRadius(6)
+                        }
+                        
+                        Spacer()
                     }
                 }
+                .padding()
+                .background(Color.purple.opacity(0.05))
+                .cornerRadius(16)
+            }
+            
+            // Pricing Strategy - Most Important Section
+            VStack(spacing: 15) {
+                Text("💰 PRICING STRATEGY")
+                    .font(.headline)
+                    .fontWeight(.bold)
                 
-                // Key Metrics Row
-                HStack {
-                    VStack(alignment: .leading) {
-                        Text("MAX PAY PRICE")
+                // Main pricing cards
+                HStack(spacing: 12) {
+                    // Max Buy Price
+                    VStack(spacing: 8) {
+                        Text("MAX PAY")
                             .font(.caption)
                             .fontWeight(.bold)
-                            .foregroundColor(.blue)
-                        Text("$\(String(format: "%.2f", analysis.maxPayPrice))")
-                            .font(.title2)
+                            .foregroundColor(.red)
+                        
+                        Text("$\(String(format: "%.2f", analysis.maxBuyPrice))")
+                            .font(.title)
                             .fontWeight(.bold)
-                            .foregroundColor(.blue)
+                            .foregroundColor(.red)
+                        
+                        Text("Don't pay more")
+                            .font(.caption2)
+                            .foregroundColor(.secondary)
                     }
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .background(Color.red.opacity(0.1))
+                    .cornerRadius(12)
                     
-                    Spacer()
+                    // Target Buy Price
+                    VStack(spacing: 8) {
+                        Text("TARGET PRICE")
+                            .font(.caption)
+                            .fontWeight(.bold)
+                            .foregroundColor(.orange)
+                        
+                        Text("$\(String(format: "%.2f", analysis.targetBuyPrice))")
+                            .font(.title)
+                            .fontWeight(.bold)
+                            .foregroundColor(.orange)
+                        
+                        Text("Good profit")
+                            .font(.caption2)
+                            .foregroundColor(.secondary)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .background(Color.orange.opacity(0.1))
+                    .cornerRadius(12)
                     
-                    VStack(alignment: .center) {
+                    // Sell Price
+                    VStack(spacing: 8) {
+                        Text("SELL FOR")
+                            .font(.caption)
+                            .fontWeight(.bold)
+                            .foregroundColor(.green)
+                        
+                        Text("$\(String(format: "%.2f", analysis.estimatedSellPrice))")
+                            .font(.title)
+                            .fontWeight(.bold)
+                            .foregroundColor(.green)
+                        
+                        Text("Market price")
+                            .font(.caption2)
+                            .foregroundColor(.secondary)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .background(Color.green.opacity(0.1))
+                    .cornerRadius(12)
+                }
+                
+                // Profit potential
+                HStack {
+                    VStack(alignment: .leading) {
                         Text("Potential Profit")
                             .font(.caption)
                             .foregroundColor(.secondary)
                         Text("$\(String(format: "%.2f", analysis.potentialProfit))")
                             .font(.headline)
                             .fontWeight(.bold)
-                            .foregroundColor(analysis.potentialProfit > 0 ? .green : .red)
+                            .foregroundColor(analysis.potentialProfit > 10 ? .green : .orange)
+                    }
+                    
+                    Spacer()
+                    
+                    VStack(alignment: .center) {
+                        Text("Expected ROI")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                        Text("\(String(format: "%.1f", analysis.expectedROI))%")
+                            .font(.headline)
+                            .fontWeight(.bold)
+                            .foregroundColor(analysis.expectedROI > 100 ? .green : analysis.expectedROI > 50 ? .orange : .red)
                     }
                     
                     Spacer()
                     
                     VStack(alignment: .trailing) {
-                        Text("Market Value")
+                        Text("Recommendation")
                             .font(.caption)
                             .foregroundColor(.secondary)
-                        Text("$\(String(format: "%.2f", analysis.estimatedValue))")
+                        Text(analysis.recommendation.title)
+                            .font(.headline)
+                            .fontWeight(.bold)
+                            .foregroundColor(analysis.recommendation.color)
+                    }
+                }
+                .padding()
+                .background(Color.gray.opacity(0.05))
+                .cornerRadius(12)
+            }
+            .padding()
+            .background(Color.green.opacity(0.05))
+            .cornerRadius(16)
+            
+            // Recent Sales Data
+            if !analysis.recentSales.isEmpty {
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("📈 RECENT EBAY SALES")
+                        .font(.headline)
+                        .fontWeight(.bold)
+                    
+                    ForEach(analysis.recentSales.prefix(3), id: \.title) { sale in
+                        HStack {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(sale.title)
+                                    .font(.body)
+                                    .lineLimit(2)
+                                
+                                HStack {
+                                    Text(sale.condition)
+                                        .font(.caption)
+                                        .padding(.horizontal, 6)
+                                        .padding(.vertical, 2)
+                                        .background(Color.blue.opacity(0.1))
+                                        .cornerRadius(4)
+                                    
+                                    Text("Sold in \(sale.soldIn)")
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+                                }
+                            }
+                            
+                            Spacer()
+                            
+                            VStack(alignment: .trailing) {
+                                Text("$\(String(format: "%.2f", sale.price))")
+                                    .font(.headline)
+                                    .fontWeight(.bold)
+                                    .foregroundColor(.green)
+                                
+                                Text(formatDate(sale.date))
+                                    .font(.caption2)
+                                    .foregroundColor(.secondary)
+                            }
+                        }
+                        .padding()
+                        .background(Color.blue.opacity(0.05))
+                        .cornerRadius(12)
+                    }
+                    
+                    // Average sale price
+                    HStack {
+                        Text("Average Sale Price:")
+                            .font(.body)
+                            .fontWeight(.semibold)
+                        
+                        Spacer()
+                        
+                        Text("$\(String(format: "%.2f", analysis.averageSoldPrice))")
                             .font(.headline)
                             .fontWeight(.bold)
                             .foregroundColor(.purple)
                     }
+                    .padding()
+                    .background(Color.purple.opacity(0.1))
+                    .cornerRadius(12)
                 }
+                .padding()
+                .background(Color.blue.opacity(0.05))
+                .cornerRadius(16)
             }
-            .padding()
-            .background(
-                RoundedRectangle(cornerRadius: 16)
-                    .fill(analysis.recommendation.color.opacity(0.1))
-                    .stroke(analysis.recommendation.color.opacity(0.3), lineWidth: 2)
-            )
-            
-            // Reasoning and Tips
-            VStack(alignment: .leading, spacing: 12) {
-                Text("🤔 ANALYSIS REASONING")
-                    .font(.headline)
-                    .fontWeight(.bold)
-                
-                ForEach(analysis.reasons, id: \.self) { reason in
-                    HStack(alignment: .top) {
-                        Text("•")
-                            .foregroundColor(.blue)
-                            .fontWeight(.bold)
-                        Text(reason)
-                            .font(.body)
-                    }
-                }
-                
-                Text("💡 SOURCING TIPS")
-                    .font(.headline)
-                    .fontWeight(.bold)
-                    .padding(.top, 8)
-                
-                ForEach(analysis.sourcingTips, id: \.self) { tip in
-                    HStack(alignment: .top) {
-                        Text("✓")
-                            .foregroundColor(.green)
-                            .fontWeight(.bold)
-                        Text(tip)
-                            .font(.body)
-                    }
-                }
-            }
-            .padding()
-            .background(Color.gray.opacity(0.05))
-            .cornerRadius(16)
             
             // Market Intelligence
             VStack(alignment: .leading, spacing: 12) {
@@ -499,24 +637,71 @@ struct ProspectAnalysisResultView: View {
                     )
                     
                     ProspectStatCard(
-                        title: "Trend",
-                        value: analysis.marketTrend,
-                        color: getTrendColor(analysis.marketTrend)
-                    )
-                    
-                    ProspectStatCard(
                         title: "Sell Time",
                         value: analysis.sellTimeEstimate,
                         color: .blue
                     )
+                    
+                    ProspectStatCard(
+                        title: "Risk Level",
+                        value: analysis.riskLevel,
+                        color: getRiskColor(analysis.riskLevel)
+                    )
                 }
             }
             .padding()
-            .background(Color.purple.opacity(0.1))
+            .background(Color.orange.opacity(0.05))
+            .cornerRadius(16)
+            
+            // Sourcing Tips
+            VStack(alignment: .leading, spacing: 12) {
+                Text("💡 SOURCING TIPS")
+                    .font(.headline)
+                    .fontWeight(.bold)
+                
+                ForEach(analysis.sourcingTips, id: \.self) { tip in
+                    HStack(alignment: .top) {
+                        Text("✓")
+                            .foregroundColor(.green)
+                            .fontWeight(.bold)
+                        Text(tip)
+                            .font(.body)
+                    }
+                }
+                
+                // Additional insights
+                if analysis.quickFlipPotential {
+                    HStack {
+                        Image(systemName: "bolt.fill")
+                            .foregroundColor(.yellow)
+                        Text("Quick flip potential - high demand item")
+                            .font(.body)
+                            .fontWeight(.semibold)
+                    }
+                    .padding()
+                    .background(Color.yellow.opacity(0.1))
+                    .cornerRadius(8)
+                }
+                
+                if analysis.holidayDemand {
+                    HStack {
+                        Image(systemName: "gift.fill")
+                            .foregroundColor(.red)
+                        Text("Higher demand during holidays")
+                            .font(.body)
+                            .fontWeight(.semibold)
+                    }
+                    .padding()
+                    .background(Color.red.opacity(0.1))
+                    .cornerRadius(8)
+                }
+            }
+            .padding()
+            .background(Color.gray.opacity(0.05))
             .cornerRadius(16)
         }
         .padding()
-        .background(Color.gray.opacity(0.05))
+        .background(Color.gray.opacity(0.02))
         .cornerRadius(20)
     }
     
@@ -529,13 +714,19 @@ struct ProspectAnalysisResultView: View {
         }
     }
     
-    private func getTrendColor(_ trend: String) -> Color {
-        switch trend.lowercased() {
-        case "increasing": return .green
-        case "stable": return .blue
-        case "decreasing": return .red
+    private func getRiskColor(_ risk: String) -> Color {
+        switch risk.lowercased() {
+        case "low": return .green
+        case "medium": return .orange
+        case "high": return .red
         default: return .gray
         }
+    }
+    
+    private func formatDate(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .short
+        return formatter.string(from: date)
     }
 }
 

@@ -337,14 +337,15 @@ struct PriceRange {
     }
 }
 
-// MARK: - Prospecting Models
+// MARK: - Improved Prospecting Models
 struct ProspectAnalysis {
     let itemName: String
     let brand: String
     let condition: String
     let confidence: Double
-    let estimatedValue: Double
-    let maxPayPrice: Double        // Max price you should pay
+    let estimatedSellPrice: Double    // What you can sell it for
+    let maxBuyPrice: Double          // Max price you should pay
+    let targetBuyPrice: Double       // Ideal purchase price for good profit
     let potentialProfit: Double
     let expectedROI: Double
     let recommendation: ProspectDecision
@@ -358,19 +359,33 @@ struct ProspectAnalysis {
     let sourcingTips: [String]
     let images: [UIImage]
     
-    // Prospecting-specific properties
-    let breakEvenPrice: Double     // Minimum to break even
-    let targetBuyPrice: Double     // Ideal purchase price for good profit
-    let quickFlipPotential: Bool   // Can be sold quickly
-    let holidayDemand: Bool        // Higher demand during holidays
+    // Recent sales data
+    let recentSales: [RecentSale]     // Recent eBay sales
+    let averageSoldPrice: Double      // Average of recent sales
+    
+    // Additional product details
+    let category: String
+    let subcategory: String
+    let modelNumber: String
+    let size: String
+    let colorway: String
+    let releaseYear: String
+    let retailPrice: Double
+    let currentMarketValue: Double
+    
+    // Market intelligence
+    let quickFlipPotential: Bool
+    let holidayDemand: Bool
+    let breakEvenPrice: Double
 }
 
-// MARK: - Missing Types for Services
-struct QuickIdentification {
-    let itemName: String
-    let brand: String
+// Recent sale data structure
+struct RecentSale {
+    let price: Double
+    let date: Date
     let condition: String
-    let confidence: Double
+    let title: String
+    let soldIn: String  // "3 days", "1 week", etc.
 }
 
 struct ProspectRecommendation {
@@ -381,21 +396,19 @@ struct ProspectRecommendation {
 }
 
 enum ProspectDecision {
-    case buy, investigate, avoid
+    case buy, investigate
     
     var emoji: String {
         switch self {
         case .buy: return "✅"
         case .investigate: return "🤔"
-        case .avoid: return "❌"
         }
     }
     
     var title: String {
         switch self {
-        case .buy: return "BUY NOW"
-        case .investigate: return "INVESTIGATE"
-        case .avoid: return "AVOID"
+        case .buy: return "GOOD DEAL"
+        case .investigate: return "RESEARCH MORE"
         }
     }
     
@@ -403,15 +416,13 @@ enum ProspectDecision {
         switch self {
         case .buy: return .green
         case .investigate: return .orange
-        case .avoid: return .red
         }
     }
     
     var description: String {
         switch self {
-        case .buy: return "Great profit opportunity!"
-        case .investigate: return "Proceed with caution"
-        case .avoid: return "Not profitable at this price"
+        case .buy: return "Strong profit potential at target price"
+        case .investigate: return "Verify condition and market demand"
         }
     }
 }
@@ -421,6 +432,18 @@ enum PhotoSource {
     case camera
     case photoLibrary
     case multiPhoto
+}
+
+// Quick identification for prospecting
+struct QuickIdentification {
+    let itemName: String
+    let brand: String
+    let category: String
+    let modelNumber: String
+    let condition: String
+    let confidence: Double
+    let estimatedRetailPrice: Double
+    let keyFeatures: [String]
 }
 
 // MARK: - App Constants
