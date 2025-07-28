@@ -104,7 +104,6 @@ struct AnalysisResultView: View {
             // Action Buttons
             VStack(spacing: 12) {
                 Button(action: {
-                    hapticFeedback(.medium)
                     onAddToInventory()
                 }) {
                     HStack {
@@ -126,7 +125,6 @@ struct AnalysisResultView: View {
                 }
                 
                 Button(action: {
-                    hapticFeedback(.medium)
                     onDirectList()
                 }) {
                     HStack {
@@ -483,14 +481,12 @@ struct ItemFormView: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button("Cancel") {
-                        hapticFeedback(.light)
                         presentationMode.wrappedValue.dismiss()
                     }
                 }
                 
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Save") {
-                        hapticFeedback(.medium)
                         saveItem()
                     }
                     .disabled(purchasePrice <= 0)
@@ -610,7 +606,6 @@ struct DirectEbayListingView: View {
                     
                     // List Button
                     Button(action: {
-                        hapticFeedback(.heavy)
                         listToEbay()
                     }) {
                         HStack {
@@ -667,7 +662,6 @@ struct DirectEbayListingView: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Done") {
-                        hapticFeedback(.light)
                         presentationMode.wrappedValue.dismiss()
                     }
                 }
@@ -808,7 +802,6 @@ struct PriceOption: View {
     
     var body: some View {
         Button(action: {
-            hapticFeedback(.light)
             onTap()
         }) {
             VStack(spacing: 6) {
