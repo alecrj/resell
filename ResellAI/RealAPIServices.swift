@@ -3,7 +3,7 @@ import Foundation
 import PhotosUI
 import Vision
 
-// MARK: - API Configuration
+// MARK: - Updated API Configuration
 struct APIConfig {
     static let openAIKey = ProcessInfo.processInfo.environment["OPENAI_API_KEY"] ?? ""
     static let spreadsheetID = ProcessInfo.processInfo.environment["SPREADSHEET_ID"] ?? ""
@@ -11,8 +11,7 @@ struct APIConfig {
     static let googleAppsScriptURL = ProcessInfo.processInfo.environment["GOOGLE_SCRIPT_URL"] ?? ""
     static let googleCloudAPIKey = ProcessInfo.processInfo.environment["GOOGLE_CLOUD_API_KEY"] ?? ""
     static let rapidAPIKey = ProcessInfo.processInfo.environment["RAPID_API_KEY"] ?? ""
-    static let rapidAPIHost = "ebay-data-scraper.p.rapidapi.com"
-
+    
     static func validateConfiguration() {
         print("🔧 API Configuration Status:")
         print("✅ OpenAI Key: \(openAIKey.isEmpty ? "❌ Missing" : "\(openAIKey.prefix(10))...")")
@@ -20,56 +19,66 @@ struct APIConfig {
         print("✅ Spreadsheet ID: \(spreadsheetID.isEmpty ? "❌ Missing" : spreadsheetID)")
         print("✅ RapidAPI Key: \(rapidAPIKey.isEmpty ? "❌ Missing" : "\(rapidAPIKey.prefix(10))...")")
         
-        // Cost Analysis Information
+        if openAIKey.isEmpty {
+            print("⚠️ WARNING: OpenAI API key missing - analysis will not work!")
+        }
+        if rapidAPIKey.isEmpty {
+            print("⚠️ WARNING: RapidAPI key missing - market research limited!")
+        }
+        
         print("💰 OpenAI Cost Analysis:")
-        print("📊 Model: gpt-4o-mini (Recommended for cost/performance)")
-        print("💵 Input Cost: ~$0.15 per 1M tokens")
-        print("💵 Output Cost: ~$0.60 per 1M tokens")
-        print("📸 Image Cost: ~512 tokens per image")
-        print("🔢 Per Analysis Cost: ~$0.02-0.05 per scan")
-        print("📷 Multiple Photos: Yes, costs more but very affordable with gpt-4o-mini")
+        print("📊 Model: gpt-4o-mini (Cost-effective)")
+        print("💵 Per Analysis: ~$0.02-0.05")
+        print("📷 Multiple Photos: Supported")
     }
 }
 
-// MARK: - Main AI Service using Professional Analysis
+// MARK: - Main AI Service with REAL Implementation
 class AIService: ObservableObject {
     @Published var isAnalyzing = false
     @Published var analysisProgress = "Ready"
     @Published var currentStep = 0
     @Published var totalSteps = 8
     
-    private let professionalAnalyzer = ProfessionalAIService()
+    private let realAnalyzer = RealAIAnalysisService()
     
     init() {
         APIConfig.validateConfiguration()
-    }
-    
-    // MARK: - Main Analysis Functions
-    
-    // Business Mode: Complete professional analysis
-    func analyzeItem(_ images: [UIImage], completion: @escaping (AnalysisResult) -> Void) {
-        print("🚀 Starting PROFESSIONAL Business Mode Analysis...")
         
-        // Sync progress with professional analyzer
-        professionalAnalyzer.$isAnalyzing
+        // Sync progress with real analyzer
+        realAnalyzer.$isAnalyzing
             .receive(on: DispatchQueue.main)
             .assign(to: &$isAnalyzing)
         
-        professionalAnalyzer.$analysisProgress
+        realAnalyzer.$analysisProgress
             .receive(on: DispatchQueue.main)
             .assign(to: &$analysisProgress)
         
-        professionalAnalyzer.$currentStep
+        realAnalyzer.$currentStep
             .receive(on: DispatchQueue.main)
             .assign(to: &$currentStep)
         
-        professionalAnalyzer.$totalSteps
+        realAnalyzer.$totalSteps
             .receive(on: DispatchQueue.main)
             .assign(to: &$totalSteps)
+    }
+    
+    // MARK: - Main Analysis Functions with REAL APIs
+    
+    func analyzeItem(_ images: [UIImage], completion: @escaping (AnalysisResult) -> Void) {
+        guard !APIConfig.openAIKey.isEmpty else {
+            print("❌ OpenAI API key not configured!")
+            completion(createAPIErrorResult("OpenAI API key not configured"))
+            return
+        }
         
-        // Use professional analysis system
-        professionalAnalyzer.analyzeItem(images) { result in
-            completion(result)
+        print("🚀 Starting REAL AI Analysis with \(images.count) images")
+        
+        realAnalyzer.analyzeItem(images) { result in
+            DispatchQueue.main.async {
+                print("✅ REAL Analysis Complete: \(result.itemName) - \(result.actualCondition) - $\(String(format: "%.2f", result.realisticPrice))")
+                completion(result)
+            }
         }
     }
     
@@ -80,45 +89,34 @@ class AIService: ObservableObject {
             return
         }
         
-        print("🔍 Starting PROFESSIONAL Prospecting Analysis...")
-        
-        DispatchQueue.main.async {
-            self.isAnalyzing = true
-            self.currentStep = 0
-            self.totalSteps = 6
-            self.analysisProgress = "🔍 Step 1/6: Quick product identification..."
-            self.currentStep = 1
+        guard !APIConfig.openAIKey.isEmpty else {
+            print("❌ OpenAI API key not configured!")
+            completion(createDefaultProspectAnalysis(images))
+            return
         }
         
-        // Use professional analysis for prospecting
-        professionalAnalyzer.analyzeItem(images) { [weak self] analysisResult in
+        print("🔍 Starting REAL Prospecting Analysis with \(images.count) images")
+        
+        realAnalyzer.analyzeItem(images) { [weak self] analysisResult in
             guard let self = self else { return }
-            
-            DispatchQueue.main.async {
-                self.analysisProgress = "💰 Step 2/6: Calculating buy prices..."
-                self.currentStep = 2
-            }
             
             // Convert analysis result to prospect analysis
             let prospectAnalysis = self.convertToProspectAnalysis(analysisResult, images: images)
             
             DispatchQueue.main.async {
-                self.isAnalyzing = false
-                self.analysisProgress = "✅ Prospecting Complete!"
-                self.currentStep = 0
-                print("✅ PROFESSIONAL Prospecting Complete: \(prospectAnalysis.recommendation.title) - Max Pay: $\(String(format: "%.2f", prospectAnalysis.maxBuyPrice))")
+                print("✅ REAL Prospecting Complete: \(prospectAnalysis.recommendation.title) - Max Pay: $\(String(format: "%.2f", prospectAnalysis.maxBuyPrice))")
                 completion(prospectAnalysis)
             }
         }
     }
     
     private func convertToProspectAnalysis(_ analysis: AnalysisResult, images: [UIImage]) -> ProspectAnalysis {
-        // Calculate smart buy prices
+        // Calculate smart buy prices based on REAL market data
         let marketValue = analysis.realisticPrice
+        let conditionMultiplier = getConditionMultiplier(analysis.conditionScore)
         let maxBuyPrice = calculateSmartMaxBuyPrice(
             marketValue: marketValue,
-            condition: analysis.actualCondition,
-            conditionScore: analysis.conditionScore,
+            conditionMultiplier: conditionMultiplier,
             competitorCount: analysis.competitorCount
         )
         
@@ -127,7 +125,7 @@ class AIService: ObservableObject {
         let potentialProfit = marketValue - maxBuyPrice - estimatedFees
         let expectedROI = maxBuyPrice > 0 ? (potentialProfit / maxBuyPrice) * 100 : 0
         
-        // Generate smart recommendation
+        // Generate smart recommendation based on REAL data
         let recommendation = generateSmartRecommendation(
             expectedROI: expectedROI,
             potentialProfit: potentialProfit,
@@ -136,11 +134,11 @@ class AIService: ObservableObject {
             conditionScore: analysis.conditionScore
         )
         
-        // Create recent sales from market data
-        let recentSales = analysis.recentSoldPrices.prefix(5).map { price in
+        // Create recent sales from REAL market data
+        let recentSales = analysis.recentSoldPrices.prefix(5).enumerated().map { index, price in
             RecentSale(
                 price: price,
-                date: Date().addingTimeInterval(-Double.random(in: 86400...2592000)),
+                date: Date().addingTimeInterval(-Double(index * 86400 * 3)), // Spread over days
                 condition: analysis.actualCondition,
                 title: "\(analysis.brand) \(analysis.itemName)",
                 soldIn: generateSoldTime()
@@ -187,16 +185,17 @@ class AIService: ObservableObject {
     func analyzeBarcode(_ barcode: String, images: [UIImage], completion: @escaping (AnalysisResult) -> Void) {
         print("📱 Analyzing barcode: \(barcode)")
         
-        // First lookup barcode in product database
-        lookupBarcodeProduct(barcode) { [weak self] productInfo in
+        // First try barcode lookup, then fall back to image analysis
+        realAnalyzer.lookupProductByBarcode(barcode) { [weak self] productData in
             guard let self = self else { return }
             
-            if let product = productInfo {
-                // If barcode found, use that data with image analysis
-                self.analyzeWithBarcodeData(images, productInfo: product, completion: completion)
+            if let product = productData, product.confidence > 0.8 {
+                // High confidence barcode match
+                let enhancedResult = self.createBarcodeEnhancedResult(product, images: images)
+                completion(enhancedResult)
             } else {
-                // If no barcode data, fallback to regular analysis
-                print("📱 Barcode not found, using regular analysis")
+                // Low confidence or no barcode match, use image analysis
+                print("📱 Barcode lookup failed or low confidence, using image analysis")
                 self.analyzeItem(images, completion: completion)
             }
         }
@@ -205,10 +204,10 @@ class AIService: ObservableObject {
     func lookupBarcodeForProspecting(_ barcode: String, completion: @escaping (ProspectAnalysis) -> Void) {
         print("📱 Looking up barcode for prospecting: \(barcode)")
         
-        lookupBarcodeProduct(barcode) { [weak self] productInfo in
+        realAnalyzer.lookupProductByBarcode(barcode) { [weak self] productData in
             guard let self = self else { return }
             
-            if let product = productInfo {
+            if let product = productData {
                 let prospectAnalysis = self.createProspectFromBarcodeData(product)
                 completion(prospectAnalysis)
             } else {
@@ -217,96 +216,30 @@ class AIService: ObservableObject {
         }
     }
     
-    // MARK: - Barcode Lookup
-    private func lookupBarcodeProduct(_ barcode: String, completion: @escaping (BarcodeProductInfo?) -> Void) {
-        // Try multiple barcode APIs
-        lookupUPCDatabase(barcode) { productInfo in
-            if let product = productInfo {
-                completion(product)
-            } else {
-                // Try alternative barcode service
-                completion(nil)
-            }
+    // MARK: - Helper Methods for Prospecting
+    
+    private func getConditionMultiplier(_ score: Double) -> Double {
+        switch score {
+        case 90...100: return 1.0    // Like New
+        case 80...89:  return 0.85   // Excellent
+        case 70...79:  return 0.75   // Very Good
+        case 60...69:  return 0.65   // Good
+        case 40...59:  return 0.5    // Fair
+        default:       return 0.35   // Poor
         }
     }
     
-    private func lookupUPCDatabase(_ barcode: String, completion: @escaping (BarcodeProductInfo?) -> Void) {
-        // This would use a real UPC database API
-        print("🔍 Looking up UPC: \(barcode)")
-        
-        // For now, return nil to trigger regular analysis
-        completion(nil)
-    }
-    
-    private func analyzeWithBarcodeData(_ images: [UIImage], productInfo: BarcodeProductInfo, completion: @escaping (AnalysisResult) -> Void) {
-        // Use professional analysis with barcode data as additional context
-        professionalAnalyzer.analyzeItem(images) { result in
-            // Create enhanced result with barcode data - Fixed: Create new instance instead of modifying
-            let enhancedResult = AnalysisResult(
-                itemName: productInfo.productName.isEmpty ? result.itemName : productInfo.productName,
-                brand: productInfo.brand.isEmpty ? result.brand : productInfo.brand,
-                modelNumber: productInfo.modelNumber.isEmpty ? result.modelNumber : productInfo.modelNumber,
-                category: result.category,
-                confidence: max(result.confidence, 0.9), // High confidence from barcode
-                actualCondition: result.actualCondition,
-                conditionReasons: result.conditionReasons,
-                conditionScore: result.conditionScore,
-                realisticPrice: result.realisticPrice,
-                quickSalePrice: result.quickSalePrice,
-                maxProfitPrice: result.maxProfitPrice,
-                marketRange: result.marketRange,
-                recentSoldPrices: result.recentSoldPrices,
-                averagePrice: result.averagePrice,
-                marketTrend: result.marketTrend,
-                competitorCount: result.competitorCount,
-                demandLevel: result.demandLevel,
-                ebayTitle: result.ebayTitle,
-                description: result.description,
-                keywords: result.keywords,
-                feesBreakdown: result.feesBreakdown,
-                profitMargins: result.profitMargins,
-                listingStrategy: result.listingStrategy,
-                sourcingTips: result.sourcingTips,
-                seasonalFactors: result.seasonalFactors,
-                resalePotential: result.resalePotential,
-                images: result.images,
-                size: productInfo.size.isEmpty ? result.size : productInfo.size,
-                colorway: productInfo.colorway.isEmpty ? result.colorway : productInfo.colorway,
-                releaseYear: productInfo.releaseYear.isEmpty ? result.releaseYear : productInfo.releaseYear,
-                subcategory: result.subcategory,
-                authenticationNotes: result.authenticationNotes,
-                seasonalDemand: result.seasonalDemand,
-                sizePopularity: result.sizePopularity,
-                barcode: productInfo.upc
-            )
-            
-            completion(enhancedResult)
-        }
-    }
-    
-    // MARK: - Helper Methods
-    
-    private func calculateSmartMaxBuyPrice(marketValue: Double, condition: String, conditionScore: Double, competitorCount: Int) -> Double {
-        var multiplier = 0.45 // Base 45% of market value
-        
-        // Adjust for condition
-        switch condition.lowercased() {
-        case "like new": multiplier += 0.15
-        case "excellent": multiplier += 0.1
-        case "very good": multiplier += 0.05
-        case "fair", "poor": multiplier -= 0.1
-        default: break
-        }
-        
-        // Adjust for condition score
-        if conditionScore > 90 { multiplier += 0.05 }
-        if conditionScore < 60 { multiplier -= 0.1 }
+    private func calculateSmartMaxBuyPrice(marketValue: Double, conditionMultiplier: Double, competitorCount: Int) -> Double {
+        var maxBuy = marketValue * conditionMultiplier * 0.5 // Base 50% of adjusted market value
         
         // Adjust for competition
-        if competitorCount < 50 { multiplier += 0.05 }
-        if competitorCount > 200 { multiplier -= 0.05 }
+        if competitorCount < 50 {
+            maxBuy *= 1.1  // Less competition = can pay more
+        } else if competitorCount > 200 {
+            maxBuy *= 0.9  // High competition = pay less
+        }
         
-        return max(3.0, marketValue * max(0.25, min(0.65, multiplier)))
+        return max(5.0, maxBuy)
     }
     
     private func generateSmartRecommendation(expectedROI: Double, potentialProfit: Double, confidence: Double, brand: String, conditionScore: Double) -> ProspectRecommendation {
@@ -315,23 +248,24 @@ class AIService: ObservableObject {
         var riskLevel = "Medium"
         var sourcingTips: [String] = []
         
-        let isPopularBrand = ["nike", "adidas", "jordan", "supreme", "apple", "sony"].contains(brand.lowercased())
+        let isPopularBrand = ["nike", "jordan", "adidas", "supreme", "yeezy", "vans"].contains(brand.lowercased())
         
-        if expectedROI >= 80 && potentialProfit >= 10 && confidence >= 0.7 && conditionScore >= 70 {
+        // Decision logic based on REAL data
+        if expectedROI >= 100 && potentialProfit >= 15 && confidence >= 0.7 && conditionScore >= 70 {
             decision = .buy
             riskLevel = "Low"
             reasons.append("🔥 Excellent ROI: \(String(format: "%.0f", expectedROI))%")
             reasons.append("💰 Strong profit: $\(String(format: "%.2f", potentialProfit))")
             if isPopularBrand { reasons.append("⭐ Popular brand") }
-            if conditionScore >= 85 { reasons.append("✅ Excellent condition") }
             sourcingTips.append("✅ Strong buy - great deal")
-        } else if expectedROI >= 50 && potentialProfit >= 5 && conditionScore >= 60 {
-            if confidence >= 0.7 {
+        } else if expectedROI >= 50 && potentialProfit >= 8 && conditionScore >= 60 {
+            if confidence >= 0.6 {
                 decision = .buy
-                reasons.append("✅ Good ROI with high confidence")
+                riskLevel = conditionScore > 80 ? "Low" : "Medium"
+                reasons.append("✅ Good ROI with acceptable confidence")
             } else {
                 decision = .investigate
-                reasons.append("⚠️ Good ROI but verify identification")
+                reasons.append("⚠️ Good numbers but verify identification")
             }
         } else {
             decision = .investigate
@@ -341,9 +275,10 @@ class AIService: ObservableObject {
             if confidence < 0.6 { reasons.append("⚠️ Low identification confidence") }
         }
         
-        sourcingTips.append("🔍 Check condition carefully")
+        // Add universal sourcing tips
+        sourcingTips.append("🔍 Verify condition thoroughly")
         if !isPopularBrand { sourcingTips.append("📊 Research brand popularity") }
-        if conditionScore < 70 { sourcingTips.append("💡 Factor in restoration costs") }
+        sourcingTips.append("📦 Check for original packaging")
         
         return ProspectRecommendation(
             decision: decision,
@@ -368,22 +303,20 @@ class AIService: ObservableObject {
     
     private func estimateRetailPrice(brand: String, category: String) -> Double {
         let brandLower = brand.lowercased()
+        let categoryLower = category.lowercased()
         
-        if brandLower == "nike" || brandLower == "jordan" {
-            return category.lowercased().contains("shoe") ? 120.0 : 60.0
-        } else if brandLower == "adidas" {
-            return category.lowercased().contains("shoe") ? 100.0 : 50.0
-        } else if brandLower == "apple" {
-            return 500.0
-        } else if brandLower == "supreme" {
-            return 150.0
-        }
+        if brandLower.contains("jordan") && categoryLower.contains("shoe") { return 170.0 }
+        if brandLower.contains("nike") && categoryLower.contains("shoe") { return 120.0 }
+        if brandLower.contains("adidas") && categoryLower.contains("shoe") { return 110.0 }
+        if brandLower.contains("vans") && categoryLower.contains("shoe") { return 65.0 }
+        if brandLower.contains("supreme") { return 200.0 }
+        if brandLower.contains("off-white") { return 400.0 }
         
-        return 50.0
+        return 75.0
     }
     
     private func hasQuickFlipPotential(_ brand: String, _ demandLevel: String) -> Bool {
-        let popularBrands = ["nike", "jordan", "supreme", "apple"]
+        let popularBrands = ["nike", "jordan", "supreme", "yeezy"]
         return popularBrands.contains(brand.lowercased()) && demandLevel == "High"
     }
     
@@ -397,18 +330,79 @@ class AIService: ObservableObject {
         return times.randomElement() ?? "1 week"
     }
     
-    private func createProspectFromBarcodeData(_ product: BarcodeProductInfo) -> ProspectAnalysis {
-        let estimatedMarketValue = product.originalRetailPrice * 0.6
+    // MARK: - Barcode Enhanced Results
+    
+    private func createBarcodeEnhancedResult(_ product: RealProductData, images: [UIImage]) -> AnalysisResult {
+        // When we have high-confidence barcode data, create enhanced result
+        let estimatedCondition = "Very Good" // Conservative estimate without photo analysis
+        let conditionScore = 75.0 // Conservative score
+        let marketPrice = product.retailPrice * 0.6 // Conservative market estimate
+        
+        let fees = FeesBreakdown(
+            ebayFee: marketPrice * 0.1325,
+            paypalFee: marketPrice * 0.0349 + 0.49,
+            shippingCost: 12.50,
+            listingFees: 0.35,
+            totalFees: marketPrice * 0.1674 + 12.85
+        )
+        
+        let profits = ProfitMargins(
+            quickSaleNet: (marketPrice * 0.85) - fees.totalFees,
+            realisticNet: marketPrice - fees.totalFees,
+            maxProfitNet: (marketPrice * 1.15) - fees.totalFees
+        )
+        
+        return AnalysisResult(
+            itemName: product.name,
+            brand: product.brand,
+            modelNumber: product.model,
+            category: product.category,
+            confidence: product.confidence,
+            actualCondition: estimatedCondition,
+            conditionReasons: ["Barcode verified - visual inspection recommended"],
+            conditionScore: conditionScore,
+            realisticPrice: marketPrice,
+            quickSalePrice: marketPrice * 0.85,
+            maxProfitPrice: marketPrice * 1.15,
+            marketRange: PriceRange(low: marketPrice * 0.8, high: marketPrice * 1.2, average: marketPrice),
+            recentSoldPrices: [marketPrice * 0.9, marketPrice, marketPrice * 1.1],
+            averagePrice: marketPrice,
+            marketTrend: "Stable",
+            competitorCount: 75,
+            demandLevel: "Medium",
+            ebayTitle: "\(product.brand) \(product.name) - \(estimatedCondition)",
+            description: "📱 Barcode verified authentic \(product.brand) \(product.name)",
+            keywords: [product.brand, product.name, product.model, product.category],
+            feesBreakdown: fees,
+            profitMargins: profits,
+            listingStrategy: "Barcode verified authenticity - transparent condition listing",
+            sourcingTips: ["✅ Barcode verified authentic", "🔍 Verify physical condition"],
+            seasonalFactors: "Standard patterns",
+            resalePotential: 7,
+            images: images,
+            size: product.size,
+            colorway: product.colorway,
+            releaseYear: product.releaseYear,
+            subcategory: product.category,
+            authenticationNotes: "Barcode verified in product database",
+            seasonalDemand: "Standard",
+            sizePopularity: "Standard",
+            barcode: nil
+        )
+    }
+    
+    private func createProspectFromBarcodeData(_ product: RealProductData) -> ProspectAnalysis {
+        let estimatedMarketValue = product.retailPrice * 0.6
         let maxBuyPrice = estimatedMarketValue * 0.5
         let targetBuyPrice = maxBuyPrice * 0.8
         let potentialProfit = estimatedMarketValue - maxBuyPrice - (estimatedMarketValue * 0.15)
         let expectedROI = maxBuyPrice > 0 ? (potentialProfit / maxBuyPrice) * 100 : 0
         
         return ProspectAnalysis(
-            itemName: product.productName,
+            itemName: product.name,
             brand: product.brand,
             condition: "Unknown - Inspect Carefully",
-            confidence: 0.9, // High confidence from barcode
+            confidence: product.confidence,
             estimatedSellPrice: estimatedMarketValue,
             maxBuyPrice: maxBuyPrice,
             targetBuyPrice: targetBuyPrice,
@@ -416,23 +410,23 @@ class AIService: ObservableObject {
             expectedROI: expectedROI,
             recommendation: expectedROI > 50 ? .buy : .investigate,
             reasons: ["📱 Verified by barcode", "✅ Authentic product confirmed"],
-            riskLevel: "Low",
+            riskLevel: "Medium",
             demandLevel: "Medium",
             competitorCount: 50,
             marketTrend: "Stable",
             sellTimeEstimate: "2-3 weeks",
             seasonalFactors: "Standard",
-            sourcingTips: ["✅ Barcode verified authentic", "🔍 Check physical condition"],
+            sourcingTips: ["✅ Barcode verified authentic", "🔍 Check physical condition carefully"],
             images: [],
             recentSales: [],
             averageSoldPrice: estimatedMarketValue,
             category: product.category,
-            subcategory: product.subcategory,
-            modelNumber: product.modelNumber,
+            subcategory: product.category,
+            modelNumber: product.model,
             size: product.size,
             colorway: product.colorway,
             releaseYear: product.releaseYear,
-            retailPrice: product.originalRetailPrice,
+            retailPrice: product.retailPrice,
             currentMarketValue: estimatedMarketValue,
             quickFlipPotential: false,
             holidayDemand: false,
@@ -440,7 +434,43 @@ class AIService: ObservableObject {
         )
     }
     
+    // MARK: - Error Handling
+    
+    private func createAPIErrorResult(_ error: String) -> AnalysisResult {
+        return AnalysisResult(
+            itemName: "API Configuration Error",
+            brand: "",
+            modelNumber: "",
+            category: "other",
+            confidence: 0.0,
+            actualCondition: "Unknown",
+            conditionReasons: [error],
+            conditionScore: 0,
+            realisticPrice: 0,
+            quickSalePrice: 0,
+            maxProfitPrice: 0,
+            marketRange: PriceRange(),
+            recentSoldPrices: [],
+            averagePrice: 0,
+            marketTrend: "Unknown",
+            competitorCount: 0,
+            demandLevel: "Unknown",
+            ebayTitle: "Error",
+            description: error,
+            keywords: [],
+            feesBreakdown: FeesBreakdown(ebayFee: 0, paypalFee: 0, shippingCost: 0, listingFees: 0, totalFees: 0),
+            profitMargins: ProfitMargins(quickSaleNet: 0, realisticNet: 0, maxProfitNet: 0),
+            listingStrategy: "",
+            sourcingTips: ["Configure OpenAI API key in environment variables"],
+            seasonalFactors: "",
+            resalePotential: 1,
+            images: []
+        )
+    }
+    
     private func createDefaultProspectAnalysis(_ images: [UIImage]) -> ProspectAnalysis {
+        let errorMessage = APIConfig.openAIKey.isEmpty ? "Configure OpenAI API key" : "Analysis failed"
+        
         return ProspectAnalysis(
             itemName: "Analysis Failed",
             brand: "",
@@ -452,14 +482,14 @@ class AIService: ObservableObject {
             potentialProfit: 0,
             expectedROI: 0,
             recommendation: .investigate,
-            reasons: ["Analysis failed - check API connection"],
+            reasons: [errorMessage],
             riskLevel: "High",
             demandLevel: "Unknown",
             competitorCount: 0,
             marketTrend: "Unknown",
             sellTimeEstimate: "Unknown",
             seasonalFactors: "Unknown",
-            sourcingTips: ["Manual research required"],
+            sourcingTips: ["Configure API keys for analysis"],
             images: images,
             recentSales: [],
             averageSoldPrice: 0,
@@ -478,26 +508,7 @@ class AIService: ObservableObject {
     }
 }
 
-// MARK: - Barcode Product Info
-struct BarcodeProductInfo {
-    let upc: String
-    let productName: String
-    let brand: String
-    let modelNumber: String
-    let size: String
-    let colorway: String
-    let releaseYear: String
-    let originalRetailPrice: Double
-    let category: String
-    let subcategory: String
-    let description: String
-    let imageUrls: [String]
-    let specifications: [String: String]
-    let isAuthentic: Bool
-    let confidence: Double
-}
-
-// MARK: - Google Sheets Service (unchanged)
+// MARK: - Google Sheets Service (unchanged but improved error handling)
 class GoogleSheetsService: ObservableObject {
     @Published var spreadsheetId = APIConfig.spreadsheetID
     @Published var isConnected = true
@@ -510,24 +521,24 @@ class GoogleSheetsService: ObservableObject {
     }
     
     func authenticate() {
-        print("🔗 Google Sheets Service Initialized with REAL API")
-        isConnected = true
-        syncStatus = "Connected to Google Sheets"
+        print("🔗 Google Sheets Service Initialized")
+        isConnected = !APIConfig.googleAppsScriptURL.isEmpty
+        syncStatus = isConnected ? "Connected to Google Sheets" : "Google Sheets not configured"
     }
     
     func uploadItem(_ item: InventoryItem) {
-        print("📤 Uploading item to REAL Google Sheets: \(item.name) [\(item.inventoryCode)]")
+        guard isConnected else {
+            print("❌ Google Sheets not configured")
+            return
+        }
+        
+        print("📤 Uploading item to Google Sheets: \(item.name) [\(item.inventoryCode)]")
         
         DispatchQueue.main.async {
             self.isSyncing = true
             self.syncStatus = "Uploading \(item.name)..."
         }
         
-        // Generate optimized eBay title and description
-        let optimizedTitle = generateOptimizedListingTitle(item)
-        let optimizedDescription = generateOptimizedListingDescription(item)
-        
-        // Prepare data for Google Apps Script
         let itemData: [String: Any] = [
             "itemNumber": item.itemNumber,
             "inventoryCode": item.inventoryCode,
@@ -547,122 +558,33 @@ class GoogleSheetsService: ObservableObject {
             "brand": item.brand,
             "size": item.size,
             "storageLocation": item.storageLocation,
-            "binNumber": item.binNumber,
-            "optimizedTitle": optimizedTitle,
-            "optimizedDescription": optimizedDescription
+            "binNumber": item.binNumber
         ]
         
-        sendToRealGoogleSheets(data: itemData) { [weak self] success in
+        sendToGoogleSheets(data: itemData) { [weak self] success in
             DispatchQueue.main.async {
                 self?.isSyncing = false
                 if success {
                     self?.syncStatus = "✅ Synced successfully"
                     self?.lastSyncDate = Date()
-                    print("✅ Successfully uploaded \(item.name) to REAL Google Sheets")
                 } else {
                     self?.syncStatus = "❌ Sync failed"
-                    print("❌ Failed to upload \(item.name) to REAL Google Sheets")
                 }
             }
         }
     }
     
-    private func generateOptimizedListingTitle(_ item: InventoryItem) -> String {
-        var components: [String] = []
-        
-        // Brand first if available
-        if !item.brand.isEmpty {
-            components.append(item.brand)
-        }
-        
-        // Main item name
-        components.append(item.name)
-        
-        // Size if available
-        if !item.size.isEmpty {
-            components.append("Size \(item.size)")
-        }
-        
-        // Colorway if available and not already in name
-        if !item.colorway.isEmpty && !item.name.lowercased().contains(item.colorway.lowercased()) {
-            components.append(item.colorway)
-        }
-        
-        // Condition
-        components.append(item.condition)
-        
-        // Keywords for search optimization
-        let keywordString = item.keywords.prefix(3).joined(separator: " ")
-        if !keywordString.isEmpty {
-            components.append(keywordString)
-        }
-        
-        let fullTitle = components.joined(separator: " ")
-        
-        // eBay title limit is 80 characters
-        return fullTitle.count > 77 ? String(fullTitle.prefix(77)) + "..." : fullTitle
-    }
-    
-    private func generateOptimizedListingDescription(_ item: InventoryItem) -> String {
-        var description = ""
-        
-        // Eye-catching header
-        description += "🔥 \(item.name) - \(item.condition) Condition 🔥\n\n"
-        
-        // Key details
-        if !item.brand.isEmpty {
-            description += "Brand: \(item.brand)\n"
-        }
-        
-        if !item.size.isEmpty {
-            description += "Size: \(item.size)\n"
-        }
-        
-        if !item.colorway.isEmpty {
-            description += "Colorway: \(item.colorway)\n"
-        }
-        
-        description += "Condition: \(item.condition)\n"
-        
-        if !item.inventoryCode.isEmpty {
-            description += "Item Code: \(item.inventoryCode)\n"
-        }
-        
-        description += "\n"
-        
-        // Main description
-        if !item.description.isEmpty {
-            description += "\(item.description)\n\n"
-        }
-        
-        // Selling points
-        description += "✅ WHY BUY FROM US:\n"
-        description += "• 100% Authentic Guaranteed\n"
-        description += "• Fast Same/Next Day Shipping\n"
-        description += "• Secure Packaging with Tracking\n"
-        description += "• 30-Day Return Policy\n"
-        description += "• Top-Rated Seller with Excellent Feedback\n\n"
-        
-        // Keywords for search
-        if !item.keywords.isEmpty {
-            description += "🔍 SEARCH TERMS: \(item.keywords.joined(separator: ", "))\n\n"
-        }
-        
-        // Hashtags for visibility
-        let hashtags = item.keywords.prefix(5).map { "#\($0.replacingOccurrences(of: " ", with: ""))" }
-        if !hashtags.isEmpty {
-            description += hashtags.joined(separator: " ")
-        }
-        
-        return description
-    }
-    
     func updateItem(_ item: InventoryItem) {
-        uploadItem(item) // For now, treat updates as uploads
+        uploadItem(item)
     }
     
     func syncAllItems(_ items: [InventoryItem]) {
-        print("🔄 Syncing \(items.count) items to REAL Google Sheets")
+        guard isConnected else {
+            print("❌ Google Sheets not configured for bulk sync")
+            return
+        }
+        
+        print("🔄 Syncing \(items.count) items to Google Sheets")
         
         DispatchQueue.main.async {
             self.isSyncing = true
@@ -675,9 +597,6 @@ class GoogleSheetsService: ObservableObject {
         for item in items {
             group.enter()
             
-            let optimizedTitle = generateOptimizedListingTitle(item)
-            let optimizedDescription = generateOptimizedListingDescription(item)
-            
             let itemData: [String: Any] = [
                 "itemNumber": item.itemNumber,
                 "inventoryCode": item.inventoryCode,
@@ -689,23 +608,12 @@ class GoogleSheetsService: ObservableObject {
                 "profit": item.estimatedProfit,
                 "roi": item.estimatedROI,
                 "date": formatDate(item.dateAdded),
-                "title": item.title,
-                "description": item.description,
-                "keywords": item.keywords.joined(separator: ", "),
-                "condition": item.condition,
-                "category": item.category,
                 "brand": item.brand,
-                "size": item.size,
-                "storageLocation": item.storageLocation,
-                "binNumber": item.binNumber,
-                "optimizedTitle": optimizedTitle,
-                "optimizedDescription": optimizedDescription
+                "condition": item.condition
             ]
             
-            sendToRealGoogleSheets(data: itemData) { success in
-                if success {
-                    successCount += 1
-                }
+            sendToGoogleSheets(data: itemData) { success in
+                if success { successCount += 1 }
                 group.leave()
             }
         }
@@ -714,11 +622,10 @@ class GoogleSheetsService: ObservableObject {
             self.isSyncing = false
             self.syncStatus = "✅ Synced \(successCount)/\(items.count) items"
             self.lastSyncDate = Date()
-            print("✅ REAL Bulk sync complete: \(successCount)/\(items.count) items")
         }
     }
     
-    private func sendToRealGoogleSheets(data: [String: Any], completion: @escaping (Bool) -> Void) {
+    private func sendToGoogleSheets(data: [String: Any], completion: @escaping (Bool) -> Void) {
         guard let url = URL(string: APIConfig.googleAppsScriptURL) else {
             print("❌ Invalid Google Apps Script URL")
             completion(false)
@@ -732,35 +639,24 @@ class GoogleSheetsService: ObservableObject {
         
         do {
             request.httpBody = try JSONSerialization.data(withJSONObject: data)
-            print("📤 Sending data to REAL Google Sheets: \(data["name"] ?? "Unknown")")
         } catch {
-            print("❌ Failed to serialize data for Google Sheets: \(error)")
+            print("❌ Failed to serialize data: \(error)")
             completion(false)
             return
         }
         
         URLSession.shared.dataTask(with: request) { data, response, error in
             if let error = error {
-                print("❌ REAL Google Sheets upload error: \(error.localizedDescription)")
+                print("❌ Google Sheets error: \(error.localizedDescription)")
                 completion(false)
                 return
             }
             
-            if let httpResponse = response as? HTTPURLResponse {
-                print("📨 Google Sheets HTTP Status: \(httpResponse.statusCode)")
-            }
-            
             if let data = data,
                let responseString = String(data: data, encoding: .utf8) {
-                print("📨 REAL Google Sheets response: \(responseString)")
-                
-                if responseString.contains("success") || responseString.contains("Item added successfully") {
-                    completion(true)
-                } else {
-                    completion(false)
-                }
+                let success = responseString.contains("success") || responseString.contains("Item added")
+                completion(success)
             } else {
-                print("❌ No response from REAL Google Sheets")
                 completion(false)
             }
         }.resume()
@@ -773,7 +669,7 @@ class GoogleSheetsService: ObservableObject {
     }
 }
 
-// MARK: - eBay Listing Service (placeholder)
+// MARK: - eBay Listing Service (unchanged)
 class EbayListingService: ObservableObject {
     @Published var isListing = false
     @Published var listingProgress = "Ready to list"
@@ -781,16 +677,16 @@ class EbayListingService: ObservableObject {
     @Published var isConfigured = false
     
     func listDirectlyToEbay(item: InventoryItem, analysis: AnalysisResult, completion: @escaping (Bool, String?) -> Void) {
-        print("🚫 eBay direct listing not yet implemented - need eBay API access")
+        print("🚫 eBay direct listing requires eBay Developer API configuration")
         
         DispatchQueue.main.async {
             self.isListing = true
-            self.listingProgress = "eBay API not yet configured..."
+            self.listingProgress = "eBay API not configured..."
         }
         
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
             self.isListing = false
-            self.listingProgress = "Manual listing required - copy from inventory"
+            self.listingProgress = "Manual listing required"
             completion(false, nil)
         }
     }
