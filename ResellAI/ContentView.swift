@@ -89,9 +89,10 @@ struct ModeToggleView: View {
                     .padding()
                     .background(
                         isProspectingMode ?
-                        Color.gray.opacity(0.2) :
-                        LinearGradient(colors: [.blue, .blue.opacity(0.8)], startPoint: .top, endPoint: .bottom)
+                        AnyShapeStyle(Color.gray.opacity(0.2)) :
+                        AnyShapeStyle(LinearGradient(colors: [.blue, .blue.opacity(0.8)], startPoint: .top, endPoint: .bottom))
                     )
+
                     .animation(.easeInOut(duration: 0.2), value: isProspectingMode)
                 }
                 
@@ -111,9 +112,10 @@ struct ModeToggleView: View {
                     .padding()
                     .background(
                         isProspectingMode ?
-                        LinearGradient(colors: [.purple, .purple.opacity(0.8)], startPoint: .top, endPoint: .bottom) :
-                        Color.gray.opacity(0.2)
+                        AnyShapeStyle(LinearGradient(colors: [.purple, .purple.opacity(0.8)], startPoint: .top, endPoint: .bottom)) :
+                        AnyShapeStyle(Color.gray.opacity(0.2))
                     )
+
                     .animation(.easeInOut(duration: 0.2), value: isProspectingMode)
                 }
             }
@@ -196,7 +198,7 @@ struct RealAIAnalysisView: View {
                     // Header with Real AI Status
                     VStack(spacing: 8) {
                         HStack {
-                            Text("🧠 REAL AI ANALYSIS")
+                            Text("ITEM ANALYSIS")
                                 .font(.largeTitle)
                                 .fontWeight(.bold)
                                 .foregroundColor(.blue)
@@ -213,7 +215,7 @@ struct RealAIAnalysisView: View {
                             }
                         }
                         
-                        Text("GPT-4 Vision • Real market research • Professional analysis")
+                        Text(" Real time market research • Professional analysis")
                             .font(.headline)
                             .foregroundColor(.secondary)
                             .multilineTextAlignment(.center)
@@ -360,18 +362,18 @@ struct RealAIAnalysisView: View {
     private func analyzeWithRealAI() {
         guard !capturedImages.isEmpty else { return }
         
-        print("🚀 Starting REAL AI Analysis with \(capturedImages.count) images")
+        print("🚀 Starting Analysis with \(capturedImages.count) images")
         
         aiService.analyzeItem(capturedImages) { result in
             DispatchQueue.main.async {
                 analysisResult = result
-                print("✅ REAL Analysis Complete: \(result.itemName) - $\(String(format: "%.2f", result.realisticPrice))")
+                print("✅ Analysis Complete: \(result.itemName) - $\(String(format: "%.2f", result.realisticPrice))")
             }
         }
     }
     
     private func analyzeBarcode(_ barcode: String) {
-        print("📱 Analyzing barcode with Real AI: \(barcode)")
+        print("📱 Analyzing barcode: \(barcode)")
         
         aiService.analyzeBarcode(barcode, images: capturedImages) { result in
             DispatchQueue.main.async {
@@ -384,7 +386,7 @@ struct RealAIAnalysisView: View {
         capturedImages = []
         analysisResult = nil
         scannedBarcode = nil
-        print("🔄 Real AI Analysis reset")
+        print("🔄 Analysis reset")
     }
 }
 
@@ -443,10 +445,10 @@ struct RealPhotoGalleryView: View {
             // Enhanced Photo Controls
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("🧠 Real AI Multi-angle Analysis Ready")
+                    Text("🧠 Analysis Ready")
                         .font(.headline)
                         .fontWeight(.semibold)
-                    Text("GPT-4 Vision will analyze all \(images.count) photos for maximum accuracy")
+                    Text("Resell AI will analyze all \(images.count) photos for maximum accuracy")
                         .font(.caption)
                         .foregroundColor(.blue)
                 }
@@ -523,7 +525,7 @@ struct RealPhotoPlaceholderView: View {
                 }
                 
                 VStack(spacing: 8) {
-                    Text("Real AI Photo Analysis")
+                    Text("Photo Analysis")
                         .font(.title2)
                         .fontWeight(.bold)
                         .foregroundColor(.primary)
@@ -535,7 +537,7 @@ struct RealPhotoPlaceholderView: View {
                 }
                 
                 VStack(spacing: 4) {
-                    Text("✓ Real GPT-4 Vision API Analysis")
+                    Text("✓ Real AI Analysis")
                     Text("✓ Live Market Research & Pricing")
                     Text("✓ Accurate Condition Assessment")
                     Text("✓ Professional eBay Listing Generation")
@@ -644,16 +646,16 @@ struct RealActionButtonsView: View {
                             ProgressView()
                                 .scaleEffect(0.9)
                                 .progressViewStyle(CircularProgressViewStyle(tint: .white))
-                            Text("🧠 REAL AI ANALYZING...")
+                            Text("🧠 ANALYZING...")
                                 .fontWeight(.bold)
                         } else {
                             Image(systemName: "brain.head.profile")
                                 .font(.title2)
                             
                             VStack(alignment: .leading, spacing: 2) {
-                                Text("🧠 ANALYZE WITH REAL AI")
+                                Text("🧠 ANALYZE WITH RESELL AI")
                                     .fontWeight(.bold)
-                                Text("\(photoCount) photos • GPT-4 Vision • Live market data")
+                                Text("\(photoCount) photos • Live market data")
                                     .font(.caption)
                                     .opacity(0.9)
                             }

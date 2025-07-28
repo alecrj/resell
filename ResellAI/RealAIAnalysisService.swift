@@ -225,13 +225,13 @@ class RealAIAnalysisService: ObservableObject {
         URLSession.shared.dataTask(with: request) { data, response, error in
             if let error = error {
                 print("❌ OpenAI API error: \(error)")
-                completion(createDefaultVisionResult())
+                completion(self.createDefaultVisionResult())
                 return
             }
             
             guard let data = data else {
                 print("❌ No data from OpenAI")
-                completion(createDefaultVisionResult())
+                completion(self.createDefaultVisionResult())
                 return
             }
             
