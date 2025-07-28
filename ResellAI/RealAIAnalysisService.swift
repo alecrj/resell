@@ -177,7 +177,7 @@ class RealAIAnalysisService: ObservableObject {
         }
         
         guard !base64Images.isEmpty else {
-            completion(createDefaultVisionResult())
+            completion(self.createDefaultVisionResult())
             return
         }
         
@@ -247,11 +247,11 @@ class RealAIAnalysisService: ObservableObject {
                     completion(visionResult)
                 } else {
                     print("❌ Failed to parse OpenAI response")
-                    completion(createDefaultVisionResult())
+                    completion(self.createDefaultVisionResult())
                 }
             } catch {
                 print("❌ JSON parsing error: \(error)")
-                completion(createDefaultVisionResult())
+                completion(self.createDefaultVisionResult())
             }
         }.resume()
     }
@@ -300,19 +300,19 @@ class RealAIAnalysisService: ObservableObject {
             request.httpBody = try JSONSerialization.data(withJSONObject: requestBody)
         } catch {
             print("❌ Failed to serialize condition request: \(error)")
-            completion(createDefaultConditionResult())
+            completion(self.createDefaultConditionResult())
             return
         }
         
         URLSession.shared.dataTask(with: request) { data, response, error in
             if let error = error {
                 print("❌ Condition analysis error: \(error)")
-                completion(createDefaultConditionResult())
+                completion(self.createDefaultConditionResult())
                 return
             }
             
             guard let data = data else {
-                completion(createDefaultConditionResult())
+                completion(self.createDefaultConditionResult())
                 return
             }
             
@@ -327,11 +327,11 @@ class RealAIAnalysisService: ObservableObject {
                     let conditionResult = self.parseConditionResponse(content)
                     completion(conditionResult)
                 } else {
-                    completion(createDefaultConditionResult())
+                    completion(self.createDefaultConditionResult())
                 }
             } catch {
                 print("❌ Condition JSON parsing error: \(error)")
-                completion(createDefaultConditionResult())
+                completion(self.createDefaultConditionResult())
             }
         }.resume()
     }
@@ -541,10 +541,10 @@ class RealAIAnalysisService: ObservableObject {
             "item_name": "EXACT full product name",
             "brand": "Brand name",
             "model_number": "Model/style code",
-            "category": "shoes/clothing/electronics/accessories",
+            "category": "shoes/clothing/electronics/accessories/home/toys/books/collectibles",
             "size": "Size from tags",
             "colorway": "Exact colorway name",
-            "collaboration": "Any collaboration (Travis Scott, Off-White, etc.)",
+            "collaboration": "Any collaboration or special edition",
             "limited_edition": true/false,
             "release_year": "Year",
             "key_features": ["List unique features that affect value"],
@@ -552,28 +552,57 @@ class RealAIAnalysisService: ObservableObject {
             "confidence": 0.0-1.0
         }
 
-        Be extremely specific. For example:
-        - "Air Jordan 1 Retro High OG Chicago (2015)" not just "Jordan 1"
-        - "Nike Dunk Low Travis Scott" not just "Nike Dunk"
-        - Include exact colorway names like "Bred", "Chicago", "Fragment"
+        Be extremely specific and work with ALL item types:
+        - Electronics: exact model numbers, condition of screens/buttons
+        - Clothing: brand, size, material, special collections
+        - Home goods: brand, model, vintage status
+        - Books: title, author, edition, condition
+        - Toys: brand, character, year, completeness
+        - Collectibles: exact item, rarity, condition
         """
     }
     
     private func createDetailedConditionPrompt(productInfo: RealVisionResult) -> String {
         return """
-        You are a professional sneaker and product condition assessor. Examine these images of a \(productInfo.itemName) and provide an extremely detailed condition assessment.
+        You are a professional product condition assessor. Examine these images of a \(productInfo.itemName) and provide an extremely detailed condition assessment.
 
-        ANALYZE FOR:
-        1. SOLE CONDITION: Check for wear patterns, separation, yellowing
-        2. UPPER CONDITION: Scuffs, creases, tears, stains, scratches
-        3. LOGO/BRANDING: Condition of logos, swooshes, text
-        4. STITCHING: Check for loose or damaged stitching
-        5. LACES: Original/replacement, condition
-        6. BOX: Original box condition if visible
-        7. OVERALL CLEANLINESS: Dirt, stains, odors
-
-        For electronics: Screen condition, scratches, dents, functionality
-        For clothing: Fading, tears, stains, shrinkage, pilling
+        ANALYZE FOR EACH ITEM TYPE:
+        
+        SHOES/FOOTWEAR:
+        - Sole condition: wear patterns, separation, yellowing
+        - Upper condition: scuffs, creases, tears, stains
+        - Logo/branding condition
+        - Stitching integrity
+        - Laces: original/replacement, condition
+        
+        ELECTRONICS:
+        - Screen condition: scratches, cracks, dead pixels
+        - Housing: dents, scratches, wear
+        - Ports and buttons functionality appearance
+        - Missing accessories or cables
+        
+        CLOTHING:
+        - Fabric condition: fading, tears, stains, pilling
+        - Seams and stitching
+        - Hardware: zippers, buttons, snaps
+        - Size tags and care labels
+        
+        HOME GOODS:
+        - Functionality indicators
+        - Wear patterns and damage
+        - Missing parts or pieces
+        - Age-related deterioration
+        
+        BOOKS:
+        - Cover condition: tears, creases, spine damage
+        - Page condition: yellowing, tears, markings
+        - Binding integrity
+        
+        TOYS/COLLECTIBLES:
+        - Completeness: all parts present
+        - Paint condition and wear
+        - Moving parts functionality
+        - Original packaging condition
 
         Provide response in this JSON format:
         {
@@ -627,8 +656,8 @@ class RealAIAnalysisService: ObservableObject {
         var colorway = ""
         var confidence = 0.5
         
-        // Look for brand mentions
-        let brandPatterns = ["nike", "jordan", "adidas", "vans", "converse", "puma", "reebok"]
+        // Look for brand mentions (expand for all categories)
+        let brandPatterns = ["nike", "jordan", "adidas", "vans", "apple", "samsung", "sony", "vintage", "antique"]
         for brandPattern in brandPatterns {
             if content.lowercased().contains(brandPattern) {
                 brand = brandPattern.capitalized
@@ -641,6 +670,14 @@ class RealAIAnalysisService: ObservableObject {
             category = "shoes"
         } else if content.lowercased().contains("shirt") || content.lowercased().contains("clothing") {
             category = "clothing"
+        } else if content.lowercased().contains("phone") || content.lowercased().contains("electronic") {
+            category = "electronics"
+        } else if content.lowercased().contains("book") {
+            category = "books"
+        } else if content.lowercased().contains("toy") || content.lowercased().contains("game") {
+            category = "toys"
+        } else if content.lowercased().contains("home") || content.lowercased().contains("kitchen") {
+            category = "home"
         }
         
         // Try to extract item name from first sentence
@@ -720,7 +757,7 @@ class RealAIAnalysisService: ObservableObject {
             positiveNotes: [],
             negativeNotes: negativeNotes,
             resaleImpact: "Condition affects pricing",
-            priceAdjustment: (score - 75.0) / 2.0 // Adjust based on score
+            priceAdjustment: (score - 75.0) / 2.0
         )
     }
     
@@ -735,17 +772,19 @@ class RealAIAnalysisService: ObservableObject {
     
     private func extractJSON(from text: String) -> Data? {
         if let startRange = text.range(of: "{"),
-           let endRange = text.range(of: "}", range: startRange.upperBound..<text.endIndex, options: .backwards) {
+           let endRange = text.range(of: "}", options: .backwards, range: startRange.upperBound..<text.endIndex) {
             let jsonString = String(text[startRange.lowerBound...endRange.upperBound])
-            return jsonString.data(using: .utf8)
+            return jsonString.data(using: String.Encoding.utf8)
         }
         return nil
     }
     
-    // Text classification methods
+    // Text classification methods (updated for all categories)
     private func isBrandText(_ text: String) -> Bool {
         let brands = ["nike", "jordan", "adidas", "vans", "converse", "puma", "reebok", "new balance",
-                     "supreme", "off-white", "fear of god", "travis scott", "fragment"]
+                     "supreme", "off-white", "fear of god", "travis scott", "fragment",
+                     "apple", "samsung", "sony", "lg", "panasonic", "canon", "nikon",
+                     "vintage", "antique", "signed", "authentic", "original"]
         return brands.contains { text.lowercased().contains($0) }
     }
     
@@ -826,7 +865,7 @@ class RealAIAnalysisService: ObservableObject {
         )
     }
     
-    // MARK: - Missing Implementation Methods (from artifacts)
+    // MARK: - Implementation Methods
     
     private func createProductFromVision(_ visionResult: RealVisionResult, _ textData: RealTextData) -> RealProductData {
         return RealProductData(
@@ -860,14 +899,50 @@ class RealAIAnalysisService: ObservableObject {
         let brandLower = brand.lowercased()
         let categoryLower = category.lowercased()
         
-        if brandLower.contains("jordan") && categoryLower.contains("shoe") { return 170.0 }
-        if brandLower.contains("nike") && categoryLower.contains("shoe") { return 120.0 }
-        if brandLower.contains("adidas") && categoryLower.contains("shoe") { return 110.0 }
-        if brandLower.contains("vans") && categoryLower.contains("shoe") { return 65.0 }
-        if brandLower.contains("supreme") { return 200.0 }
-        if brandLower.contains("off-white") { return 400.0 }
+        // Footwear
+        if categoryLower.contains("shoe") {
+            if brandLower.contains("jordan") { return 170.0 }
+            if brandLower.contains("nike") { return 120.0 }
+            if brandLower.contains("adidas") { return 110.0 }
+            if brandLower.contains("vans") { return 65.0 }
+            return 80.0
+        }
         
-        return 75.0
+        // Electronics
+        if categoryLower.contains("electronic") || categoryLower.contains("phone") {
+            if brandLower.contains("apple") { return 600.0 }
+            if brandLower.contains("samsung") { return 500.0 }
+            if brandLower.contains("sony") { return 300.0 }
+            return 200.0
+        }
+        
+        // Clothing
+        if categoryLower.contains("clothing") || categoryLower.contains("shirt") {
+            if brandLower.contains("supreme") { return 150.0 }
+            if brandLower.contains("off-white") { return 300.0 }
+            if brandLower.contains("vintage") { return 80.0 }
+            return 40.0
+        }
+        
+        // Home goods
+        if categoryLower.contains("home") || categoryLower.contains("kitchen") {
+            if brandLower.contains("vintage") { return 60.0 }
+            return 30.0
+        }
+        
+        // Books
+        if categoryLower.contains("book") {
+            if brandLower.contains("vintage") || brandLower.contains("antique") { return 40.0 }
+            return 15.0
+        }
+        
+        // Toys
+        if categoryLower.contains("toy") || categoryLower.contains("game") {
+            if brandLower.contains("vintage") { return 50.0 }
+            return 25.0
+        }
+        
+        return 25.0 // Default fallback
     }
     
     private func synthesizeRealMarketData(ebayData: EbaySearchResult?, stockxData: StockXSearchResult?, productData: RealProductData) -> RealMarketData {
@@ -907,13 +982,13 @@ class RealAIAnalysisService: ObservableObject {
         // Apply condition adjustment
         let conditionMultiplier = 1.0 + (condition.priceAdjustment / 100.0)
         
-        // Apply size premium for shoes
-        let sizeMultiplier = getSizePremium(size: product.size, category: product.category)
+        // Apply category-specific adjustments
+        let categoryMultiplier = getCategoryMultiplier(category: product.category)
         
         // Apply brand premium
         let brandMultiplier = getBrandPremium(brand: product.brand)
         
-        let adjustedPrice = basePrice * conditionMultiplier * sizeMultiplier * brandMultiplier
+        let adjustedPrice = basePrice * conditionMultiplier * categoryMultiplier * brandMultiplier
         let realisticPrice = max(5.0, adjustedPrice)
         
         return IntelligentPricingData(
@@ -930,31 +1005,28 @@ class RealAIAnalysisService: ObservableObject {
                 "Condition: \(condition.conditionName)",
                 "Market data: \(market.soldPrices.count) sales",
                 "Brand: \(product.brand)",
-                "Size: \(product.size)"
+                "Category: \(product.category)"
             ]
         )
     }
     
-    private func getSizePremium(size: String, category: String) -> Double {
-        if category.lowercased().contains("shoe") {
-            let popularSizes = ["9", "9.5", "10", "10.5", "11"]
-            let largeSizes = ["13", "14", "15", "16"]
-            
-            if popularSizes.contains(size) {
-                return 1.05
-            } else if largeSizes.contains(size) {
-                return 1.15
-            }
+    private func getCategoryMultiplier(category: String) -> Double {
+        switch category.lowercased() {
+        case "electronics": return 1.1
+        case "collectibles": return 1.2
+        case "vintage": return 1.15
+        case "shoes": return 1.05
+        default: return 1.0
         }
-        return 1.0
     }
     
     private func getBrandPremium(brand: String) -> Double {
         let brandLower = brand.lowercased()
         
-        if brandLower.contains("jordan") || brandLower.contains("off-white") { return 1.2 }
-        if brandLower.contains("supreme") || brandLower.contains("yeezy") { return 1.15 }
+        if brandLower.contains("apple") || brandLower.contains("jordan") { return 1.2 }
+        if brandLower.contains("supreme") || brandLower.contains("off-white") { return 1.15 }
         if brandLower.contains("nike") || brandLower.contains("adidas") { return 1.05 }
+        if brandLower.contains("vintage") || brandLower.contains("antique") { return 1.1 }
         
         return 1.0
     }
@@ -1013,7 +1085,7 @@ class RealAIAnalysisService: ObservableObject {
             desc += "\n"
         }
         
-        desc += "✅ 100% Authentic\n"
+        desc += "✅ Authentic Item\n"
         desc += "📦 Fast Shipping\n"
         desc += "↩️ Returns Accepted\n"
         
@@ -1038,6 +1110,10 @@ class RealAIAnalysisService: ObservableObject {
         case "shoes": return "Clothing, Shoes & Accessories > Men's Shoes"
         case "clothing": return "Clothing, Shoes & Accessories > Men's Clothing"
         case "electronics": return "Consumer Electronics"
+        case "books": return "Books & Magazines"
+        case "toys": return "Toys & Hobbies"
+        case "home": return "Home & Garden"
+        case "collectibles": return "Collectibles"
         default: return "Everything Else"
         }
     }
@@ -1153,8 +1229,10 @@ class RealAIAnalysisService: ObservableObject {
             return "Check swoosh placement, stitching quality, and tags"
         case "adidas":
             return "Verify three stripes and logo authenticity"
-        case "vans":
-            return "Check waffle sole pattern and logo placement"
+        case "apple":
+            return "Check serial numbers and original accessories"
+        case "vintage", "antique":
+            return "Verify age and authenticity markers"
         default:
             return "Verify through official brand channels"
         }
@@ -1163,7 +1241,6 @@ class RealAIAnalysisService: ObservableObject {
     // MARK: - API Response Parsers
     
     private func parseEbayResponse(_ json: [String: Any]) -> EbaySearchResult? {
-        // Parse eBay API response
         if let items = json["items"] as? [[String: Any]] {
             var soldPrices: [Double] = []
             
@@ -1186,7 +1263,6 @@ class RealAIAnalysisService: ObservableObject {
     }
     
     private func parseStockXResponse(_ json: [String: Any]) -> StockXSearchResult? {
-        // Parse StockX API response
         if let products = json["products"] as? [[String: Any]],
            let firstProduct = products.first {
             
@@ -1204,7 +1280,6 @@ class RealAIAnalysisService: ObservableObject {
     }
     
     private func parseBarcodeResponse(_ json: [String: Any]) -> RealProductData? {
-        // Parse barcode API response
         if let product = json["product"] as? [String: Any] {
             return RealProductData(
                 name: product["title"] as? String ?? "Unknown",

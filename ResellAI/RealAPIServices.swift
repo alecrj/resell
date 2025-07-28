@@ -3,7 +3,7 @@ import Foundation
 import PhotosUI
 import Vision
 
-// MARK: - Updated API Configuration
+// MARK: - API Configuration
 struct APIConfig {
     static let openAIKey = ProcessInfo.processInfo.environment["OPENAI_API_KEY"] ?? ""
     static let spreadsheetID = ProcessInfo.processInfo.environment["SPREADSHEET_ID"] ?? ""
@@ -191,8 +191,8 @@ class AIService: ObservableObject {
             
             if let product = productData, product.confidence > 0.8 {
                 // High confidence barcode match
-                let enhancedResult = self.createBarcodeEnhancedResult(product, images: images)
-                completion(enhancedResult)
+                let barcodeResult = self.createBarcodeResult(product, images: images)
+                completion(barcodeResult)
             } else {
                 // Low confidence or no barcode match, use image analysis
                 print("📱 Barcode lookup failed or low confidence, using image analysis")
@@ -248,7 +248,7 @@ class AIService: ObservableObject {
         var riskLevel = "Medium"
         var sourcingTips: [String] = []
         
-        let isPopularBrand = ["nike", "jordan", "adidas", "supreme", "yeezy", "vans"].contains(brand.lowercased())
+        let isPopularBrand = ["nike", "jordan", "adidas", "supreme", "yeezy", "vans", "apple", "samsung"].contains(brand.lowercased())
         
         // Decision logic based on REAL data
         if expectedROI >= 100 && potentialProfit >= 15 && confidence >= 0.7 && conditionScore >= 70 {
@@ -305,23 +305,44 @@ class AIService: ObservableObject {
         let brandLower = brand.lowercased()
         let categoryLower = category.lowercased()
         
-        if brandLower.contains("jordan") && categoryLower.contains("shoe") { return 170.0 }
-        if brandLower.contains("nike") && categoryLower.contains("shoe") { return 120.0 }
-        if brandLower.contains("adidas") && categoryLower.contains("shoe") { return 110.0 }
-        if brandLower.contains("vans") && categoryLower.contains("shoe") { return 65.0 }
-        if brandLower.contains("supreme") { return 200.0 }
-        if brandLower.contains("off-white") { return 400.0 }
+        // Electronics
+        if categoryLower.contains("electronic") || categoryLower.contains("phone") {
+            if brandLower.contains("apple") { return 600.0 }
+            if brandLower.contains("samsung") { return 500.0 }
+            return 200.0
+        }
         
-        return 75.0
+        // Footwear
+        if categoryLower.contains("shoe") {
+            if brandLower.contains("jordan") { return 170.0 }
+            if brandLower.contains("nike") { return 120.0 }
+            if brandLower.contains("adidas") { return 110.0 }
+            if brandLower.contains("vans") { return 65.0 }
+            return 80.0
+        }
+        
+        // Clothing
+        if categoryLower.contains("clothing") {
+            if brandLower.contains("supreme") { return 200.0 }
+            if brandLower.contains("off-white") { return 400.0 }
+            return 50.0
+        }
+        
+        // Collectibles and vintage
+        if categoryLower.contains("collectible") || categoryLower.contains("vintage") {
+            return 75.0
+        }
+        
+        return 25.0
     }
     
     private func hasQuickFlipPotential(_ brand: String, _ demandLevel: String) -> Bool {
-        let popularBrands = ["nike", "jordan", "supreme", "yeezy"]
+        let popularBrands = ["nike", "jordan", "supreme", "yeezy", "apple", "vintage"]
         return popularBrands.contains(brand.lowercased()) && demandLevel == "High"
     }
     
     private func hasHolidayDemand(_ category: String) -> Bool {
-        let holidayCategories = ["electronics", "toys", "gaming"]
+        let holidayCategories = ["electronics", "toys", "gaming", "home"]
         return holidayCategories.contains { category.lowercased().contains($0) }
     }
     
@@ -330,10 +351,10 @@ class AIService: ObservableObject {
         return times.randomElement() ?? "1 week"
     }
     
-    // MARK: - Barcode Enhanced Results
+    // MARK: - Barcode Results
     
-    private func createBarcodeEnhancedResult(_ product: RealProductData, images: [UIImage]) -> AnalysisResult {
-        // When we have high-confidence barcode data, create enhanced result
+    private func createBarcodeResult(_ product: RealProductData, images: [UIImage]) -> AnalysisResult {
+        // When we have high-confidence barcode data, create result
         let estimatedCondition = "Very Good" // Conservative estimate without photo analysis
         let conditionScore = 75.0 // Conservative score
         let marketPrice = product.retailPrice * 0.6 // Conservative market estimate
@@ -508,7 +529,7 @@ class AIService: ObservableObject {
     }
 }
 
-// MARK: - Google Sheets Service (unchanged but improved error handling)
+// MARK: - Google Sheets Service
 class GoogleSheetsService: ObservableObject {
     @Published var spreadsheetId = APIConfig.spreadsheetID
     @Published var isConnected = true
@@ -669,7 +690,7 @@ class GoogleSheetsService: ObservableObject {
     }
 }
 
-// MARK: - eBay Listing Service (unchanged)
+// MARK: - eBay Listing Service
 class EbayListingService: ObservableObject {
     @Published var isListing = false
     @Published var listingProgress = "Ready to list"
