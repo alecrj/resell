@@ -43,6 +43,19 @@ struct APIConfig {
     }
 }
 
+// MARK: - FIXED: Added Missing RealProductData Structure
+struct RealProductData {
+    let name: String
+    let brand: String
+    let model: String
+    let category: String
+    let size: String
+    let colorway: String
+    let retailPrice: Double
+    let releaseYear: String
+    let confidence: Double
+}
+
 // MARK: - Updated AI Service with Google Lens Integration
 class AIService: ObservableObject {
     @Published var isAnalyzing = false
@@ -130,7 +143,7 @@ class AIService: ObservableObject {
         }
     }
     
-    // MARK: - Barcode Analysis with Product Database
+    // MARK: - FIXED: Barcode Analysis with Product Database
     func analyzeBarcode(_ barcode: String, images: [UIImage], completion: @escaping (AnalysisResult) -> Void) {
         print("📱 Barcode Analysis: \(barcode)")
         
@@ -781,19 +794,6 @@ class AIService: ObservableObject {
         case .other: return "Everything Else"
         }
     }
-}
-
-// MARK: - Product Data Structure for Barcode Lookups
-struct RealProductData {
-    let name: String
-    let brand: String
-    let model: String
-    let category: String
-    let size: String
-    let colorway: String
-    let retailPrice: Double
-    let releaseYear: String
-    let confidence: Double
 }
 
 // MARK: - Google Sheets Service (Keep existing implementation)

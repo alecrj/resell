@@ -133,6 +133,32 @@ struct InventoryItem: Identifiable, Codable {
     }
 }
 
+// MARK: - FIXED: Added Missing InventoryStatistics
+struct InventoryStatistics {
+    let totalItems: Int
+    let listedItems: Int
+    let soldItems: Int
+    let totalInvestment: Double
+    let totalProfit: Double
+    let averageROI: Double
+    let estimatedValue: Double
+    
+    var successRate: Double {
+        guard totalItems > 0 else { return 0 }
+        return (Double(soldItems) / Double(totalItems)) * 100
+    }
+    
+    var averageItemValue: Double {
+        guard totalItems > 0 else { return 0 }
+        return estimatedValue / Double(totalItems)
+    }
+    
+    var averageProfit: Double {
+        guard soldItems > 0 else { return 0 }
+        return totalProfit / Double(soldItems)
+    }
+}
+
 // MARK: - NEW: eBay Condition Standards
 enum EbayCondition: String, CaseIterable, Codable {
     case newWithTags = "New with tags"

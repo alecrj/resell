@@ -511,7 +511,7 @@ struct ImprovedProspectAnalysisResultView: View {
                         
                         Spacer()
                         
-                        Text("Confidence: \(String(format: "%.0f", analysis.confidence * 100))%")
+                        Text("Confidence: \(String(format: "%.0f", analysis.confidence.overall * 100))%")
                             .font(.caption)
                             .foregroundColor(.secondary)
                     }
@@ -1012,9 +1012,6 @@ struct ProspectingPhotoPlaceholderView: View {
     }
 }
 
-// Keep existing Auto Listing View and other components...
-// [Rest of the file continues with existing implementations]
-
 // MARK: - Auto Listing View
 struct AutoListingView: View {
     let item: InventoryItem
@@ -1349,4 +1346,201 @@ struct ShareSheet: UIViewControllerRepresentable {
     }
     
     func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}
+}
+
+// MARK: - FIXED: Pricing Strategy and Market Analysis Components
+
+// MARK: - Pricing Strategy Card with Simplified Background
+struct PricingStrategyCard: View {
+    let analysis: AnalysisResult
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 15) {
+            Text("💰 PRICING STRATEGY")
+                .font(.headline)
+                .fontWeight(.bold)
+            
+            // Pricing recommendations grid
+            HStack(spacing: 12) {
+                // Quick Sale
+                createPriceCard(
+                    title: "Quick Sale",
+                    price: analysis.quickSalePrice,
+                    subtitle: "Fast turnover",
+                    color: .orange,
+                    isRecommended: false
+                )
+                
+                // Recommended
+                createPriceCard(
+                    title: "Recommended",
+                    price: analysis.realisticPrice,
+                    subtitle: "Best value",
+                    color: .blue,
+                    isRecommended: true
+                )
+                
+                // Max Profit
+                createPriceCard(
+                    title: "Max Profit",
+                    price: analysis.maxProfitPrice,
+                    subtitle: "Patient sale",
+                    color: .green,
+                    isRecommended: false
+                )
+            }
+            
+            // Market justification
+            VStack(alignment: .leading, spacing: 6) {
+                Text("💡 Based on \(analysis.soldListings.count) recent sales")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                
+                Text("Market trend: \(analysis.marketTrend)")
+                    .font(.caption)
+                    .foregroundColor(.blue)
+            }
+        }
+        .padding()
+        .background(Color.purple.opacity(0.1))
+        .cornerRadius(16)
+    }
+    
+    // FIXED: Simplified price card creation
+    private func createPriceCard(title: String, price: Double, subtitle: String, color: Color, isRecommended: Bool) -> some View {
+        VStack(spacing: 4) {
+            Text(title)
+                .font(.caption)
+                .fontWeight(.semibold)
+                .foregroundColor(isRecommended ? .white : color)
+            
+            Text("$\(String(format: "%.0f", price))")
+                .font(.headline)
+                .fontWeight(.bold)
+                .foregroundColor(isRecommended ? .white : color)
+            
+            Text(subtitle)
+                .font(.caption2)
+                .foregroundColor(isRecommended ? .white.opacity(0.8) : .secondary)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 12)
+        .background(getCardBackground(color: color, isRecommended: isRecommended))
+        .cornerRadius(8)
+        .overlay(
+            RoundedRectangle(cornerRadius: 8)
+                .stroke(color, lineWidth: isRecommended ? 2 : 1)
+        )
+    }
+    
+    // FIXED: Simplified background creation
+    private func getCardBackground(color: Color, isRecommended: Bool) -> some View {
+        Group {
+            if isRecommended {
+                LinearGradient(colors: [color, color.opacity(0.8)], startPoint: .top, endPoint: .bottom)
+            } else {
+                color.opacity(0.1)
+            }
+        }
+    }
+}
+
+// MARK: - Market Intelligence Card
+struct MarketIntelligenceCard: View {
+    let analysis: AnalysisResult
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 15) {
+            Text("📊 MARKET INTELLIGENCE")
+                .font(.headline)
+                .fontWeight(.bold)
+            
+            LazyVGrid(columns: [
+                GridItem(.flexible()),
+                GridItem(.flexible())
+            ], spacing: 12) {
+                
+                // Demand Level
+                createStatCard(
+                    title: "Demand",
+                    value: analysis.demandLevel,
+                    color: getDemandColor(analysis.demandLevel)
+                )
+                
+                // Competition
+                createStatCard(
+                    title: "Competition",
+                    value: "\(analysis.competitorCount)",
+                    color: analysis.competitorCount > 50 ? .red : .green
+                )
+                
+                // Market Trend
+                createStatCard(
+                    title: "Trend",
+                    value: analysis.marketTrend,
+                    color: .blue
+                )
+                
+                // Resale Score
+                createStatCard(
+                    title: "Score",
+                    value: "\(analysis.resalePotential)/10",
+                    color: getScoreColor(analysis.resalePotential)
+                )
+            }
+            
+            // Quick insights
+            VStack(alignment: .leading, spacing: 6) {
+                Text("🎯 Key Insights")
+                    .font(.caption)
+                    .fontWeight(.semibold)
+                    .foregroundColor(.secondary)
+                
+                Text("• Based on real eBay market data")
+                Text("• \(analysis.soldListings.count) recent sales analyzed")
+                Text("• Average price: $\(String(format: "%.2f", analysis.averagePrice))")
+            }
+            .font(.caption)
+            .foregroundColor(.primary)
+        }
+        .padding()
+        .background(Color.orange.opacity(0.1))
+        .cornerRadius(16)
+    }
+    
+    private func createStatCard(title: String, value: String, color: Color) -> some View {
+        VStack(spacing: 4) {
+            Text(value)
+                .font(.headline)
+                .fontWeight(.bold)
+                .foregroundColor(color)
+            
+            Text(title)
+                .font(.caption)
+                .foregroundColor(.secondary)
+                .multilineTextAlignment(.center)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 8)
+        .background(color.opacity(0.1))
+        .cornerRadius(8)
+    }
+    
+    private func getDemandColor(_ demand: String) -> Color {
+        switch demand.lowercased() {
+        case "high": return .green
+        case "medium": return .orange
+        case "low": return .red
+        default: return .gray
+        }
+    }
+    
+    private func getScoreColor(_ score: Int) -> Color {
+        switch score {
+        case 8...10: return .green
+        case 6...7: return .orange
+        case 4...5: return .yellow
+        default: return .red
+        }
+    }
 }

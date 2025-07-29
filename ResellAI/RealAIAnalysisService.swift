@@ -33,6 +33,159 @@ class RealAIAnalysisService: ObservableObject {
         }
     }
     
+    // MARK: - FIXED: Added Missing Barcode Lookup Methods
+    func lookupProductByBarcode(_ barcode: String, completion: @escaping (RealProductData?) -> Void) {
+        print("📱 Looking up barcode: \(barcode)")
+        
+        guard !barcode.isEmpty else {
+            completion(nil)
+            return
+        }
+        
+        // First try UPC database lookup
+        lookupUPCDatabase(barcode: barcode) { [weak self] productData in
+            if let product = productData {
+                completion(product)
+            } else {
+                // Fallback to other product databases
+                self?.lookupAlternativeProductDatabase(barcode: barcode, completion: completion)
+            }
+        }
+    }
+    
+    private func lookupUPCDatabase(barcode: String, completion: @escaping (RealProductData?) -> Void) {
+        // Try multiple UPC/barcode APIs
+        let upcAPIEndpoints = [
+            "https://api.upcitemdb.com/prod/trial/lookup?upc=\(barcode)",
+            "https://api.barcodelookup.com/v3/products?barcode=\(barcode)&formatted=y&key=\(rapidAPIKey)"
+        ]
+        
+        // Try first endpoint
+        guard let url = URL(string: upcAPIEndpoints[0]) else {
+            completion(nil)
+            return
+        }
+        
+        var request = URLRequest(url: url)
+        request.timeoutInterval = 10.0
+        
+        URLSession.shared.dataTask(with: request) { [weak self] data, response, error in
+            if let error = error {
+                print("❌ UPC API error: \(error)")
+                // Try alternative endpoint
+                self?.lookupAlternativeProductDatabase(barcode: barcode, completion: completion)
+                return
+            }
+            
+            guard let data = data else {
+                self?.lookupAlternativeProductDatabase(barcode: barcode, completion: completion)
+                return
+            }
+            
+            do {
+                if let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
+                   let items = json["items"] as? [[String: Any]],
+                   let firstItem = items.first {
+                    
+                    let productData = self?.parseUPCResponse(firstItem, barcode: barcode)
+                    completion(productData)
+                } else {
+                    print("📱 No product found in UPC database")
+                    self?.lookupAlternativeProductDatabase(barcode: barcode, completion: completion)
+                }
+            } catch {
+                print("❌ UPC JSON parsing error: \(error)")
+                self?.lookupAlternativeProductDatabase(barcode: barcode, completion: completion)
+            }
+        }.resume()
+    }
+    
+    private func lookupAlternativeProductDatabase(barcode: String, completion: @escaping (RealProductData?) -> Void) {
+        // Use RapidAPI for product lookup
+        guard !rapidAPIKey.isEmpty else {
+            print("📱 No RapidAPI key for barcode lookup")
+            completion(nil)
+            return
+        }
+        
+        let urlString = "https://barcode-lookup.p.rapidapi.com/v3/products?barcode=\(barcode)"
+        guard let url = URL(string: urlString) else {
+            completion(nil)
+            return
+        }
+        
+        var request = URLRequest(url: url)
+        request.setValue(rapidAPIKey, forHTTPHeaderField: "X-RapidAPI-Key")
+        request.setValue("barcode-lookup.p.rapidapi.com", forHTTPHeaderField: "X-RapidAPI-Host")
+        request.timeoutInterval = 10.0
+        
+        URLSession.shared.dataTask(with: request) { [weak self] data, response, error in
+            if let error = error {
+                print("❌ Alternative barcode lookup error: \(error)")
+                completion(nil)
+                return
+            }
+            
+            guard let data = data else {
+                completion(nil)
+                return
+            }
+            
+            do {
+                if let json = try JSONSerialization.jsonObject(with: data) as? [String: Any] {
+                    let productData = self?.parseRapidAPIBarcodeResponse(json, barcode: barcode)
+                    completion(productData)
+                } else {
+                    completion(nil)
+                }
+            } catch {
+                print("❌ Alternative barcode JSON error: \(error)")
+                completion(nil)
+            }
+        }.resume()
+    }
+    
+    private func parseUPCResponse(_ item: [String: Any], barcode: String) -> RealProductData {
+        let title = item["title"] as? String ?? "Unknown Product"
+        let brand = item["brand"] as? String ?? ""
+        let category = item["category"] as? String ?? "Other"
+        
+        return RealProductData(
+            name: title,
+            brand: brand,
+            model: barcode,
+            category: category,
+            size: "",
+            colorway: "",
+            retailPrice: 0, // UPC API doesn't always have prices
+            releaseYear: "",
+            confidence: 0.7
+        )
+    }
+    
+    private func parseRapidAPIBarcodeResponse(_ json: [String: Any], barcode: String) -> RealProductData? {
+        guard let products = json["products"] as? [[String: Any]],
+              let product = products.first else {
+            return nil
+        }
+        
+        let title = product["title"] as? String ?? "Unknown Product"
+        let brand = product["brand"] as? String ?? ""
+        let category = product["category"] as? String ?? "Other"
+        
+        return RealProductData(
+            name: title,
+            brand: brand,
+            model: barcode,
+            category: category,
+            size: "",
+            colorway: "",
+            retailPrice: 0,
+            releaseYear: "",
+            confidence: 0.8
+        )
+    }
+    
     // MARK: - Main Google Lens-Level Analysis Pipeline
     func analyzeItem(_ images: [UIImage], completion: @escaping (AnalysisResult) -> Void) {
         guard !images.isEmpty else {
