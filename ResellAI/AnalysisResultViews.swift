@@ -1,15 +1,8 @@
-//
-//  AnalysisResultViews.swift
-//  ResellAI
-//
-//  Created by Alec on 7/27/25.
-//
-
 import SwiftUI
 
-// MARK: - Analysis Result Views
+// MARK: - Updated Analysis Result Views for eBay Standards
 
-// MARK: - Analysis Result View
+// MARK: - Main Analysis Result View with Real eBay Data
 struct AnalysisResultView: View {
     let analysis: AnalysisResult
     let onAddToInventory: () -> Void
@@ -17,14 +10,19 @@ struct AnalysisResultView: View {
     
     var body: some View {
         VStack(spacing: 20) {
-            // Analysis Header
+            // Google Lens-Level Identification Header
             VStack(spacing: 12) {
                 HStack {
                     VStack(alignment: .leading, spacing: 4) {
-                        Text(analysis.itemName)
-                            .font(.title2)
-                            .fontWeight(.bold)
-                            .foregroundColor(.primary)
+                        HStack {
+                            Text(analysis.itemName)
+                                .font(.title2)
+                                .fontWeight(.bold)
+                                .foregroundColor(.primary)
+                            
+                            // AI Confidence Badge
+                            ConfidenceBadge(confidence: analysis.confidence.overall)
+                        }
                         
                         if !analysis.brand.isEmpty {
                             Text(analysis.brand)
@@ -32,9 +30,33 @@ struct AnalysisResultView: View {
                                 .foregroundColor(.blue)
                         }
                         
-                        Text("Confidence: \(String(format: "%.0f", analysis.confidence * 100))%")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
+                        // Product Details Row
+                        HStack {
+                            if !analysis.identificationResult.styleCode.isEmpty {
+                                Text("Style: \(analysis.identificationResult.styleCode)")
+                                    .font(.caption)
+                                    .padding(.horizontal, 6)
+                                    .padding(.vertical, 2)
+                                    .background(Color.blue.opacity(0.1))
+                                    .cornerRadius(4)
+                            }
+                            
+                            if !analysis.identificationResult.size.isEmpty {
+                                Text("Size: \(analysis.identificationResult.size)")
+                                    .font(.caption)
+                                    .padding(.horizontal, 6)
+                                    .padding(.vertical, 2)
+                                    .background(Color.green.opacity(0.1))
+                                    .cornerRadius(4)
+                            }
+                            
+                            Text(analysis.identificationResult.identificationMethod.displayName)
+                                .font(.caption)
+                                .padding(.horizontal, 6)
+                                .padding(.vertical, 2)
+                                .background(Color.purple.opacity(0.1))
+                                .cornerRadius(4)
+                        }
                     }
                     
                     Spacer()
@@ -45,48 +67,17 @@ struct AnalysisResultView: View {
                             .fontWeight(.bold)
                             .foregroundColor(.green)
                         
-                        Text("Realistic Price")
+                        Text("Market Price")
                             .font(.caption)
                             .foregroundColor(.secondary)
                     }
                 }
                 
-                // Condition and Score
-                HStack {
-                    VStack(alignment: .leading) {
-                        Text("Condition")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                        Text(analysis.actualCondition)
-                            .font(.headline)
-                            .fontWeight(.semibold)
-                            .foregroundColor(.blue)
-                    }
-                    
-                    Spacer()
-                    
-                    VStack(alignment: .center) {
-                        Text("Condition Score")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                        Text("\(String(format: "%.0f", analysis.conditionScore))/100")
-                            .font(.headline)
-                            .fontWeight(.semibold)
-                            .foregroundColor(getConditionColor(analysis.conditionScore))
-                    }
-                    
-                    Spacer()
-                    
-                    VStack(alignment: .trailing) {
-                        Text("Resale Potential")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                        Text("\(analysis.resalePotential)/10")
-                            .font(.headline)
-                            .fontWeight(.semibold)
-                            .foregroundColor(getPotentialColor(analysis.resalePotential))
-                    }
-                }
+                // eBay Condition Assessment
+                EbayConditionCard(
+                    condition: analysis.ebayCondition,
+                    assessment: analysis.marketAnalysis.conditionAssessment
+                )
             }
             .padding()
             .background(
@@ -95,11 +86,20 @@ struct AnalysisResultView: View {
                     .stroke(Color.blue.opacity(0.3), lineWidth: 1)
             )
             
-            // Pricing Strategy
-            PricingStrategyCard(analysis: analysis)
+            // Real eBay Market Data
+            RealEbayMarketCard(marketData: analysis.marketAnalysis.marketData)
             
-            // Market Intelligence
-            MarketIntelligenceCard(analysis: analysis)
+            // Pricing Strategy with Real Data
+            EbayPricingStrategyCard(
+                pricing: analysis.ebayPricing,
+                soldListings: analysis.soldListings
+            )
+            
+            // Market Intelligence with Real Metrics
+            RealMarketIntelligenceCard(
+                analysis: analysis.marketAnalysis,
+                soldCount: analysis.soldListings.count
+            )
             
             // Action Buttons
             VStack(spacing: 12) {
@@ -108,7 +108,7 @@ struct AnalysisResultView: View {
                 }) {
                     HStack {
                         Image(systemName: "plus.circle.fill")
-                        Text("📦 Add to Inventory")
+                        Text("📦 Add to Smart Inventory")
                     }
                     .frame(maxWidth: .infinity)
                     .padding()
@@ -129,7 +129,7 @@ struct AnalysisResultView: View {
                 }) {
                     HStack {
                         Image(systemName: "bolt.fill")
-                        Text("🚀 Direct List to eBay")
+                        Text("🚀 Generate Professional eBay Listing")
                     }
                     .frame(maxWidth: .infinity)
                     .padding()
@@ -150,137 +150,392 @@ struct AnalysisResultView: View {
         .background(Color.gray.opacity(0.05))
         .cornerRadius(20)
     }
-    
-    private func getConditionColor(_ score: Double) -> Color {
-        switch score {
-        case 90...100: return .green
-        case 70...89: return .blue
-        case 50...69: return .orange
-        default: return .red
-        }
-    }
-    
-    private func getPotentialColor(_ potential: Int) -> Color {
-        switch potential {
-        case 8...10: return .green
-        case 6...7: return .blue
-        case 4...5: return .orange
-        default: return .red
-        }
-    }
 }
 
-// MARK: - Pricing Strategy Card
-struct PricingStrategyCard: View {
-    let analysis: AnalysisResult
+// MARK: - eBay Condition Card
+struct EbayConditionCard: View {
+    let condition: EbayCondition
+    let assessment: EbayConditionAssessment
     
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("💰 PRICING STRATEGY")
+            Text("🏷️ EBAY CONDITION ASSESSMENT")
                 .font(.headline)
                 .fontWeight(.bold)
             
             HStack {
-                PriceCard(
-                    title: "Quick Sale",
-                    price: analysis.quickSalePrice,
-                    subtitle: "Fast turnover",
-                    color: .orange
-                )
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(condition.rawValue)
+                        .font(.title3)
+                        .fontWeight(.bold)
+                        .foregroundColor(condition.color)
+                    
+                    Text(condition.description)
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
                 
-                PriceCard(
-                    title: "Realistic",
-                    price: analysis.realisticPrice,
-                    subtitle: "Recommended",
+                Spacer()
+                
+                VStack(alignment: .trailing, spacing: 4) {
+                    Text("\(String(format: "%.0f", assessment.conditionConfidence * 100))%")
+                        .font(.title3)
+                        .fontWeight(.bold)
+                        .foregroundColor(.blue)
+                    
+                    Text("Confidence")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+            }
+            
+            // Condition Factors
+            if !assessment.conditionFactors.isEmpty {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Condition Details:")
+                        .font(.caption)
+                        .fontWeight(.semibold)
+                        .foregroundColor(.secondary)
+                    
+                    ForEach(assessment.conditionFactors.indices, id: \.self) { index in
+                        let factor = assessment.conditionFactors[index]
+                        ConditionFactorRow(factor: factor)
+                    }
+                }
+            }
+            
+            // Condition Notes
+            if !assessment.conditionNotes.isEmpty {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Notes:")
+                        .font(.caption)
+                        .fontWeight(.semibold)
+                        .foregroundColor(.secondary)
+                    
+                    ForEach(assessment.conditionNotes, id: \.self) { note in
+                        Text("• \(note)")
+                            .font(.caption)
+                            .foregroundColor(.primary)
+                    }
+                }
+            }
+        }
+        .padding()
+        .background(condition.color.opacity(0.1))
+        .cornerRadius(16)
+    }
+}
+
+// MARK: - Condition Factor Row
+struct ConditionFactorRow: View {
+    let factor: ConditionFactor
+    
+    var body: some View {
+        HStack {
+            Text(factor.area)
+                .font(.caption)
+                .fontWeight(.medium)
+            
+            if let issue = factor.issue {
+                Text("- \(issue)")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+            
+            Spacer()
+            
+            Text("\(factor.impactOnValue, specifier: "%.0f")%")
+                .font(.caption)
+                .fontWeight(.semibold)
+                .foregroundColor(factor.severity.color)
+        }
+    }
+}
+
+// MARK: - Real eBay Market Card
+struct RealEbayMarketCard: View {
+    let marketData: EbayMarketData
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Text("📊 REAL EBAY MARKET DATA")
+                    .font(.headline)
+                    .fontWeight(.bold)
+                
+                Spacer()
+                
+                Text(marketData.lastUpdated, style: .time)
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+            
+            // Market Summary
+            HStack {
+                MarketStatCard(
+                    title: "Sold Items",
+                    value: "\(marketData.soldListings.count)",
+                    subtitle: marketData.priceRange.dateRange,
                     color: .blue
                 )
                 
-                PriceCard(
-                    title: "Max Profit",
-                    price: analysis.maxProfitPrice,
-                    subtitle: "Patient sale",
+                MarketStatCard(
+                    title: "Avg Price",
+                    value: "$\(String(format: "%.2f", marketData.priceRange.average))",
+                    subtitle: "Market average",
                     color: .green
+                )
+                
+                MarketStatCard(
+                    title: "Competition",
+                    value: marketData.competitionLevel.displayName,
+                    subtitle: "Current level",
+                    color: marketData.competitionLevel.color
                 )
             }
             
-            // Fees Breakdown
-            VStack(alignment: .leading, spacing: 6) {
-                Text("💸 Fees & Profit (at realistic price)")
-                    .font(.caption)
-                    .fontWeight(.semibold)
-                    .foregroundColor(.secondary)
-                
-                HStack {
-                    Text("eBay Fee:")
-                    Spacer()
-                    Text("$\(String(format: "%.2f", analysis.feesBreakdown.ebayFee))")
-                }
-                .font(.caption)
-                
-                HStack {
-                    Text("Shipping:")
-                    Spacer()
-                    Text("$\(String(format: "%.2f", analysis.feesBreakdown.shippingCost))")
-                }
-                .font(.caption)
-                
-                Divider()
-                
-                HStack {
-                    Text("Net Profit:")
+            // Price Breakdown by Condition
+            if hasConditionPrices(marketData.priceRange) {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("💰 Prices by Condition")
+                        .font(.caption)
                         .fontWeight(.semibold)
-                    Spacer()
-                    Text("$\(String(format: "%.2f", analysis.profitMargins.realisticNet))")
-                        .fontWeight(.semibold)
-                        .foregroundColor(.green)
+                        .foregroundColor(.secondary)
+                    
+                    ConditionPriceGrid(priceRange: marketData.priceRange)
                 }
-                .font(.caption)
             }
-            .padding(.top, 8)
+            
+            // Market Trend
+            MarketTrendIndicator(trend: marketData.marketTrend)
         }
         .padding()
         .background(Color.green.opacity(0.1))
         .cornerRadius(16)
     }
+    
+    private func hasConditionPrices(_ priceRange: EbayPriceRange) -> Bool {
+        return priceRange.newWithTags != nil ||
+               priceRange.excellent != nil ||
+               priceRange.veryGood != nil ||
+               priceRange.good != nil
+    }
 }
 
-// MARK: - Price Card
-struct PriceCard: View {
+// MARK: - Condition Price Grid
+struct ConditionPriceGrid: View {
+    let priceRange: EbayPriceRange
+    
+    var body: some View {
+        LazyVGrid(columns: [
+            GridItem(.flexible()),
+            GridItem(.flexible())
+        ], spacing: 8) {
+            
+            if let price = priceRange.newWithTags {
+                ConditionPriceChip(condition: "New w/ Tags", price: price, color: .green)
+            }
+            
+            if let price = priceRange.excellent {
+                ConditionPriceChip(condition: "Excellent", price: price, color: .blue)
+            }
+            
+            if let price = priceRange.veryGood {
+                ConditionPriceChip(condition: "Very Good", price: price, color: .orange)
+            }
+            
+            if let price = priceRange.good {
+                ConditionPriceChip(condition: "Good", price: price, color: .purple)
+            }
+        }
+    }
+}
+
+// MARK: - Condition Price Chip
+struct ConditionPriceChip: View {
+    let condition: String
+    let price: Double
+    let color: Color
+    
+    var body: some View {
+        VStack(spacing: 2) {
+            Text("$\(String(format: "%.0f", price))")
+                .font(.caption)
+                .fontWeight(.bold)
+                .foregroundColor(color)
+            
+            Text(condition)
+                .font(.caption2)
+                .foregroundColor(.secondary)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 4)
+        .background(color.opacity(0.1))
+        .cornerRadius(6)
+    }
+}
+
+// MARK: - eBay Pricing Strategy Card
+struct EbayPricingStrategyCard: View {
+    let pricing: EbayPricingRecommendation
+    let soldListings: [EbaySoldListing]
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("💰 INTELLIGENT PRICING STRATEGY")
+                .font(.headline)
+                .fontWeight(.bold)
+            
+            HStack {
+                PriceStrategyCard(
+                    title: "Quick Sale",
+                    price: pricing.quickSalePrice,
+                    subtitle: "Fast turnover",
+                    color: .orange,
+                    isRecommended: false
+                )
+                
+                PriceStrategyCard(
+                    title: "Recommended",
+                    price: pricing.recommendedPrice,
+                    subtitle: "Best value",
+                    color: .blue,
+                    isRecommended: true
+                )
+                
+                PriceStrategyCard(
+                    title: "Max Profit",
+                    price: pricing.maxProfitPrice,
+                    subtitle: "Patient sale",
+                    color: .green,
+                    isRecommended: false
+                )
+            }
+            
+            // Strategy Details
+            VStack(alignment: .leading, spacing: 6) {
+                Text("💡 Pricing Justification")
+                    .font(.caption)
+                    .fontWeight(.semibold)
+                    .foregroundColor(.secondary)
+                
+                ForEach(pricing.priceJustification, id: \.self) { reason in
+                    Text("• \(reason)")
+                        .font(.caption)
+                        .foregroundColor(.primary)
+                }
+            }
+            
+            // Recent Sales Evidence
+            if !soldListings.isEmpty {
+                RecentSalesPreview(soldListings: Array(soldListings.prefix(3)))
+            }
+        }
+        .padding()
+        .background(Color.purple.opacity(0.1))
+        .cornerRadius(16)
+    }
+}
+
+// MARK: - Price Strategy Card
+struct PriceStrategyCard: View {
     let title: String
     let price: Double
     let subtitle: String
     let color: Color
+    let isRecommended: Bool
     
     var body: some View {
         VStack(spacing: 4) {
             Text(title)
                 .font(.caption)
                 .fontWeight(.semibold)
-                .foregroundColor(color)
+                .foregroundColor(isRecommended ? .white : color)
             
             Text("$\(String(format: "%.0f", price))")
                 .font(.headline)
                 .fontWeight(.bold)
-                .foregroundColor(color)
+                .foregroundColor(isRecommended ? .white : color)
             
             Text(subtitle)
                 .font(.caption2)
-                .foregroundColor(.secondary)
+                .foregroundColor(isRecommended ? .white.opacity(0.8) : .secondary)
         }
         .frame(maxWidth: .infinity)
-        .padding(.vertical, 8)
-        .background(color.opacity(0.1))
+        .padding(.vertical, 12)
+        .background(
+            isRecommended ?
+            LinearGradient(colors: [color, color.opacity(0.8)], startPoint: .top, endPoint: .bottom) :
+            color.opacity(0.1)
+        )
         .cornerRadius(8)
+        .overlay(
+            RoundedRectangle(cornerRadius: 8)
+                .stroke(color, lineWidth: isRecommended ? 2 : 1)
+        )
     }
 }
 
-// MARK: - Market Intelligence Card
-struct MarketIntelligenceCard: View {
-    let analysis: AnalysisResult
+// MARK: - Recent Sales Preview
+struct RecentSalesPreview: View {
+    let soldListings: [EbaySoldListing]
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text("🔥 Recent eBay Sales")
+                .font(.caption)
+                .fontWeight(.semibold)
+                .foregroundColor(.secondary)
+            
+            ForEach(soldListings.indices, id: \.self) { index in
+                let listing = soldListings[index]
+                RecentSaleRow(listing: listing)
+            }
+        }
+    }
+}
+
+// MARK: - Recent Sale Row
+struct RecentSaleRow: View {
+    let listing: EbaySoldListing
+    
+    var body: some View {
+        HStack {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(listing.title)
+                    .font(.caption)
+                    .lineLimit(1)
+                
+                Text(listing.condition)
+                    .font(.caption2)
+                    .foregroundColor(.secondary)
+            }
+            
+            Spacer()
+            
+            VStack(alignment: .trailing, spacing: 2) {
+                Text("$\(String(format: "%.2f", listing.price))")
+                    .font(.caption)
+                    .fontWeight(.bold)
+                    .foregroundColor(.green)
+                
+                Text(listing.soldDate, style: .date)
+                    .font(.caption2)
+                    .foregroundColor(.secondary)
+            }
+        }
+        .padding(.vertical, 2)
+    }
+}
+
+// MARK: - Real Market Intelligence Card
+struct RealMarketIntelligenceCard: View {
+    let analysis: MarketAnalysisResult
+    let soldCount: Int
     
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("📊 MARKET INTELLIGENCE")
+            Text("🧠 MARKET INTELLIGENCE")
                 .font(.headline)
                 .fontWeight(.bold)
             
@@ -290,72 +545,48 @@ struct MarketIntelligenceCard: View {
             ], spacing: 12) {
                 
                 MarketStatCard(
-                    title: "Competition",
-                    value: "\(analysis.competitorCount) listings",
-                    color: analysis.competitorCount > 100 ? .red : .green
+                    title: "Data Quality",
+                    value: analysis.confidence.dataQuality.displayName,
+                    subtitle: "\(soldCount) sales",
+                    color: analysis.confidence.dataQuality.color
                 )
                 
                 MarketStatCard(
                     title: "Demand",
-                    value: analysis.demandLevel,
-                    color: getDemandColor(analysis.demandLevel)
+                    value: analysis.marketData.demandIndicators.searchVolume.displayName,
+                    subtitle: "Search volume",
+                    color: analysis.marketData.demandIndicators.searchVolume.color
                 )
                 
                 MarketStatCard(
-                    title: "Trend",
-                    value: analysis.marketTrend,
-                    color: getTrendColor(analysis.marketTrend)
+                    title: "Time to Sell",
+                    value: analysis.marketData.demandIndicators.timeToSell.displayName,
+                    subtitle: "Expected",
+                    color: analysis.marketData.demandIndicators.timeToSell.color
                 )
                 
                 MarketStatCard(
-                    title: "Avg. Price",
-                    value: "$\(String(format: "%.0f", analysis.averagePrice))",
-                    color: .blue
+                    title: "Overall Score",
+                    value: "\(String(format: "%.0f", analysis.confidence.overall * 100))%",
+                    subtitle: "Confidence",
+                    color: getConfidenceColor(analysis.confidence.overall)
                 )
             }
             
-            // Recent Sales Data
-            if !analysis.recentSoldPrices.isEmpty {
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("📈 Recent Sales")
-                        .font(.caption)
-                        .fontWeight(.semibold)
-                        .foregroundColor(.secondary)
-                    
-                    HStack {
-                        ForEach(analysis.recentSoldPrices.prefix(5), id: \.self) { price in
-                            Text("$\(String(format: "%.0f", price))")
-                                .font(.caption2)
-                                .padding(.horizontal, 6)
-                                .padding(.vertical, 2)
-                                .background(Color.blue.opacity(0.2))
-                                .cornerRadius(4)
-                        }
-                    }
-                }
-                .padding(.top, 8)
-            }
+            // Market Trend
+            MarketTrendIndicator(trend: analysis.marketData.marketTrend)
         }
         .padding()
-        .background(Color.purple.opacity(0.1))
+        .background(Color.orange.opacity(0.1))
         .cornerRadius(16)
     }
     
-    private func getDemandColor(_ demand: String) -> Color {
-        switch demand.lowercased() {
-        case "high": return .green
-        case "medium": return .orange
-        case "low": return .red
-        default: return .gray
-        }
-    }
-    
-    private func getTrendColor(_ trend: String) -> Color {
-        switch trend.lowercased() {
-        case "increasing": return .green
-        case "stable": return .blue
-        case "decreasing": return .red
-        default: return .gray
+    private func getConfidenceColor(_ confidence: Double) -> Color {
+        switch confidence {
+        case 0.8...1.0: return .green
+        case 0.6...0.79: return .blue
+        case 0.4...0.59: return .orange
+        default: return .red
         }
     }
 }
@@ -364,6 +595,7 @@ struct MarketIntelligenceCard: View {
 struct MarketStatCard: View {
     let title: String
     let value: String
+    let subtitle: String
     let color: Color
     
     var body: some View {
@@ -377,6 +609,11 @@ struct MarketStatCard: View {
                 .font(.caption)
                 .foregroundColor(.secondary)
                 .multilineTextAlignment(.center)
+            
+            Text(subtitle)
+                .font(.caption2)
+                .foregroundColor(.secondary)
+                .multilineTextAlignment(.center)
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 8)
@@ -385,448 +622,188 @@ struct MarketStatCard: View {
     }
 }
 
-// MARK: - Item Form View
-struct ItemFormView: View {
-    let analysis: AnalysisResult
-    let onSave: (InventoryItem) -> Void
-    @EnvironmentObject var inventoryManager: InventoryManager
-    @Environment(\.presentationMode) var presentationMode
-    
-    @State private var purchasePrice: Double = 0.0
-    @State private var source = "Thrift Store"
-    @State private var notes = ""
-    @State private var storageLocation = ""
-    @State private var binNumber = ""
-    
-    let sources = ["Thrift Store", "Goodwill Bins", "Estate Sale", "Yard Sale", "Facebook Marketplace", "OfferUp", "Auction", "Other"]
+// MARK: - Market Trend Indicator
+struct MarketTrendIndicator: View {
+    let trend: MarketTrend
     
     var body: some View {
-        NavigationView {
-            Form {
-                Section("Item Details") {
-                    HStack {
-                        Text("Name")
-                        Spacer()
-                        Text(analysis.itemName)
-                            .foregroundColor(.secondary)
-                    }
-                    
-                    HStack {
-                        Text("Suggested Price")
-                        Spacer()
-                        Text("$\(String(format: "%.2f", analysis.realisticPrice))")
-                            .fontWeight(.bold)
-                            .foregroundColor(.green)
-                    }
-                    
-                    HStack {
-                        Text("Inventory Code")
-                        Spacer()
-                        Text("Auto-assigned")
-                            .foregroundColor(.blue)
-                    }
-                }
-                
-                Section("Purchase Information") {
-                    HStack {
-                        Text("Purchase Price")
-                        TextField("0.00", value: $purchasePrice, format: .currency(code: "USD"))
-                            .keyboardType(.decimalPad)
-                            .multilineTextAlignment(.trailing)
-                    }
-                    
-                    Picker("Source", selection: $source) {
-                        ForEach(sources, id: \.self) { source in
-                            Text(source).tag(source)
-                        }
-                    }
-                }
-                
-                Section("Storage") {
-                    TextField("Storage Location (e.g., Closet A, Shelf 2)", text: $storageLocation)
-                    TextField("Bin Number (optional)", text: $binNumber)
-                }
-                
-                Section("Additional Notes") {
-                    TextField("Notes (optional)", text: $notes, axis: .vertical)
-                        .lineLimit(3...6)
-                }
-                
-                // Profit Calculation Preview
-                if purchasePrice > 0 {
-                    Section("Profit Preview") {
-                        let estimatedProfit = analysis.realisticPrice - purchasePrice - analysis.feesBreakdown.totalFees
-                        let estimatedROI = purchasePrice > 0 ? (estimatedProfit / purchasePrice) * 100 : 0
-                        
-                        HStack {
-                            Text("Estimated Profit")
-                            Spacer()
-                            Text("$\(String(format: "%.2f", estimatedProfit))")
-                                .fontWeight(.bold)
-                                .foregroundColor(estimatedProfit > 0 ? .green : .red)
-                        }
-                        
-                        HStack {
-                            Text("Estimated ROI")
-                            Spacer()
-                            Text("\(String(format: "%.1f", estimatedROI))%")
-                                .fontWeight(.bold)
-                                .foregroundColor(estimatedROI > 100 ? .green : estimatedROI > 50 ? .orange : .red)
-                        }
-                    }
-                }
-            }
-            .navigationTitle("Add to Inventory")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Button("Cancel") {
-                        presentationMode.wrappedValue.dismiss()
-                    }
-                }
-                
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Save") {
-                        saveItem()
-                    }
-                    .disabled(purchasePrice <= 0)
-                }
-            }
-        }
-    }
-    
-    private func saveItem() {
-        // Convert first image to Data
-        let imageData = analysis.images.first?.jpegData(compressionQuality: 0.8)
-        
-        // Convert additional images to Data
-        let additionalImageData = analysis.images.dropFirst().compactMap { $0.jpegData(compressionQuality: 0.8) }
-        
-        let item = InventoryItem(
-            itemNumber: inventoryManager.nextItemNumber,
-            name: analysis.itemName,
-            category: analysis.category,
-            purchasePrice: purchasePrice,
-            suggestedPrice: analysis.realisticPrice,
-            source: source,
-            condition: analysis.actualCondition,
-            title: analysis.ebayTitle,
-            description: analysis.description,
-            keywords: analysis.keywords,
-            status: .analyzed,
-            dateAdded: Date(),
-            imageData: imageData,
-            additionalImageData: additionalImageData.isEmpty ? nil : additionalImageData,
-            resalePotential: analysis.resalePotential,
-            marketNotes: notes,
-            conditionScore: analysis.conditionScore,
-            aiConfidence: analysis.confidence,
-            competitorCount: analysis.competitorCount,
-            demandLevel: analysis.demandLevel,
-            listingStrategy: analysis.listingStrategy,
-            sourcingTips: analysis.sourcingTips,
-            barcode: analysis.barcode,
-            brand: analysis.brand,
-            size: analysis.size,
-            colorway: analysis.colorway,
-            releaseYear: analysis.releaseYear,
-            subcategory: analysis.subcategory,
-            authenticationNotes: analysis.authenticationNotes,
-            storageLocation: storageLocation,
-            binNumber: binNumber
-        )
-        
-        onSave(item)
-        presentationMode.wrappedValue.dismiss()
-    }
-}
-
-// MARK: - Direct eBay Listing View
-struct DirectEbayListingView: View {
-    let analysis: AnalysisResult
-    @EnvironmentObject var ebayListingService: EbayListingService
-    @Environment(\.presentationMode) var presentationMode
-    @State private var selectedPrice: Double
-    @State private var customTitle = ""
-    @State private var customDescription = ""
-    
-    init(analysis: AnalysisResult) {
-        self.analysis = analysis
-        self._selectedPrice = State(initialValue: analysis.realisticPrice)
-        self._customTitle = State(initialValue: analysis.ebayTitle)
-        self._customDescription = State(initialValue: analysis.description)
-    }
-    
-    var body: some View {
-        NavigationView {
-            ScrollView {
-                VStack(spacing: 20) {
-                    Text("🚀 DIRECT EBAY LISTING")
-                        .font(.largeTitle)
-                        .fontWeight(.bold)
-                        .foregroundColor(.green)
-                    
-                    Text("One-tap listing to eBay")
-                        .font(.headline)
-                        .foregroundColor(.secondary)
-                    
-                    // Item Preview
-                    ItemPreviewCard(analysis: analysis, selectedPrice: selectedPrice)
-                    
-                    // Price Selection
-                    PriceSelectionCard(analysis: analysis, selectedPrice: $selectedPrice)
-                    
-                    // Listing Options
-                    VStack(alignment: .leading, spacing: 15) {
-                        Text("📝 Listing Details")
-                            .font(.headline)
-                            .fontWeight(.bold)
-                        
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("Title")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                            TextField("eBay Title", text: $customTitle, axis: .vertical)
-                                .textFieldStyle(RoundedBorderTextFieldStyle())
-                                .lineLimit(2...3)
-                        }
-                        
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("Description")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                            TextField("Item Description", text: $customDescription, axis: .vertical)
-                                .textFieldStyle(RoundedBorderTextFieldStyle())
-                                .lineLimit(4...8)
-                        }
-                    }
-                    .padding()
-                    .background(Color.gray.opacity(0.1))
-                    .cornerRadius(12)
-                    
-                    // List Button
-                    Button(action: {
-                        listToEbay()
-                    }) {
-                        HStack {
-                            if ebayListingService.isListing {
-                                ProgressView()
-                                    .scaleEffect(0.8)
-                                    .progressViewStyle(CircularProgressViewStyle(tint: .white))
-                                Text("Listing to eBay...")
-                            } else {
-                                Image(systemName: "bolt.fill")
-                                Text("🚀 LIST TO EBAY NOW")
-                            }
-                        }
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(
-                            LinearGradient(
-                                colors: [.green, .mint],
-                                startPoint: .leading,
-                                endPoint: .trailing
-                            )
-                        )
-                        .foregroundColor(.white)
-                        .cornerRadius(16)
-                        .font(.headline)
-                        .shadow(radius: 5)
-                    }
-                    .disabled(ebayListingService.isListing)
-                    
-                    if let listingURL = ebayListingService.listingURL {
-                        VStack(spacing: 12) {
-                            Text("✅ Successfully Listed!")
-                                .font(.headline)
-                                .fontWeight(.bold)
-                                .foregroundColor(.green)
-                            
-                            Button("View on eBay") {
-                                if let url = URL(string: listingURL) {
-                                    UIApplication.shared.open(url)
-                                }
-                            }
-                            .buttonStyle(.bordered)
-                        }
-                        .padding()
-                        .background(Color.green.opacity(0.1))
-                        .cornerRadius(12)
-                    }
-                    
-                    Spacer(minLength: 50)
-                }
-                .padding()
-            }
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Done") {
-                        presentationMode.wrappedValue.dismiss()
-                    }
-                }
-            }
-        }
-    }
-    
-    private func listToEbay() {
-        // Create a temporary inventory item for listing
-        let tempItem = InventoryItem(
-            itemNumber: 999999,
-            name: analysis.itemName,
-            category: analysis.category,
-            purchasePrice: 0,
-            suggestedPrice: selectedPrice,
-            source: "Direct Listing",
-            condition: analysis.actualCondition,
-            title: customTitle,
-            description: customDescription,
-            keywords: analysis.keywords,
-            status: .listed,
-            dateAdded: Date()
-        )
-        
-        ebayListingService.listDirectlyToEbay(item: tempItem, analysis: analysis) { success, url in
-            if success {
-                print("✅ Successfully listed to eBay")
-            } else {
-                print("❌ Failed to list to eBay")
-            }
-        }
-    }
-}
-
-// MARK: - Item Preview Card
-struct ItemPreviewCard: View {
-    let analysis: AnalysisResult
-    let selectedPrice: Double
-    
-    var body: some View {
-        VStack(spacing: 12) {
-            if let image = analysis.images.first {
-                Image(uiImage: image)
-                    .resizable()
-                    .aspectRatio(contentMode: .fit)
-                    .frame(maxHeight: 200)
-                    .cornerRadius(12)
-            }
+        HStack {
+            Text("📈 Market Trend:")
+                .font(.caption)
+                .fontWeight(.semibold)
+                .foregroundColor(.secondary)
             
-            VStack(alignment: .leading, spacing: 8) {
-                Text(analysis.itemName)
-                    .font(.headline)
-                    .fontWeight(.bold)
-                
-                HStack {
-                    Text("Price:")
-                    Spacer()
-                    Text(String(format: "$%.2f", selectedPrice))
-                        .fontWeight(.bold)
-                        .foregroundColor(.green)
-                }
-                
-                HStack {
-                    Text("Condition:")
-                    Spacer()
-                    Text(analysis.actualCondition)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 2)
-                        .background(Color.blue.opacity(0.2))
-                        .cornerRadius(6)
-                        .font(.caption)
-                }
-            }
-        }
-        .padding()
-        .background(Color.gray.opacity(0.05))
-        .cornerRadius(16)
-    }
-}
-
-// MARK: - Price Selection Card
-struct PriceSelectionCard: View {
-    let analysis: AnalysisResult
-    @Binding var selectedPrice: Double
-    
-    var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("💰 Select Listing Price")
-                .font(.headline)
-                .fontWeight(.bold)
+            Text(trend.direction.displayName)
+                .font(.caption)
+                .fontWeight(.semibold)
+                .foregroundColor(trend.direction.color)
             
-            HStack(spacing: 12) {
-                PriceOption(
-                    title: "Quick Sale",
-                    price: analysis.quickSalePrice,
-                    subtitle: "Fast",
-                    isSelected: selectedPrice == analysis.quickSalePrice,
-                    color: .orange
-                ) {
-                    selectedPrice = analysis.quickSalePrice
-                }
-                
-                PriceOption(
-                    title: "Realistic",
-                    price: analysis.realisticPrice,
-                    subtitle: "Recommended",
-                    isSelected: selectedPrice == analysis.realisticPrice,
-                    color: .blue
-                ) {
-                    selectedPrice = analysis.realisticPrice
-                }
-                
-                PriceOption(
-                    title: "Max Profit",
-                    price: analysis.maxProfitPrice,
-                    subtitle: "Patient",
-                    isSelected: selectedPrice == analysis.maxProfitPrice,
-                    color: .green
-                ) {
-                    selectedPrice = analysis.maxProfitPrice
-                }
-            }
+            Text("(\(trend.strength.displayName))")
+                .font(.caption)
+                .foregroundColor(.secondary)
+            
+            Spacer()
         }
-        .padding()
-        .background(Color.blue.opacity(0.1))
-        .cornerRadius(16)
     }
 }
 
-// MARK: - Price Option
-struct PriceOption: View {
-    let title: String
-    let price: Double
-    let subtitle: String
-    let isSelected: Bool
-    let color: Color
-    let onTap: () -> Void
+// MARK: - Confidence Badge
+struct ConfidenceBadge: View {
+    let confidence: Double
     
     var body: some View {
-        Button(action: {
-            onTap()
-        }) {
-            VStack(spacing: 6) {
-                Text(title)
-                    .font(.caption)
-                    .fontWeight(.semibold)
-                    .foregroundColor(isSelected ? color : .secondary)
-                
-                Text("$\(String(format: "%.0f", price))")
-                    .font(.headline)
-                    .fontWeight(.bold)
-                    .foregroundColor(isSelected ? color : .primary)
-                
-                Text(subtitle)
-                    .font(.caption2)
-                    .foregroundColor(.secondary)
-            }
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 12)
-            .background(
-                RoundedRectangle(cornerRadius: 8)
-                    .fill(isSelected ? color.opacity(0.2) : Color.clear)
-                    .stroke(isSelected ? color : Color.gray.opacity(0.3), lineWidth: isSelected ? 2 : 1)
-            )
+        Text("\(String(format: "%.0f", confidence * 100))%")
+            .font(.caption)
+            .fontWeight(.bold)
+            .foregroundColor(.white)
+            .padding(.horizontal, 6)
+            .padding(.vertical, 2)
+            .background(confidenceColor)
+            .cornerRadius(4)
+    }
+    
+    private var confidenceColor: Color {
+        switch confidence {
+        case 0.8...1.0: return .green
+        case 0.6...0.79: return .blue
+        case 0.4...0.59: return .orange
+        default: return .red
         }
-        .buttonStyle(PlainButtonStyle())
     }
 }
+
+// MARK: - Extensions for Display Names and Colors
+
+extension IdentificationMethod {
+    var displayName: String {
+        switch self {
+        case .visualAndText: return "Visual + Text"
+        case .visualOnly: return "Visual Only"
+        case .textOnly: return "Text Only"
+        case .categoryBased: return "Category"
+        }
+    }
+}
+
+extension Severity {
+    var color: Color {
+        switch self {
+        case .minor: return .green
+        case .moderate: return .orange
+        case .major: return .red
+        case .critical: return .purple
+        }
+    }
+}
+
+extension CompetitionLevel {
+    var displayName: String {
+        switch self {
+        case .low: return "Low"
+        case .moderate: return "Moderate"
+        case .high: return "High"
+        case .saturated: return "Saturated"
+        }
+    }
+    
+    var color: Color {
+        switch self {
+        case .low: return .green
+        case .moderate: return .blue
+        case .high: return .orange
+        case .saturated: return .red
+        }
+    }
+}
+
+extension DataQuality {
+    var displayName: String {
+        switch self {
+        case .excellent: return "Excellent"
+        case .good: return "Good"
+        case .fair: return "Fair"
+        case .limited: return "Limited"
+        case .insufficient: return "Poor"
+        }
+    }
+    
+    var color: Color {
+        switch self {
+        case .excellent: return .green
+        case .good: return .blue
+        case .fair: return .orange
+        case .limited: return .red
+        case .insufficient: return .gray
+        }
+    }
+}
+
+extension SearchVolume {
+    var displayName: String {
+        switch self {
+        case .high: return "High"
+        case .medium: return "Medium"
+        case .low: return "Low"
+        }
+    }
+    
+    var color: Color {
+        switch self {
+        case .high: return .green
+        case .medium: return .orange
+        case .low: return .red
+        }
+    }
+}
+
+extension TimeToSell {
+    var displayName: String {
+        switch self {
+        case .immediate: return "< 1 day"
+        case .fast: return "1-7 days"
+        case .normal: return "1-4 weeks"
+        case .slow: return "1-3 months"
+        case .difficult: return "3+ months"
+        }
+    }
+    
+    var color: Color {
+        switch self {
+        case .immediate, .fast: return .green
+        case .normal: return .blue
+        case .slow: return .orange
+        case .difficult: return .red
+        }
+    }
+}
+
+extension TrendDirection {
+    var displayName: String {
+        switch self {
+        case .increasing: return "Increasing"
+        case .stable: return "Stable"
+        case .decreasing: return "Decreasing"
+        }
+    }
+    
+    var color: Color {
+        switch self {
+        case .increasing: return .green
+        case .stable: return .blue
+        case .decreasing: return .red
+        }
+    }
+}
+
+extension TrendStrength {
+    var displayName: String {
+        switch self {
+        case .strong: return "Strong"
+        case .moderate: return "Moderate"
+        case .weak: return "Weak"
+        }
+    }
+}
+
+// MARK: - Keep existing ItemFormView and DirectEbayListingView
+// These remain the same but will work with the new AnalysisResult structure

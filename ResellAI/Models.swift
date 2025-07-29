@@ -1,19 +1,19 @@
-// MARK: - FIXED Models.swift with Proper Category Mapping
+// MARK: - Updated Models.swift with eBay Condition Standards
 import SwiftUI
 import Foundation
 
-// MARK: - Core Models with FIXED Smart Inventory System
+// MARK: - Core Models with eBay Condition System
 struct InventoryItem: Identifiable, Codable {
     let id = UUID()
     var itemNumber: Int
-    var inventoryCode: String = "" // Smart inventory code (e.g., "A-001", "B-023")
+    var inventoryCode: String = ""
     var name: String
     var category: String
     var purchasePrice: Double
     var suggestedPrice: Double
     var actualPrice: Double?
     var source: String
-    var condition: String
+    var condition: String // Now uses eBay condition standards
     var title: String
     var description: String
     var keywords: [String]
@@ -22,22 +22,30 @@ struct InventoryItem: Identifiable, Codable {
     var dateListed: Date?
     var dateSold: Date?
     var imageData: Data?
-    var additionalImageData: [Data]? // Multiple photos support
+    var additionalImageData: [Data]?
     var ebayURL: String?
     var resalePotential: Int?
     var marketNotes: String?
     
+    // Market analysis fields
+    var ebayCondition: EbayCondition? // NEW: eBay-specific condition
+    var marketConfidence: Double?     // NEW: Market data confidence
+    var soldListingsCount: Int?       // NEW: Number of sold items found
+    var priceRange: EbayPriceRange?   // NEW: Real market price range
+    var lastMarketUpdate: Date?       // NEW: When market data was last fetched
+    
     // AI analysis fields
-    var conditionScore: Double?
     var aiConfidence: Double?
     var competitorCount: Int?
     var demandLevel: String?
     var listingStrategy: String?
     var sourcingTips: [String]?
     
-    // Barcode support and product details
+    // Product identification
     var barcode: String?
     var brand: String = ""
+    var exactModel: String = ""      // NEW: Exact model (e.g., "Air Force 1 Low '07")
+    var styleCode: String = ""       // NEW: Style/SKU code
     var size: String = ""
     var colorway: String = ""
     var releaseYear: String = ""
@@ -45,25 +53,24 @@ struct InventoryItem: Identifiable, Codable {
     var authenticationNotes: String = ""
     
     // Physical inventory management
-    var storageLocation: String = "" // Where it's physically stored
-    var binNumber: String = ""       // Specific bin/box number
-    var isPackaged: Bool = false     // Ready for shipping
-    var packagedDate: Date?          // When it was packaged
+    var storageLocation: String = ""
+    var binNumber: String = ""
+    var isPackaged: Bool = false
+    var packagedDate: Date?
     
-    // Initialize with comprehensive defaults
     init(itemNumber: Int, name: String, category: String, purchasePrice: Double,
          suggestedPrice: Double, source: String, condition: String, title: String,
          description: String, keywords: [String], status: ItemStatus, dateAdded: Date,
          actualPrice: Double? = nil, dateListed: Date? = nil, dateSold: Date? = nil,
          imageData: Data? = nil, additionalImageData: [Data]? = nil, ebayURL: String? = nil,
          resalePotential: Int? = nil, marketNotes: String? = nil,
-         conditionScore: Double? = nil, aiConfidence: Double? = nil,
-         competitorCount: Int? = nil, demandLevel: String? = nil,
+         aiConfidence: Double? = nil, competitorCount: Int? = nil, demandLevel: String? = nil,
          listingStrategy: String? = nil, sourcingTips: [String]? = nil,
          barcode: String? = nil, brand: String = "", size: String = "",
          colorway: String = "", releaseYear: String = "", subcategory: String = "",
          authenticationNotes: String = "", inventoryCode: String = "",
-         storageLocation: String = "", binNumber: String = "") {
+         storageLocation: String = "", binNumber: String = "",
+         exactModel: String = "", styleCode: String = "", ebayCondition: EbayCondition? = nil) {
         self.itemNumber = itemNumber
         self.inventoryCode = inventoryCode
         self.name = name
@@ -85,7 +92,6 @@ struct InventoryItem: Identifiable, Codable {
         self.ebayURL = ebayURL
         self.resalePotential = resalePotential
         self.marketNotes = marketNotes
-        self.conditionScore = conditionScore
         self.aiConfidence = aiConfidence
         self.competitorCount = competitorCount
         self.demandLevel = demandLevel
@@ -100,11 +106,14 @@ struct InventoryItem: Identifiable, Codable {
         self.authenticationNotes = authenticationNotes
         self.storageLocation = storageLocation
         self.binNumber = binNumber
+        self.exactModel = exactModel
+        self.styleCode = styleCode
+        self.ebayCondition = ebayCondition
     }
     
     var profit: Double {
         guard let actualPrice = actualPrice else { return 0 }
-        let fees = actualPrice * 0.1325 // Updated eBay fees
+        let fees = actualPrice * 0.1325
         return actualPrice - purchasePrice - fees
     }
     
@@ -122,20 +131,273 @@ struct InventoryItem: Identifiable, Codable {
         guard purchasePrice > 0 else { return 0 }
         return (estimatedProfit / purchasePrice) * 100
     }
+}
+
+// MARK: - NEW: eBay Condition Standards
+enum EbayCondition: String, CaseIterable, Codable {
+    case newWithTags = "New with tags"
+    case newWithoutTags = "New without tags"
+    case newOther = "New other"
+    case likeNew = "Like New"
+    case excellent = "Excellent"
+    case veryGood = "Very Good"
+    case good = "Good"
+    case acceptable = "Acceptable"
+    case forPartsNotWorking = "For parts or not working"
     
-    // Net profit calculations
-    var netProfitAfterAllFees: Double {
-        let totalFees = suggestedPrice * 0.1325 + 8.50 + 0.30 // eBay + shipping + listing
-        return suggestedPrice - purchasePrice - totalFees
+    var description: String {
+        switch self {
+        case .newWithTags:
+            return "Brand new with original tags attached"
+        case .newWithoutTags:
+            return "Brand new without tags"
+        case .newOther:
+            return "Brand new but not in original packaging"
+        case .likeNew:
+            return "No signs of wear, appears unused"
+        case .excellent:
+            return "Minimal wear, no flaws affecting use"
+        case .veryGood:
+            return "Light wear with minor flaws"
+        case .good:
+            return "Moderate wear with noticeable flaws"
+        case .acceptable:
+            return "Heavy wear with significant flaws"
+        case .forPartsNotWorking:
+            return "Major damage or not functional"
+        }
     }
     
-    var breakEvenPrice: Double {
-        let totalFeeRate = 0.1325 + (8.80 / suggestedPrice) // eBay fees + fixed costs
-        return purchasePrice / (1 - totalFeeRate)
+    var color: Color {
+        switch self {
+        case .newWithTags, .newWithoutTags, .newOther:
+            return .green
+        case .likeNew, .excellent:
+            return .blue
+        case .veryGood, .good:
+            return .orange
+        case .acceptable:
+            return .red
+        case .forPartsNotWorking:
+            return .gray
+        }
+    }
+    
+    var priceMultiplier: Double {
+        switch self {
+        case .newWithTags: return 1.0
+        case .newWithoutTags: return 0.95
+        case .newOther: return 0.90
+        case .likeNew: return 0.85
+        case .excellent: return 0.75
+        case .veryGood: return 0.65
+        case .good: return 0.50
+        case .acceptable: return 0.35
+        case .forPartsNotWorking: return 0.20
+        }
     }
 }
 
-// FIXED ItemStatus enum with migration support
+// MARK: - NEW: eBay Market Data Structures
+struct EbayPriceRange: Codable {
+    let newWithTags: Double?
+    let newWithoutTags: Double?
+    let likeNew: Double?
+    let excellent: Double?
+    let veryGood: Double?
+    let good: Double?
+    let acceptable: Double?
+    let average: Double
+    let soldCount: Int
+    let dateRange: String // "Last 30 days"
+    
+    func priceForCondition(_ condition: EbayCondition) -> Double? {
+        switch condition {
+        case .newWithTags: return newWithTags
+        case .newWithoutTags: return newWithoutTags
+        case .newOther: return newWithoutTags
+        case .likeNew: return likeNew
+        case .excellent: return excellent
+        case .veryGood: return veryGood
+        case .good: return good
+        case .acceptable: return acceptable
+        case .forPartsNotWorking: return good != nil ? good! * 0.4 : nil
+        }
+    }
+}
+
+struct EbaySoldListing: Codable {
+    let title: String
+    let price: Double
+    let condition: String
+    let soldDate: Date
+    let shippingCost: Double?
+    let bestOffer: Bool
+    let auction: Bool
+    let watchers: Int?
+}
+
+// MARK: - NEW: Google Lens-Style Identification Result
+struct PrecisionIdentificationResult {
+    let exactModelName: String       // "Nike Air Force 1 Low '07"
+    let brand: String               // "Nike"
+    let productLine: String         // "Air Force 1"
+    let styleVariant: String        // "Low '07"
+    let styleCode: String           // "315122-111"
+    let colorway: String            // "White/White"
+    let size: String                // "10.5"
+    let category: ProductCategory   // .sneakers
+    let subcategory: String         // "Basketball Shoes"
+    let identificationMethod: IdentificationMethod
+    let confidence: Double          // 0.0-1.0
+    let identificationDetails: [String] // How we identified it
+    let alternativePossibilities: [String] // Other possible matches
+}
+
+enum IdentificationMethod {
+    case visualAndText      // Best: Visual + text recognition
+    case visualOnly         // Good: Visual features only
+    case textOnly          // Okay: Text/barcode only
+    case categoryBased     // Last resort: Category matching
+}
+
+enum ProductCategory: String, CaseIterable {
+    case sneakers = "Sneakers"
+    case clothing = "Clothing"
+    case electronics = "Electronics"
+    case accessories = "Accessories"
+    case home = "Home & Garden"
+    case collectibles = "Collectibles"
+    case books = "Books"
+    case toys = "Toys"
+    case sports = "Sports"
+    case other = "Other"
+}
+
+// MARK: - NEW: Market Analysis Result with Real eBay Data
+struct MarketAnalysisResult {
+    let identifiedProduct: PrecisionIdentificationResult
+    let marketData: EbayMarketData
+    let conditionAssessment: EbayConditionAssessment
+    let pricingRecommendation: EbayPricingRecommendation
+    let listingStrategy: EbayListingStrategy
+    let confidence: MarketConfidence
+}
+
+struct EbayMarketData {
+    let soldListings: [EbaySoldListing]
+    let priceRange: EbayPriceRange
+    let marketTrend: MarketTrend
+    let demandIndicators: DemandIndicators
+    let competitionLevel: CompetitionLevel
+    let lastUpdated: Date
+}
+
+struct EbayConditionAssessment {
+    let detectedCondition: EbayCondition
+    let conditionConfidence: Double
+    let conditionFactors: [ConditionFactor]
+    let conditionNotes: [String]
+    let photographyRecommendations: [String]
+}
+
+struct ConditionFactor {
+    let area: String          // "Toe box", "Heel", "Upper"
+    let issue: String?        // "Creasing", "Scuff", "Stain"
+    let severity: Severity    // .minor, .moderate, .major
+    let impactOnValue: Double // -5% to -30%
+}
+
+enum Severity {
+    case minor, moderate, major, critical
+}
+
+struct EbayPricingRecommendation {
+    let recommendedPrice: Double
+    let priceRange: (min: Double, max: Double)
+    let competitivePrice: Double
+    let quickSalePrice: Double
+    let maxProfitPrice: Double
+    let pricingStrategy: PricingStrategy
+    let priceJustification: [String]
+}
+
+enum PricingStrategy {
+    case competitive    // Match market
+    case premium       // Price above market (excellent condition)
+    case discount      // Below market (quick sale)
+    case auction       // Let market decide
+}
+
+struct EbayListingStrategy {
+    let recommendedTitle: String
+    let keywordOptimization: [String]
+    let categoryPath: String
+    let listingFormat: ListingFormat
+    let photographyChecklist: [String]
+    let descriptionTemplate: String
+}
+
+enum ListingFormat {
+    case buyItNow, auction, bestOffer
+}
+
+// MARK: - Market Intelligence
+struct MarketTrend {
+    let direction: TrendDirection
+    let strength: TrendStrength
+    let timeframe: String
+    let seasonalFactors: [String]
+}
+
+enum TrendDirection {
+    case increasing, stable, decreasing
+}
+
+enum TrendStrength {
+    case strong, moderate, weak
+}
+
+struct DemandIndicators {
+    let watchersPerListing: Double
+    let viewsPerListing: Double
+    let timeToSell: TimeToSell
+    case searchVolume: SearchVolume
+}
+
+enum TimeToSell {
+    case immediate      // < 1 day
+    case fast          // 1-7 days
+    case normal        // 1-4 weeks
+    case slow          // 1-3 months
+    case difficult     // 3+ months
+}
+
+enum SearchVolume {
+    case high, medium, low
+}
+
+enum CompetitionLevel {
+    case low, moderate, high, saturated
+}
+
+struct MarketConfidence {
+    let overall: Double           // 0.0-1.0
+    let identification: Double    // How sure we are about the product
+    let condition: Double         // How sure we are about condition
+    let pricing: Double          // How sure we are about market price
+    let dataQuality: DataQuality
+}
+
+enum DataQuality {
+    case excellent   // 50+ recent sales
+    case good       // 20-49 recent sales
+    case fair       // 5-19 recent sales
+    case limited    // 1-4 recent sales
+    case insufficient // No recent sales
+}
+
+// MARK: - Keep existing enums
 enum ItemStatus: String, CaseIterable, Codable {
     case photographed = "📷 Photographed"
     case analyzed = "🧠 AI Analyzed"
@@ -144,12 +406,10 @@ enum ItemStatus: String, CaseIterable, Codable {
     case sold = "💰 Sold"
     case prospecting = "🔍 Prospecting"
     
-    // Migration support for old enum values
     init(from decoder: Decoder) throws {
         let container = try decoder.singleValueContainer()
         let rawValue = try container.decode(String.self)
         
-        // Handle legacy values
         switch rawValue {
         case "Analyzed", "analyzed", "🧠 AI Analyzed":
             self = .analyzed
@@ -179,23 +439,12 @@ enum ItemStatus: String, CaseIterable, Codable {
         case .prospecting: return .purple
         }
     }
-    
-    var icon: String {
-        switch self {
-        case .photographed: return "camera.fill"
-        case .analyzed: return "brain.head.profile"
-        case .toList: return "list.bullet"
-        case .listed: return "storefront.fill"
-        case .sold: return "dollarsign.circle.fill"
-        case .prospecting: return "magnifyingglass.circle"
-        }
-    }
 }
 
-// MARK: - FIXED Smart Inventory Categories with Proper Mapping
+// MARK: - Keep existing InventoryCategory with fixed mapping
 enum InventoryCategory: String, CaseIterable {
     case tshirts = "T-Shirts"
-    case jackets = "Jackets & Outerwear"  // FIXED: This should be B, not Z
+    case jackets = "Jackets & Outerwear"
     case jeans = "Jeans & Denim"
     case workPants = "Work Pants"
     case dresses = "Dresses"
@@ -212,7 +461,7 @@ enum InventoryCategory: String, CaseIterable {
     var inventoryLetter: String {
         switch self {
         case .tshirts: return "A"
-        case .jackets: return "B"      // FIXED: Jackets get B
+        case .jackets: return "B"
         case .jeans: return "C"
         case .workPants: return "D"
         case .dresses: return "E"
@@ -224,7 +473,7 @@ enum InventoryCategory: String, CaseIterable {
         case .books: return "K"
         case .toys: return "L"
         case .sports: return "M"
-        case .other: return "Z"        // Only truly unmatched items get Z
+        case .other: return "Z"
         }
     }
     
@@ -233,39 +482,37 @@ enum InventoryCategory: String, CaseIterable {
         case .tshirts:
             return ["Fold neatly", "Store flat to prevent wrinkles", "Group by size"]
         case .jackets:
-            return ["Hang to prevent creasing", "Use garment bags for expensive items", "Store in cool, dry place", "Check pockets before storing"]
+            return ["Hang to prevent creasing", "Use garment bags for expensive items", "Store in cool, dry place"]
         case .jeans:
-            return ["Fold along seams", "Stack by size", "Keep heavy items separate", "Check for stains"]
+            return ["Fold along seams", "Stack by size", "Keep heavy items separate"]
         case .workPants:
-            return ["Hang or fold carefully", "Check for stains before storing", "Group by brand", "Inspect for wear"]
+            return ["Hang or fold carefully", "Check for stains before storing", "Group by brand"]
         case .dresses:
-            return ["Hang on padded hangers", "Use garment bags for delicate items", "Store by length", "Check for missing buttons"]
+            return ["Hang on padded hangers", "Use garment bags for delicate items", "Store by length"]
         case .shoes:
-            return ["Clean before storing", "Use shoe boxes when possible", "Stuff with paper to maintain shape", "Take photos of soles"]
+            return ["Clean before storing", "Use shoe boxes when possible", "Stuff with paper to maintain shape"]
         case .accessories:
-            return ["Use small containers", "Keep sets together", "Protect delicate items", "Store jewelry separately"]
+            return ["Use small containers", "Keep sets together", "Protect delicate items"]
         case .electronics:
-            return ["Original boxes preferred", "Anti-static protection", "Temperature controlled area", "Test functionality"]
+            return ["Original boxes preferred", "Anti-static protection", "Temperature controlled area"]
         case .collectibles:
-            return ["Handle with extreme care", "Use protective sleeves", "Climate controlled storage", "Document condition"]
+            return ["Handle with extreme care", "Use protective sleeves", "Climate controlled storage"]
         case .home:
-            return ["Wrap fragile items", "Clean thoroughly", "Check for chips or cracks", "Group similar items"]
+            return ["Wrap fragile items", "Clean thoroughly", "Check for chips or cracks"]
         case .books:
-            return ["Store upright when possible", "Protect from moisture", "Check for damage", "Group by genre/author"]
+            return ["Store upright when possible", "Protect from moisture", "Check for damage"]
         case .toys:
-            return ["Check for missing pieces", "Clean thoroughly", "Test moving parts", "Keep original packaging"]
+            return ["Check for missing pieces", "Clean thoroughly", "Test moving parts"]
         case .sports:
-            return ["Clean equipment thoroughly", "Check for damage", "Test functionality", "Store properly to prevent damage"]
+            return ["Clean equipment thoroughly", "Check for damage", "Test functionality"]
         case .other:
-            return ["Handle with care", "Clean before storing", "Label clearly", "Research value"]
+            return ["Handle with care", "Clean before storing", "Label clearly"]
         }
     }
     
-    // FIXED: Add method to help with mapping
     static func fromCategoryString(_ categoryString: String) -> InventoryCategory {
         let lowercased = categoryString.lowercased()
         
-        // FIXED: More comprehensive matching
         if lowercased.contains("jacket") || lowercased.contains("coat") || lowercased.contains("hoodie") ||
            lowercased.contains("sweatshirt") || lowercased.contains("blazer") || lowercased.contains("outerwear") {
             return .jackets
@@ -313,77 +560,91 @@ enum InventoryCategory: String, CaseIterable {
     }
 }
 
-enum SourceLocation: String, CaseIterable {
-    case cityWalk = "City Walk"
-    case goodwillBins = "Goodwill Bins"
-    case goodCents = "Good Cents"
-    case estateSale = "Estate Sale"
-    case yardSale = "Yard Sale"
-    case facebookMarketplace = "Facebook Marketplace"
-    case offerUp = "OfferUp"
-    case craigslist = "Craigslist"
-    case auction = "Auction"
-    case thriftStore = "Thrift Store"
-    case online = "Online"
-    case other = "Other"
+// MARK: - Updated Analysis Result for eBay Standards
+struct AnalysisResult {
+    let identificationResult: PrecisionIdentificationResult
+    let marketAnalysis: MarketAnalysisResult
+    let ebayCondition: EbayCondition
+    let ebayPricing: EbayPricingRecommendation
+    let soldListings: [EbaySoldListing]
+    let confidence: MarketConfidence
+    let images: [UIImage]
     
-    var profitability: String {
-        switch self {
-        case .goodwillBins: return "🔥 Highest"
-        case .estateSale, .yardSale: return "🎯 Very High"
-        case .goodCents, .thriftStore: return "💰 High"
-        case .auction: return "⚡ Variable"
-        case .facebookMarketplace, .offerUp: return "📱 Medium"
-        default: return "📊 Low-Medium"
+    // Computed properties for compatibility
+    var itemName: String { identificationResult.exactModelName }
+    var brand: String { identificationResult.brand }
+    var category: String { identificationResult.category.rawValue }
+    var actualCondition: String { ebayCondition.rawValue }
+    var realisticPrice: Double { ebayPricing.recommendedPrice }
+    var quickSalePrice: Double { ebayPricing.quickSalePrice }
+    var maxProfitPrice: Double { ebayPricing.maxProfitPrice }
+    var competitorCount: Int { soldListings.count }
+    var demandLevel: String {
+        switch marketAnalysis.marketData.demandIndicators.searchVolume {
+        case .high: return "High"
+        case .medium: return "Medium"
+        case .low: return "Low"
         }
+    }
+    var ebayTitle: String { marketAnalysis.listingStrategy.recommendedTitle }
+    var description: String { marketAnalysis.listingStrategy.descriptionTemplate }
+    var keywords: [String] { marketAnalysis.listingStrategy.keywordOptimization }
+    var recentSoldPrices: [Double] { soldListings.map { $0.price } }
+    var averagePrice: Double { marketAnalysis.marketData.priceRange.average }
+    var marketTrend: String {
+        switch marketAnalysis.marketData.marketTrend.direction {
+        case .increasing: return "Increasing"
+        case .stable: return "Stable"
+        case .decreasing: return "Decreasing"
+        }
+    }
+    var resalePotential: Int {
+        switch confidence.overall {
+        case 0.9...1.0: return 10
+        case 0.8...0.89: return 8
+        case 0.7...0.79: return 7
+        case 0.6...0.69: return 6
+        case 0.5...0.59: return 5
+        case 0.4...0.49: return 4
+        default: return 3
+        }
+    }
+    
+    // For fees calculation
+    var feesBreakdown: FeesBreakdown {
+        let price = realisticPrice
+        return FeesBreakdown(
+            ebayFee: price * 0.1325,
+            paypalFee: price * 0.0349 + 0.49,
+            shippingCost: 12.50,
+            listingFees: 0.35,
+            totalFees: price * 0.1674 + 12.85
+        )
+    }
+    
+    var profitMargins: ProfitMargins {
+        let fees = feesBreakdown
+        return ProfitMargins(
+            quickSaleNet: quickSalePrice - fees.totalFees,
+            realisticNet: realisticPrice - fees.totalFees,
+            maxProfitNet: maxProfitPrice - fees.totalFees
+        )
     }
 }
 
-// MARK: - Analysis Models
-protocol ItemAnalysis {
-    var itemName: String { get }
-    var category: String { get }
-    var suggestedPrice: Double { get }
-    var confidence: Double { get }
-    var ebayTitle: String { get }
-    var description: String { get }
-    var keywords: [String] { get }
-    var condition: String { get }
-    var resalePotential: Int { get }
-    var marketNotes: String { get }
+// MARK: - Keep existing fee structures
+struct FeesBreakdown {
+    let ebayFee: Double
+    let paypalFee: Double
+    let shippingCost: Double
+    let listingFees: Double
+    let totalFees: Double
 }
 
-struct BasicItemAnalysis: ItemAnalysis {
-    let itemName: String
-    let category: String
-    let suggestedPrice: Double
-    let confidence: Double
-    let ebayTitle: String
-    let description: String
-    let keywords: [String]
-    let condition: String
-    let resalePotential: Int
-    let marketNotes: String
-}
-
-struct ItemAnalysisResult: ItemAnalysis {
-    let itemName: String
-    let category: String
-    let modelNumber: String
-    let suggestedPrice: Double
-    let priceRange: PriceRange
-    let confidence: Double
-    let ebayTitle: String
-    let description: String
-    let keywords: [String]
-    let condition: String
-    let resalePotential: Int
-    let marketNotes: String
-    let authenticationNotes: String
-    let shippingNotes: String
-    let competitionLevel: String
-    let seasonalDemand: String
-    let photosAnalyzed: Int
+struct ProfitMargins {
+    let quickSaleNet: Double
+    let realisticNet: Double
+    let maxProfitNet: Double
 }
 
 struct PriceRange {
@@ -398,62 +659,91 @@ struct PriceRange {
     }
 }
 
-// MARK: - FIXED Prospecting Models
+// MARK: - Updated Prospecting for eBay Standards
 struct ProspectAnalysis {
-    let itemName: String
-    let brand: String
-    let condition: String
-    let confidence: Double
-    let estimatedSellPrice: Double    // What you can sell it for
-    let maxBuyPrice: Double          // Max price you should pay
-    let targetBuyPrice: Double       // Ideal purchase price for good profit
-    let potentialProfit: Double
-    let expectedROI: Double
+    let identificationResult: PrecisionIdentificationResult
+    let marketAnalysis: MarketAnalysisResult
+    let maxBuyPrice: Double
+    let targetBuyPrice: Double
+    let breakEvenPrice: Double
     let recommendation: ProspectDecision
-    let reasons: [String]
-    let riskLevel: String
-    let demandLevel: String
-    let competitorCount: Int
-    let marketTrend: String
-    let sellTimeEstimate: String
-    let seasonalFactors: String
-    let sourcingTips: [String]
+    let confidence: MarketConfidence
     let images: [UIImage]
     
-    // Recent sales data
-    let recentSales: [RecentSale]     // Recent eBay sales
-    let averageSoldPrice: Double      // Average of recent sales
-    
-    // Additional product details
-    let category: String
-    let subcategory: String
-    let modelNumber: String
-    let size: String
-    let colorway: String
-    let releaseYear: String
-    let retailPrice: Double
-    let currentMarketValue: Double
-    
-    // Market intelligence
-    let quickFlipPotential: Bool
-    let holidayDemand: Bool
-    let breakEvenPrice: Double
+    // Computed properties for compatibility
+    var itemName: String { identificationResult.exactModelName }
+    var brand: String { identificationResult.brand }
+    var condition: String { marketAnalysis.conditionAssessment.detectedCondition.rawValue }
+    var estimatedSellPrice: Double { marketAnalysis.pricingRecommendation.recommendedPrice }
+    var potentialProfit: Double { estimatedSellPrice - maxBuyPrice - (estimatedSellPrice * 0.15) }
+    var expectedROI: Double { maxBuyPrice > 0 ? (potentialProfit / maxBuyPrice) * 100 : 0 }
+    var reasons: [String] { marketAnalysis.pricingRecommendation.priceJustification }
+    var riskLevel: String {
+        switch confidence.overall {
+        case 0.8...1.0: return "Low"
+        case 0.6...0.79: return "Medium"
+        default: return "High"
+        }
+    }
+    var demandLevel: String {
+        switch marketAnalysis.marketData.demandIndicators.searchVolume {
+        case .high: return "High"
+        case .medium: return "Medium"
+        case .low: return "Low"
+        }
+    }
+    var competitorCount: Int { marketAnalysis.marketData.soldListings.count }
+    var marketTrend: String {
+        switch marketAnalysis.marketData.marketTrend.direction {
+        case .increasing: return "Increasing"
+        case .stable: return "Stable"
+        case .decreasing: return "Decreasing"
+        }
+    }
+    var sellTimeEstimate: String {
+        switch marketAnalysis.marketData.demandIndicators.timeToSell {
+        case .immediate: return "< 1 day"
+        case .fast: return "1-7 days"
+        case .normal: return "1-4 weeks"
+        case .slow: return "1-3 months"
+        case .difficult: return "3+ months"
+        }
+    }
+    var seasonalFactors: String { marketAnalysis.marketData.marketTrend.seasonalFactors.joined(separator: ", ") }
+    var sourcingTips: [String] { marketAnalysis.listingStrategy.photographyChecklist }
+    var recentSales: [RecentSale] {
+        marketAnalysis.marketData.soldListings.map { listing in
+            RecentSale(
+                price: listing.price,
+                date: listing.soldDate,
+                condition: listing.condition,
+                title: listing.title,
+                soldIn: "Sold"
+            )
+        }
+    }
+    var averageSoldPrice: Double { marketAnalysis.marketData.priceRange.average }
+    var category: String { identificationResult.category.rawValue }
+    var subcategory: String { identificationResult.subcategory }
+    var modelNumber: String { identificationResult.styleCode }
+    var size: String { identificationResult.size }
+    var colorway: String { identificationResult.colorway }
+    var releaseYear: String { "" } // We can add this to identification if needed
+    var retailPrice: Double { 0 } // We can look this up if needed
+    var currentMarketValue: Double { estimatedSellPrice }
+    var quickFlipPotential: Bool {
+        marketAnalysis.marketData.demandIndicators.timeToSell == .immediate ||
+        marketAnalysis.marketData.demandIndicators.timeToSell == .fast
+    }
+    var holidayDemand: Bool { marketAnalysis.marketData.marketTrend.seasonalFactors.contains("Holiday") }
 }
 
-// Recent sale data structure
 struct RecentSale {
     let price: Double
     let date: Date
     let condition: String
     let title: String
-    let soldIn: String  // "3 days", "1 week", etc.
-}
-
-struct ProspectRecommendation {
-    let decision: ProspectDecision
-    let reasons: [String]
-    let riskLevel: String
-    let sourcingTips: [String]
+    let soldIn: String
 }
 
 enum ProspectDecision {
@@ -479,283 +769,6 @@ enum ProspectDecision {
         case .investigate: return .orange
         }
     }
-    
-    var description: String {
-        switch self {
-        case .buy: return "Strong profit potential at target price"
-        case .investigate: return "Verify condition and market demand"
-        }
-    }
-}
-
-// MARK: - Photo Source
-enum PhotoSource {
-    case camera
-    case photoLibrary
-    case multiPhoto
-}
-
-// Quick identification for prospecting
-struct QuickIdentification {
-    let itemName: String
-    let brand: String
-    let category: String
-    let modelNumber: String
-    let condition: String
-    let confidence: Double
-    let estimatedRetailPrice: Double
-    let keyFeatures: [String]
-}
-
-// MARK: - App Constants
-struct ResellAIConstants {
-    static let maxPhotosPerItem = 8
-    static let minConfidenceThreshold = 0.3
-    static let defaultROITarget = 200.0
-    static let maxAnalysisTime: TimeInterval = 30.0
-    static let cacheExpirationTime: TimeInterval = 3600.0 // 1 hour
-    static let supportedImageFormats = ["jpg", "jpeg", "png", "heic"]
-    static let maxImageSize: Int = 10 * 1024 * 1024 // 10MB
-    
-    struct Fees {
-        static let ebayFinalValueFee = 0.1325 // 13.25%
-        static let averageShippingCost = 8.50
-        static let listingFee = 0.30
-        static let promotionalFee = 0.02 // 2% for promoted listings
-    }
-    
-    struct Timing {
-        static let optimalListingDays = ["Sunday", "Monday", "Tuesday"]
-        static let optimalListingHours = ["6 PM", "7 PM", "8 PM", "9 PM"]
-        static let peakShoppingMonths = ["November", "December", "January"]
-    }
-    
-    struct Prospecting {
-        static let minROIThreshold = 50.0      // Minimum 50% ROI
-        static let idealROIThreshold = 100.0   // Ideal 100%+ ROI
-        static let maxRiskThreshold = 0.3      // 30% max risk tolerance
-        static let quickSaleMultiplier = 0.85  // 15% discount for quick sale
-        static let maxBuyMultiplier = 0.6      // Buy at 60% of estimated value max
-    }
-}
-
-// MARK: - Business Intelligence Models
-struct InventoryStatistics {
-    let totalItems: Int
-    let listedItems: Int
-    let soldItems: Int
-    let totalInvestment: Double
-    let totalProfit: Double
-    let averageROI: Double
-    let estimatedValue: Double
-    
-    var potentialProfit: Double {
-        estimatedValue - totalInvestment - (estimatedValue * 0.13) // Minus fees
-    }
-    
-    var successRate: Double {
-        guard totalItems > 0 else { return 0 }
-        return Double(soldItems) / Double(totalItems) * 100
-    }
-    
-    var averageTimeToSell: Double {
-        // This would be calculated from actual data
-        return 12.0 // days
-    }
-}
-
-// MARK: - API Data Models
-struct VisionAnalysisResults {
-    let detectedCondition: String
-    let conditionScore: Double
-    let damageFound: [String]
-    let textDetected: [String]
-    let confidenceLevel: Double
-}
-
-struct AIResults {
-    let itemName: String
-    let brand: String
-    let modelNumber: String
-    let size: String
-    let colorway: String
-    let releaseYear: String
-    let category: String
-    let subcategory: String
-    let confidence: Double
-    let realisticCondition: String
-    let conditionJustification: String
-    let estimatedRetailPrice: Double
-    let realisticUsedPrice: Double
-    let priceJustification: String
-    let keywords: [String]
-    let competitionLevel: String
-    let marketReality: String
-    let authenticationNotes: String
-    let seasonalDemand: String
-    let sizePopularity: String
-}
-
-struct LiveMarketData {
-    let recentSales: [Double]
-    let averagePrice: Double
-    let trend: String
-    let competitorCount: Int
-    let demandLevel: String
-    let seasonalTrends: String
-}
-
-struct AdvancedPricingData {
-    let realisticPrice: Double
-    let quickSalePrice: Double
-    let maxProfitPrice: Double
-    let priceRange: PriceRange
-    let confidenceLevel: Double
-}
-
-struct FeesBreakdown {
-    let ebayFee: Double
-    let paypalFee: Double
-    let shippingCost: Double
-    let listingFees: Double
-    let totalFees: Double
-}
-
-struct ProfitMargins {
-    let quickSaleNet: Double
-    let realisticNet: Double
-    let maxProfitNet: Double
-}
-
-// MARK: - FIXED Analysis Results
-struct AnalysisResult {
-    let itemName: String
-    let brand: String
-    let modelNumber: String
-    let category: String
-    let confidence: Double
-    let actualCondition: String
-    let conditionReasons: [String]
-    let conditionScore: Double
-    let realisticPrice: Double
-    let quickSalePrice: Double
-    let maxProfitPrice: Double
-    let marketRange: PriceRange
-    let recentSoldPrices: [Double]
-    let averagePrice: Double
-    let marketTrend: String
-    let competitorCount: Int
-    let demandLevel: String
-    let ebayTitle: String
-    let description: String
-    let keywords: [String]
-    let feesBreakdown: FeesBreakdown
-    let profitMargins: ProfitMargins
-    let listingStrategy: String
-    let sourcingTips: [String]
-    let seasonalFactors: String
-    let resalePotential: Int
-    let images: [UIImage]
-    
-    // Product details
-    let size: String
-    let colorway: String
-    let releaseYear: String
-    let subcategory: String
-    let authenticationNotes: String
-    let seasonalDemand: String
-    let sizePopularity: String
-    let barcode: String?
-    
-    // Initialize with product details
-    init(itemName: String, brand: String, modelNumber: String, category: String, confidence: Double,
-         actualCondition: String, conditionReasons: [String], conditionScore: Double,
-         realisticPrice: Double, quickSalePrice: Double, maxProfitPrice: Double, marketRange: PriceRange,
-         recentSoldPrices: [Double], averagePrice: Double, marketTrend: String, competitorCount: Int,
-         demandLevel: String, ebayTitle: String, description: String, keywords: [String],
-         feesBreakdown: FeesBreakdown, profitMargins: ProfitMargins, listingStrategy: String,
-         sourcingTips: [String], seasonalFactors: String, resalePotential: Int, images: [UIImage],
-         size: String = "", colorway: String = "", releaseYear: String = "", subcategory: String = "",
-         authenticationNotes: String = "", seasonalDemand: String = "", sizePopularity: String = "",
-         barcode: String? = nil) {
-        self.itemName = itemName
-        self.brand = brand
-        self.modelNumber = modelNumber
-        self.category = category
-        self.confidence = confidence
-        self.actualCondition = actualCondition
-        self.conditionReasons = conditionReasons
-        self.conditionScore = conditionScore
-        self.realisticPrice = realisticPrice
-        self.quickSalePrice = quickSalePrice
-        self.maxProfitPrice = maxProfitPrice
-        self.marketRange = marketRange
-        self.recentSoldPrices = recentSoldPrices
-        self.averagePrice = averagePrice
-        self.marketTrend = marketTrend
-        self.competitorCount = competitorCount
-        self.demandLevel = demandLevel
-        self.ebayTitle = ebayTitle
-        self.description = description
-        self.keywords = keywords
-        self.feesBreakdown = feesBreakdown
-        self.profitMargins = profitMargins
-        self.listingStrategy = listingStrategy
-        self.sourcingTips = sourcingTips
-        self.seasonalFactors = seasonalFactors
-        self.resalePotential = resalePotential
-        self.images = images
-        self.size = size
-        self.colorway = colorway
-        self.releaseYear = releaseYear
-        self.subcategory = subcategory
-        self.authenticationNotes = authenticationNotes
-        self.seasonalDemand = seasonalDemand
-        self.sizePopularity = sizePopularity
-        self.barcode = barcode
-    }
-}
-
-// MARK: - Barcode Data Structure
-struct BarcodeData {
-    let upc: String
-    let productName: String
-    let brand: String
-    let modelNumber: String
-    let size: String
-    let colorway: String
-    let releaseYear: String
-    let originalRetailPrice: Double
-    let category: String
-    let subcategory: String
-    let description: String
-    let imageUrls: [String]
-    let specifications: [String: String]
-    let isAuthentic: Bool
-    let confidence: Double
-}
-
-// MARK: - Market Analysis Models
-struct MarketIntelligence {
-    let category: String
-    let averagePrice: Double
-    let competitionLevel: String
-    let demandTrend: String
-    let seasonalFactors: String
-    let topKeywords: [String]
-    let pricingStrategy: String
-    let listingTips: [String]
-}
-
-// MARK: - Automation Models
-struct AutoListingTemplate {
-    let category: String
-    let titleTemplate: String
-    let descriptionTemplate: String
-    let keywordTemplates: [String]
-    let pricingStrategy: String
-    let shippingSettings: String
-    let returnPolicy: String
 }
 
 // MARK: - Error Handling
@@ -768,6 +781,9 @@ enum ResellAIError: Error, LocalizedError {
     case cameraUnavailable
     case barcodeInvalid
     case itemNotFound
+    case ebayAPIError
+    case identificationFailed
+    case noMarketData
     
     var errorDescription: String? {
         switch self {
@@ -787,6 +803,12 @@ enum ResellAIError: Error, LocalizedError {
             return "Invalid barcode format"
         case .itemNotFound:
             return "Item not found in database"
+        case .ebayAPIError:
+            return "eBay API error"
+        case .identificationFailed:
+            return "Could not identify item precisely"
+        case .noMarketData:
+            return "No recent market data available"
         }
     }
 }
