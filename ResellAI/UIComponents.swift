@@ -1014,3 +1014,339 @@ struct ProspectingPhotoPlaceholderView: View {
 
 // Keep existing Auto Listing View and other components...
 // [Rest of the file continues with existing implementations]
+
+// MARK: - Auto Listing View
+struct AutoListingView: View {
+    let item: InventoryItem
+    @State private var generatedListing = ""
+    @State private var isGenerating = false
+    @State private var showingShareSheet = false
+    @State private var showingEditSheet = false
+    @Environment(\.presentationMode) var presentationMode
+    
+    var body: some View {
+        NavigationView {
+            ScrollView {
+                VStack(spacing: 20) {
+                    Text("🚀 Auto-Generated eBay Listing")
+                        .font(.largeTitle)
+                        .fontWeight(.bold)
+                        .foregroundColor(.blue)
+                    
+                    InventoryItemPreviewCard(item: item)
+                    
+                    if generatedListing.isEmpty {
+                        Button(action: {
+                            generateListing()
+                        }) {
+                            HStack(spacing: 12) {
+                                if isGenerating {
+                                    ProgressView()
+                                        .scaleEffect(0.8)
+                                        .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                                    Text("Generating...")
+                                } else {
+                                    Image(systemName: "wand.and.stars")
+                                        .font(.title2)
+                                    Text("🤖 Generate Complete eBay Listing")
+                                }
+                            }
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 16)
+                            .background(LinearGradient(colors: [.blue, .purple], startPoint: .leading, endPoint: .trailing))
+                            .foregroundColor(.white)
+                            .cornerRadius(12)
+                            .font(.headline)
+                            .shadow(color: .blue.opacity(0.3), radius: 4, x: 0, y: 2)
+                        }
+                        .disabled(isGenerating)
+                    } else {
+                        VStack(alignment: .leading, spacing: 15) {
+                            Text("📝 Generated eBay Listing")
+                                .font(.title2)
+                                .fontWeight(.bold)
+                            
+                            ScrollView {
+                                Text(generatedListing)
+                                    .font(.body)
+                                    .padding()
+                                    .background(Color.gray.opacity(0.1))
+                                    .cornerRadius(12)
+                            }
+                            .frame(maxHeight: 300)
+                            
+                            HStack(spacing: 15) {
+                                Button(action: {
+                                    showingEditSheet = true
+                                }) {
+                                    HStack {
+                                        Image(systemName: "pencil")
+                                        Text("Edit")
+                                    }
+                                    .frame(maxWidth: .infinity)
+                                    .padding()
+                                    .background(Color.orange)
+                                    .foregroundColor(.white)
+                                    .cornerRadius(12)
+                                }
+                                
+                                Button(action: {
+                                    showingShareSheet = true
+                                }) {
+                                    HStack {
+                                        Image(systemName: "square.and.arrow.up")
+                                        Text("Share/Send")
+                                    }
+                                    .frame(maxWidth: .infinity)
+                                    .padding()
+                                    .background(Color.green)
+                                    .foregroundColor(.white)
+                                    .cornerRadius(12)
+                                }
+                            }
+                            
+                            Button(action: {
+                                copyToClipboard()
+                            }) {
+                                HStack {
+                                    Image(systemName: "doc.on.clipboard")
+                                    Text("📋 Copy to Clipboard")
+                                }
+                                .frame(maxWidth: .infinity)
+                                .padding()
+                                .background(Color.blue.opacity(0.2))
+                                .foregroundColor(.blue)
+                                .cornerRadius(12)
+                            }
+                        }
+                    }
+                    
+                    Spacer(minLength: 50)
+                }
+                .padding()
+            }
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("Done") {
+                        presentationMode.wrappedValue.dismiss()
+                    }
+                }
+            }
+        }
+        .sheet(isPresented: $showingShareSheet) {
+            ShareSheet(items: [generatedListing])
+        }
+        .sheet(isPresented: $showingEditSheet) {
+            ListingEditView(listing: $generatedListing)
+        }
+    }
+    
+    private func generateListing() {
+        isGenerating = true
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+            isGenerating = false
+            generatedListing = generateOptimizedEbayListing(for: item)
+        }
+    }
+    
+    private func generateOptimizedEbayListing(for item: InventoryItem) -> String {
+        return """
+        🔥 \(item.title) 🔥
+        
+        ⭐ CONDITION: \(item.condition) - \(item.description)
+        
+        📦 FAST SHIPPING:
+        • Same or next business day shipping
+        • Carefully packaged with tracking
+        • 30-day return policy
+        
+        💎 ITEM DETAILS:
+        • Category: \(item.category)
+        • Brand: \(item.brand)
+        • Size: \(item.size)
+        • Colorway: \(item.colorway)
+        • Keywords: \(item.keywords.joined(separator: ", "))
+        • Authentic & Verified
+        • Inventory Code: \(item.inventoryCode)
+        
+        🎯 WHY BUY FROM US:
+        ✅ Top-rated seller
+        ✅ 100% authentic items
+        ✅ Fast & secure shipping
+        ✅ Excellent customer service
+        ✅ Thousands of satisfied customers
+        
+        📱 QUESTIONS? Message us anytime!
+        
+        🔍 Search terms: \(item.keywords.joined(separator: " "))
+        
+        #\(item.keywords.joined(separator: " #"))
+        
+        Starting bid: $\(String(format: "%.2f", item.suggestedPrice * 0.7))
+        Buy It Now: $\(String(format: "%.2f", item.suggestedPrice))
+        
+        Thank you for shopping with us! 🙏
+        """
+    }
+    
+    private func copyToClipboard() {
+        UIPasteboard.general.string = generatedListing
+    }
+}
+
+// MARK: - Inventory Item Preview Card
+struct InventoryItemPreviewCard: View {
+    let item: InventoryItem
+    
+    var body: some View {
+        VStack(spacing: 15) {
+            if let imageData = item.imageData, let uiImage = UIImage(data: imageData) {
+                Image(uiImage: uiImage)
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .frame(maxHeight: 200)
+                    .cornerRadius(12)
+                    .shadow(color: .black.opacity(0.2), radius: 4, x: 0, y: 2)
+            }
+            
+            VStack(alignment: .leading, spacing: 12) {
+                HStack {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(item.name)
+                            .font(.headline)
+                            .fontWeight(.bold)
+                        
+                        if !item.brand.isEmpty {
+                            Text(item.brand)
+                                .font(.subheadline)
+                                .foregroundColor(.blue)
+                        }
+                    }
+                    
+                    Spacer()
+                    
+                    if !item.inventoryCode.isEmpty {
+                        Text(item.inventoryCode)
+                            .font(.caption)
+                            .fontWeight(.bold)
+                            .foregroundColor(.blue)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 4)
+                            .background(Color.blue.opacity(0.1))
+                            .cornerRadius(6)
+                    }
+                }
+                
+                LazyVGrid(columns: [
+                    GridItem(.flexible()),
+                    GridItem(.flexible())
+                ], spacing: 12) {
+                    
+                    ItemDetailChip(title: "Price", value: "$\(String(format: "%.2f", item.suggestedPrice))", color: .green)
+                    ItemDetailChip(title: "Condition", value: item.condition, color: .blue)
+                    
+                    if !item.size.isEmpty {
+                        ItemDetailChip(title: "Size", value: item.size, color: .purple)
+                    }
+                    
+                    if !item.colorway.isEmpty {
+                        ItemDetailChip(title: "Color", value: item.colorway, color: .orange)
+                    }
+                }
+            }
+        }
+        .padding()
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(Color.gray.opacity(0.05))
+                .stroke(Color.gray.opacity(0.2), lineWidth: 1)
+        )
+    }
+}
+
+// MARK: - Item Detail Chip
+struct ItemDetailChip: View {
+    let title: String
+    let value: String
+    let color: Color
+    
+    var body: some View {
+        VStack(spacing: 4) {
+            Text(title)
+                .font(.caption)
+                .foregroundColor(.secondary)
+            
+            Text(value)
+                .font(.body)
+                .fontWeight(.semibold)
+                .foregroundColor(color)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 8)
+        .background(color.opacity(0.1))
+        .cornerRadius(8)
+    }
+}
+
+// MARK: - Listing Edit View
+struct ListingEditView: View {
+    @Binding var listing: String
+    @Environment(\.presentationMode) var presentationMode
+    @State private var editedListing: String = ""
+    
+    var body: some View {
+        NavigationView {
+            VStack {
+                Text("✏️ Edit Your Listing")
+                    .font(.title)
+                    .fontWeight(.bold)
+                    .padding()
+                
+                TextEditor(text: $editedListing)
+                    .padding()
+                    .background(Color.gray.opacity(0.1))
+                    .cornerRadius(12)
+                    .padding()
+                
+                Button(action: {
+                    listing = editedListing
+                    presentationMode.wrappedValue.dismiss()
+                }) {
+                    Text("💾 Save Changes")
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(Color.blue)
+                        .foregroundColor(.white)
+                        .cornerRadius(12)
+                        .font(.headline)
+                }
+                .padding()
+            }
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button("Cancel") {
+                        presentationMode.wrappedValue.dismiss()
+                    }
+                }
+            }
+        }
+        .onAppear {
+            editedListing = listing
+        }
+    }
+}
+
+// MARK: - Share Sheet
+struct ShareSheet: UIViewControllerRepresentable {
+    let items: [Any]
+    
+    func makeUIViewController(context: Context) -> UIActivityViewController {
+        let controller = UIActivityViewController(activityItems: items, applicationActivities: nil)
+        return controller
+    }
+    
+    func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}
+}
