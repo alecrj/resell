@@ -1,8 +1,8 @@
-// MARK: - Fixed Models.swift with Simple Naming
+// MARK: - FIXED Models.swift with Proper Category Mapping
 import SwiftUI
 import Foundation
 
-// MARK: - Core Models with Smart Inventory System
+// MARK: - Core Models with FIXED Smart Inventory System
 struct InventoryItem: Identifiable, Codable {
     let id = UUID()
     var itemNumber: Int
@@ -192,10 +192,10 @@ enum ItemStatus: String, CaseIterable, Codable {
     }
 }
 
-// MARK: - Smart Inventory Categories
+// MARK: - FIXED Smart Inventory Categories with Proper Mapping
 enum InventoryCategory: String, CaseIterable {
     case tshirts = "T-Shirts"
-    case jackets = "Jackets & Outerwear"
+    case jackets = "Jackets & Outerwear"  // FIXED: This should be B, not Z
     case jeans = "Jeans & Denim"
     case workPants = "Work Pants"
     case dresses = "Dresses"
@@ -212,7 +212,7 @@ enum InventoryCategory: String, CaseIterable {
     var inventoryLetter: String {
         switch self {
         case .tshirts: return "A"
-        case .jackets: return "B"
+        case .jackets: return "B"      // FIXED: Jackets get B
         case .jeans: return "C"
         case .workPants: return "D"
         case .dresses: return "E"
@@ -224,7 +224,7 @@ enum InventoryCategory: String, CaseIterable {
         case .books: return "K"
         case .toys: return "L"
         case .sports: return "M"
-        case .other: return "Z"
+        case .other: return "Z"        // Only truly unmatched items get Z
         }
     }
     
@@ -233,21 +233,82 @@ enum InventoryCategory: String, CaseIterable {
         case .tshirts:
             return ["Fold neatly", "Store flat to prevent wrinkles", "Group by size"]
         case .jackets:
-            return ["Hang to prevent creasing", "Use garment bags", "Store in cool, dry place"]
+            return ["Hang to prevent creasing", "Use garment bags for expensive items", "Store in cool, dry place", "Check pockets before storing"]
         case .jeans:
-            return ["Fold along seams", "Stack by size", "Keep heavy items separate"]
+            return ["Fold along seams", "Stack by size", "Keep heavy items separate", "Check for stains"]
         case .workPants:
-            return ["Hang or fold carefully", "Check for stains before storing", "Group by brand"]
+            return ["Hang or fold carefully", "Check for stains before storing", "Group by brand", "Inspect for wear"]
         case .dresses:
-            return ["Hang on padded hangers", "Use garment bags", "Store by length"]
+            return ["Hang on padded hangers", "Use garment bags for delicate items", "Store by length", "Check for missing buttons"]
         case .shoes:
-            return ["Clean before storing", "Use shoe boxes", "Stuff with paper to maintain shape"]
+            return ["Clean before storing", "Use shoe boxes when possible", "Stuff with paper to maintain shape", "Take photos of soles"]
         case .accessories:
-            return ["Use small containers", "Keep sets together", "Protect delicate items"]
+            return ["Use small containers", "Keep sets together", "Protect delicate items", "Store jewelry separately"]
         case .electronics:
-            return ["Original boxes preferred", "Anti-static bags", "Temperature controlled area"]
-        default:
-            return ["Handle with care", "Clean before storing", "Label clearly"]
+            return ["Original boxes preferred", "Anti-static protection", "Temperature controlled area", "Test functionality"]
+        case .collectibles:
+            return ["Handle with extreme care", "Use protective sleeves", "Climate controlled storage", "Document condition"]
+        case .home:
+            return ["Wrap fragile items", "Clean thoroughly", "Check for chips or cracks", "Group similar items"]
+        case .books:
+            return ["Store upright when possible", "Protect from moisture", "Check for damage", "Group by genre/author"]
+        case .toys:
+            return ["Check for missing pieces", "Clean thoroughly", "Test moving parts", "Keep original packaging"]
+        case .sports:
+            return ["Clean equipment thoroughly", "Check for damage", "Test functionality", "Store properly to prevent damage"]
+        case .other:
+            return ["Handle with care", "Clean before storing", "Label clearly", "Research value"]
+        }
+    }
+    
+    // FIXED: Add method to help with mapping
+    static func fromCategoryString(_ categoryString: String) -> InventoryCategory {
+        let lowercased = categoryString.lowercased()
+        
+        // FIXED: More comprehensive matching
+        if lowercased.contains("jacket") || lowercased.contains("coat") || lowercased.contains("hoodie") ||
+           lowercased.contains("sweatshirt") || lowercased.contains("blazer") || lowercased.contains("outerwear") {
+            return .jackets
+        } else if lowercased.contains("shirt") || lowercased.contains("tee") || lowercased.contains("tank") ||
+                  lowercased.contains("blouse") || lowercased.contains("top") {
+            return .tshirts
+        } else if lowercased.contains("jean") || lowercased.contains("denim") {
+            return .jeans
+        } else if lowercased.contains("work") && lowercased.contains("pant") {
+            return .workPants
+        } else if lowercased.contains("dress") || lowercased.contains("gown") || lowercased.contains("skirt") {
+            return .dresses
+        } else if lowercased.contains("shoe") || lowercased.contains("sneaker") || lowercased.contains("boot") ||
+                  lowercased.contains("sandal") || lowercased.contains("jordan") || lowercased.contains("nike") ||
+                  lowercased.contains("adidas") || lowercased.contains("vans") || lowercased.contains("footwear") {
+            return .shoes
+        } else if lowercased.contains("accessory") || lowercased.contains("jewelry") || lowercased.contains("watch") ||
+                  lowercased.contains("bag") || lowercased.contains("belt") || lowercased.contains("hat") ||
+                  lowercased.contains("scarf") || lowercased.contains("wallet") {
+            return .accessories
+        } else if lowercased.contains("electronic") || lowercased.contains("computer") || lowercased.contains("phone") ||
+                  lowercased.contains("gaming") || lowercased.contains("laptop") || lowercased.contains("tablet") ||
+                  lowercased.contains("apple") || lowercased.contains("samsung") || lowercased.contains("iphone") ||
+                  lowercased.contains("ipad") || lowercased.contains("macbook") {
+            return .electronics
+        } else if lowercased.contains("collectible") || lowercased.contains("vintage") || lowercased.contains("antique") ||
+                  lowercased.contains("card") || lowercased.contains("figure") || lowercased.contains("memorabilia") {
+            return .collectibles
+        } else if lowercased.contains("home") || lowercased.contains("garden") || lowercased.contains("furniture") ||
+                  lowercased.contains("kitchen") || lowercased.contains("decor") || lowercased.contains("appliance") ||
+                  lowercased.contains("mug") || lowercased.contains("cup") || lowercased.contains("plate") {
+            return .home
+        } else if lowercased.contains("book") || lowercased.contains("novel") || lowercased.contains("magazine") ||
+                  lowercased.contains("textbook") || lowercased.contains("guide") {
+            return .books
+        } else if lowercased.contains("toy") || lowercased.contains("game") || lowercased.contains("puzzle") ||
+                  lowercased.contains("doll") || lowercased.contains("action figure") {
+            return .toys
+        } else if lowercased.contains("sport") || lowercased.contains("fitness") || lowercased.contains("outdoor") ||
+                  lowercased.contains("golf") || lowercased.contains("baseball") || lowercased.contains("basketball") {
+            return .sports
+        } else {
+            return .other
         }
     }
 }
@@ -278,7 +339,7 @@ enum SourceLocation: String, CaseIterable {
     }
 }
 
-// MARK: - Analysis Models (Updated with Simple Names)
+// MARK: - Analysis Models
 protocol ItemAnalysis {
     var itemName: String { get }
     var category: String { get }
@@ -337,7 +398,7 @@ struct PriceRange {
     }
 }
 
-// MARK: - Improved Prospecting Models
+// MARK: - FIXED Prospecting Models
 struct ProspectAnalysis {
     let itemName: String
     let brand: String
@@ -503,7 +564,7 @@ struct InventoryStatistics {
     }
 }
 
-// MARK: - API Data Models (Updated Names)
+// MARK: - API Data Models
 struct VisionAnalysisResults {
     let detectedCondition: String
     let conditionScore: Double
@@ -566,7 +627,7 @@ struct ProfitMargins {
     let maxProfitNet: Double
 }
 
-// MARK: - Analysis Results (Updated Name)
+// MARK: - FIXED Analysis Results
 struct AnalysisResult {
     let itemName: String
     let brand: String
@@ -705,6 +766,8 @@ enum ResellAIError: Error, LocalizedError {
     case apiKeyMissing
     case insufficientData
     case cameraUnavailable
+    case barcodeInvalid
+    case itemNotFound
     
     var errorDescription: String? {
         switch self {
@@ -720,6 +783,10 @@ enum ResellAIError: Error, LocalizedError {
             return "Insufficient data for analysis"
         case .cameraUnavailable:
             return "Camera not available"
+        case .barcodeInvalid:
+            return "Invalid barcode format"
+        case .itemNotFound:
+            return "Item not found in database"
         }
     }
 }

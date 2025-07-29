@@ -2,13 +2,13 @@
 //  InventoryManager.swift
 //  ResellAI
 //
-//  Smart Inventory Management System
+//  Fixed Smart Inventory Management System
 //
 
 import SwiftUI
 import Foundation
 
-// MARK: - Smart Inventory Manager with Auto-Coding System
+// MARK: - Fixed Smart Inventory Manager
 class InventoryManager: ObservableObject {
     @Published var items: [InventoryItem] = []
     
@@ -26,7 +26,7 @@ class InventoryManager: ObservableObject {
         loadItems()
     }
     
-    // MARK: - Smart Inventory Code Generation
+    // MARK: - FIXED Smart Inventory Code Generation
     
     /// Generates smart inventory code based on category (e.g., "A-001", "B-023")
     func generateInventoryCode(for category: String) -> String {
@@ -45,38 +45,69 @@ class InventoryManager: ObservableObject {
         return "\(letter)-\(String(format: "%03d", nextNumber))"
     }
     
-    /// Maps general category string to our smart InventoryCategory enum
+    /// FIXED: Maps general category string to our smart InventoryCategory enum
     private func mapCategoryToInventoryCategory(_ category: String) -> InventoryCategory {
         let lowercased = category.lowercased()
         
-        // Smart category mapping based on keywords
-        if lowercased.contains("shirt") || lowercased.contains("tee") || lowercased.contains("tank") {
-            return .tshirts
-        } else if lowercased.contains("jacket") || lowercased.contains("coat") || lowercased.contains("hoodie") || lowercased.contains("sweatshirt") {
+        print("🏷️ Mapping category: '\(category)' -> lowercased: '\(lowercased)'")
+        
+        // FIXED: More comprehensive and accurate category mapping
+        if lowercased.contains("jacket") || lowercased.contains("coat") || lowercased.contains("hoodie") ||
+           lowercased.contains("sweatshirt") || lowercased.contains("blazer") || lowercased.contains("outerwear") {
+            print("🏷️ Mapped to jackets (B)")
             return .jackets
+        } else if lowercased.contains("shirt") || lowercased.contains("tee") || lowercased.contains("tank") ||
+                  lowercased.contains("blouse") || lowercased.contains("top") {
+            print("🏷️ Mapped to tshirts (A)")
+            return .tshirts
         } else if lowercased.contains("jean") || lowercased.contains("denim") {
+            print("🏷️ Mapped to jeans (C)")
             return .jeans
         } else if lowercased.contains("work") && lowercased.contains("pant") {
+            print("🏷️ Mapped to work pants (D)")
             return .workPants
-        } else if lowercased.contains("dress") || lowercased.contains("gown") {
+        } else if lowercased.contains("dress") || lowercased.contains("gown") || lowercased.contains("skirt") {
+            print("🏷️ Mapped to dresses (E)")
             return .dresses
-        } else if lowercased.contains("shoe") || lowercased.contains("sneaker") || lowercased.contains("boot") || lowercased.contains("sandal") {
+        } else if lowercased.contains("shoe") || lowercased.contains("sneaker") || lowercased.contains("boot") ||
+                  lowercased.contains("sandal") || lowercased.contains("jordan") || lowercased.contains("nike") ||
+                  lowercased.contains("adidas") || lowercased.contains("vans") || lowercased.contains("footwear") {
+            print("🏷️ Mapped to shoes (F)")
             return .shoes
-        } else if lowercased.contains("accessory") || lowercased.contains("jewelry") || lowercased.contains("watch") || lowercased.contains("bag") || lowercased.contains("belt") {
+        } else if lowercased.contains("accessory") || lowercased.contains("jewelry") || lowercased.contains("watch") ||
+                  lowercased.contains("bag") || lowercased.contains("belt") || lowercased.contains("hat") ||
+                  lowercased.contains("scarf") || lowercased.contains("wallet") {
+            print("🏷️ Mapped to accessories (G)")
             return .accessories
-        } else if lowercased.contains("electronic") || lowercased.contains("computer") || lowercased.contains("phone") || lowercased.contains("gaming") {
+        } else if lowercased.contains("electronic") || lowercased.contains("computer") || lowercased.contains("phone") ||
+                  lowercased.contains("gaming") || lowercased.contains("laptop") || lowercased.contains("tablet") ||
+                  lowercased.contains("apple") || lowercased.contains("samsung") || lowercased.contains("iphone") ||
+                  lowercased.contains("ipad") || lowercased.contains("macbook") {
+            print("🏷️ Mapped to electronics (H)")
             return .electronics
-        } else if lowercased.contains("collectible") || lowercased.contains("vintage") || lowercased.contains("antique") {
+        } else if lowercased.contains("collectible") || lowercased.contains("vintage") || lowercased.contains("antique") ||
+                  lowercased.contains("card") || lowercased.contains("figure") || lowercased.contains("memorabilia") {
+            print("🏷️ Mapped to collectibles (I)")
             return .collectibles
-        } else if lowercased.contains("home") || lowercased.contains("garden") || lowercased.contains("furniture") {
+        } else if lowercased.contains("home") || lowercased.contains("garden") || lowercased.contains("furniture") ||
+                  lowercased.contains("kitchen") || lowercased.contains("decor") || lowercased.contains("appliance") ||
+                  lowercased.contains("mug") || lowercased.contains("cup") || lowercased.contains("plate") {
+            print("🏷️ Mapped to home (J)")
             return .home
-        } else if lowercased.contains("book") || lowercased.contains("novel") || lowercased.contains("magazine") {
+        } else if lowercased.contains("book") || lowercased.contains("novel") || lowercased.contains("magazine") ||
+                  lowercased.contains("textbook") || lowercased.contains("guide") {
+            print("🏷️ Mapped to books (K)")
             return .books
-        } else if lowercased.contains("toy") || lowercased.contains("game") || lowercased.contains("puzzle") {
+        } else if lowercased.contains("toy") || lowercased.contains("game") || lowercased.contains("puzzle") ||
+                  lowercased.contains("doll") || lowercased.contains("action figure") {
+            print("🏷️ Mapped to toys (L)")
             return .toys
-        } else if lowercased.contains("sport") || lowercased.contains("fitness") || lowercased.contains("outdoor") {
+        } else if lowercased.contains("sport") || lowercased.contains("fitness") || lowercased.contains("outdoor") ||
+                  lowercased.contains("golf") || lowercased.contains("baseball") || lowercased.contains("basketball") {
+            print("🏷️ Mapped to sports (M)")
             return .sports
         } else {
+            print("🏷️ Mapped to other (Z) - no specific match found")
             return .other
         }
     }
@@ -119,6 +150,7 @@ class InventoryManager: ObservableObject {
         do {
             let data = try JSONEncoder().encode(categoryCounters)
             userDefaults.set(data, forKey: categoryCountersKey)
+            print("💾 Saved category counters: \(categoryCounters)")
         } catch {
             print("❌ Error saving category counters: \(error)")
         }
@@ -203,7 +235,7 @@ class InventoryManager: ObservableObject {
         // Auto-generate inventory code if not already set
         if updatedItem.inventoryCode.isEmpty {
             updatedItem.inventoryCode = generateInventoryCode(for: item.category)
-            print("🏷️ Generated inventory code: \(updatedItem.inventoryCode)")
+            print("🏷️ Generated inventory code: \(updatedItem.inventoryCode) for category: \(item.category)")
         }
         
         items.append(updatedItem)
