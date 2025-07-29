@@ -2,7 +2,7 @@
 //  InventoryManager.swift
 //  ResellAI
 //
-//  Fixed Smart Inventory Management System
+//  Fixed Smart Inventory Management System with Proper Category Sorting
 //
 
 import SwiftUI
@@ -14,7 +14,7 @@ class InventoryManager: ObservableObject {
     
     private let userDefaults = UserDefaults.standard
     private let itemsKey = "SavedInventoryItems"
-    private let migrationKey = "DataMigrationV2_Completed"
+    private let migrationKey = "DataMigrationV3_Completed"
     private let categoryCountersKey = "CategoryCounters"
     
     // Smart inventory tracking
@@ -42,74 +42,123 @@ class InventoryManager: ObservableObject {
         saveCategoryCounters()
         
         // Format as "A-001", "B-023", etc.
-        return "\(letter)-\(String(format: "%03d", nextNumber))"
+        let code = "\(letter)-\(String(format: "%03d", nextNumber))"
+        print("🏷️ Generated inventory code: \(code) for category: \(category) -> \(inventoryCategory.rawValue)")
+        return code
     }
     
     /// FIXED: Maps general category string to our smart InventoryCategory enum
     private func mapCategoryToInventoryCategory(_ category: String) -> InventoryCategory {
-        let lowercased = category.lowercased()
+        let lowercased = category.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
         
         print("🏷️ Mapping category: '\(category)' -> lowercased: '\(lowercased)'")
         
-        // FIXED: More comprehensive and accurate category mapping
-        if lowercased.contains("jacket") || lowercased.contains("coat") || lowercased.contains("hoodie") ||
-           lowercased.contains("sweatshirt") || lowercased.contains("blazer") || lowercased.contains("outerwear") {
-            print("🏷️ Mapped to jackets (B)")
-            return .jackets
-        } else if lowercased.contains("shirt") || lowercased.contains("tee") || lowercased.contains("tank") ||
-                  lowercased.contains("blouse") || lowercased.contains("top") {
-            print("🏷️ Mapped to tshirts (A)")
+        // FIXED: Much more comprehensive and accurate category mapping
+        
+        // CLOTHING CATEGORIES
+        if lowercased.contains("shirt") || lowercased.contains("tee") || lowercased.contains("t-shirt") ||
+           lowercased.contains("tank") || lowercased.contains("blouse") || lowercased.contains("top") ||
+           lowercased == "clothing" { // Generic clothing goes to shirts
+            print("🏷️ Mapped to T-SHIRTS (A)")
             return .tshirts
-        } else if lowercased.contains("jean") || lowercased.contains("denim") {
-            print("🏷️ Mapped to jeans (C)")
-            return .jeans
-        } else if lowercased.contains("work") && lowercased.contains("pant") {
-            print("🏷️ Mapped to work pants (D)")
-            return .workPants
-        } else if lowercased.contains("dress") || lowercased.contains("gown") || lowercased.contains("skirt") {
-            print("🏷️ Mapped to dresses (E)")
-            return .dresses
-        } else if lowercased.contains("shoe") || lowercased.contains("sneaker") || lowercased.contains("boot") ||
-                  lowercased.contains("sandal") || lowercased.contains("jordan") || lowercased.contains("nike") ||
-                  lowercased.contains("adidas") || lowercased.contains("vans") || lowercased.contains("footwear") {
-            print("🏷️ Mapped to shoes (F)")
-            return .shoes
-        } else if lowercased.contains("accessory") || lowercased.contains("jewelry") || lowercased.contains("watch") ||
-                  lowercased.contains("bag") || lowercased.contains("belt") || lowercased.contains("hat") ||
-                  lowercased.contains("scarf") || lowercased.contains("wallet") {
-            print("🏷️ Mapped to accessories (G)")
-            return .accessories
-        } else if lowercased.contains("electronic") || lowercased.contains("computer") || lowercased.contains("phone") ||
-                  lowercased.contains("gaming") || lowercased.contains("laptop") || lowercased.contains("tablet") ||
-                  lowercased.contains("apple") || lowercased.contains("samsung") || lowercased.contains("iphone") ||
-                  lowercased.contains("ipad") || lowercased.contains("macbook") {
-            print("🏷️ Mapped to electronics (H)")
-            return .electronics
-        } else if lowercased.contains("collectible") || lowercased.contains("vintage") || lowercased.contains("antique") ||
-                  lowercased.contains("card") || lowercased.contains("figure") || lowercased.contains("memorabilia") {
-            print("🏷️ Mapped to collectibles (I)")
-            return .collectibles
-        } else if lowercased.contains("home") || lowercased.contains("garden") || lowercased.contains("furniture") ||
-                  lowercased.contains("kitchen") || lowercased.contains("decor") || lowercased.contains("appliance") ||
-                  lowercased.contains("mug") || lowercased.contains("cup") || lowercased.contains("plate") {
-            print("🏷️ Mapped to home (J)")
-            return .home
-        } else if lowercased.contains("book") || lowercased.contains("novel") || lowercased.contains("magazine") ||
-                  lowercased.contains("textbook") || lowercased.contains("guide") {
-            print("🏷️ Mapped to books (K)")
-            return .books
-        } else if lowercased.contains("toy") || lowercased.contains("game") || lowercased.contains("puzzle") ||
-                  lowercased.contains("doll") || lowercased.contains("action figure") {
-            print("🏷️ Mapped to toys (L)")
-            return .toys
-        } else if lowercased.contains("sport") || lowercased.contains("fitness") || lowercased.contains("outdoor") ||
-                  lowercased.contains("golf") || lowercased.contains("baseball") || lowercased.contains("basketball") {
-            print("🏷️ Mapped to sports (M)")
-            return .sports
-        } else {
-            print("🏷️ Mapped to other (Z) - no specific match found")
-            return .other
         }
+        
+        if lowercased.contains("jacket") || lowercased.contains("coat") || lowercased.contains("hoodie") ||
+           lowercased.contains("sweatshirt") || lowercased.contains("blazer") || lowercased.contains("outerwear") ||
+           lowercased.contains("cardigan") || lowercased.contains("vest") {
+            print("🏷️ Mapped to JACKETS (B)")
+            return .jackets
+        }
+        
+        if lowercased.contains("jean") || lowercased.contains("denim") {
+            print("🏷️ Mapped to JEANS (C)")
+            return .jeans
+        }
+        
+        if (lowercased.contains("work") && lowercased.contains("pant")) || lowercased.contains("chinos") ||
+           lowercased.contains("slacks") || lowercased.contains("trousers") {
+            print("🏷️ Mapped to WORK PANTS (D)")
+            return .workPants
+        }
+        
+        if lowercased.contains("dress") || lowercased.contains("gown") || lowercased.contains("skirt") ||
+           lowercased.contains("romper") || lowercased.contains("jumpsuit") {
+            print("🏷️ Mapped to DRESSES (E)")
+            return .dresses
+        }
+        
+        // FOOTWEAR
+        if lowercased.contains("shoe") || lowercased.contains("sneaker") || lowercased.contains("boot") ||
+           lowercased.contains("sandal") || lowercased.contains("jordan") || lowercased.contains("nike") ||
+           lowercased.contains("adidas") || lowercased.contains("footwear") || lowercased.contains("loafer") ||
+           lowercased.contains("heel") || lowercased.contains("pump") || lowercased == "shoes" {
+            print("🏷️ Mapped to SHOES (F)")
+            return .shoes
+        }
+        
+        // ACCESSORIES
+        if lowercased.contains("accessory") || lowercased.contains("jewelry") || lowercased.contains("watch") ||
+           lowercased.contains("bag") || lowercased.contains("belt") || lowercased.contains("hat") ||
+           lowercased.contains("scarf") || lowercased.contains("wallet") || lowercased.contains("purse") ||
+           lowercased.contains("backpack") || lowercased.contains("necklace") || lowercased.contains("bracelet") {
+            print("🏷️ Mapped to ACCESSORIES (G)")
+            return .accessories
+        }
+        
+        // ELECTRONICS
+        if lowercased.contains("electronic") || lowercased.contains("computer") || lowercased.contains("phone") ||
+           lowercased.contains("gaming") || lowercased.contains("laptop") || lowercased.contains("tablet") ||
+           lowercased.contains("apple") || lowercased.contains("samsung") || lowercased.contains("iphone") ||
+           lowercased.contains("ipad") || lowercased.contains("macbook") || lowercased.contains("airpods") ||
+           lowercased == "electronics" {
+            print("🏷️ Mapped to ELECTRONICS (H)")
+            return .electronics
+        }
+        
+        // COLLECTIBLES
+        if lowercased.contains("collectible") || lowercased.contains("vintage") || lowercased.contains("antique") ||
+           lowercased.contains("card") || lowercased.contains("figure") || lowercased.contains("memorabilia") ||
+           lowercased.contains("comic") || lowercased.contains("coin") {
+            print("🏷️ Mapped to COLLECTIBLES (I)")
+            return .collectibles
+        }
+        
+        // HOME & GARDEN
+        if lowercased.contains("home") || lowercased.contains("garden") || lowercased.contains("furniture") ||
+           lowercased.contains("kitchen") || lowercased.contains("decor") || lowercased.contains("appliance") ||
+           lowercased.contains("mug") || lowercased.contains("cup") || lowercased.contains("plate") ||
+           lowercased.contains("bowl") || lowercased.contains("vase") || lowercased.contains("lamp") {
+            print("🏷️ Mapped to HOME (J)")
+            return .home
+        }
+        
+        // BOOKS
+        if lowercased.contains("book") || lowercased.contains("novel") || lowercased.contains("magazine") ||
+           lowercased.contains("textbook") || lowercased.contains("guide") || lowercased.contains("manual") ||
+           lowercased == "books" {
+            print("🏷️ Mapped to BOOKS (K)")
+            return .books
+        }
+        
+        // TOYS & GAMES
+        if lowercased.contains("toy") || lowercased.contains("game") || lowercased.contains("puzzle") ||
+           lowercased.contains("doll") || lowercased.contains("action figure") || lowercased.contains("board game") ||
+           lowercased.contains("video game") || lowercased == "toys" {
+            print("🏷️ Mapped to TOYS (L)")
+            return .toys
+        }
+        
+        // SPORTS & OUTDOORS
+        if lowercased.contains("sport") || lowercased.contains("fitness") || lowercased.contains("outdoor") ||
+           lowercased.contains("golf") || lowercased.contains("baseball") || lowercased.contains("basketball") ||
+           lowercased.contains("camping") || lowercased.contains("hiking") {
+            print("🏷️ Mapped to SPORTS (M)")
+            return .sports
+        }
+        
+        // DEFAULT - Only truly unmatched items get Z
+        print("🏷️ Mapped to OTHER (Z) - no specific match found for: '\(category)'")
+        return .other
     }
     
     /// Get storage recommendations for a category
@@ -178,15 +227,16 @@ class InventoryManager: ObservableObject {
             return
         }
         
-        print("🔄 Performing data migration...")
+        print("🔄 Performing data migration V3...")
         
         // Clear old corrupted data
         userDefaults.removeObject(forKey: itemsKey)
+        userDefaults.removeObject(forKey: categoryCountersKey)
         
         // Mark migration as completed
         userDefaults.set(true, forKey: migrationKey)
         
-        print("✅ Data migration completed - fresh start!")
+        print("✅ Data migration V3 completed - fresh start with fixed category mapping!")
     }
     
     // MARK: - Computed Properties
@@ -240,7 +290,7 @@ class InventoryManager: ObservableObject {
         
         items.append(updatedItem)
         saveItems()
-        print("✅ Added item: \(updatedItem.name) [\(updatedItem.inventoryCode)]")
+        print("✅ Added item: \(updatedItem.name) [\(updatedItem.inventoryCode)] to category \(item.category)")
         
         return updatedItem
     }
