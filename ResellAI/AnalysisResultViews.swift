@@ -437,7 +437,7 @@ struct EbayPricingStrategyCard: View {
     }
 }
 
-// MARK: - Price Strategy Card
+// MARK: - FIXED: Price Strategy Card with proper type handling
 struct PriceStrategyCard: View {
     let title: String
     let price: Double
@@ -464,9 +464,10 @@ struct PriceStrategyCard: View {
         .frame(maxWidth: .infinity)
         .padding(.vertical, 12)
         .background(
+            // FIXED: Use AnyShapeStyle to handle both LinearGradient and Color
             isRecommended ?
-            LinearGradient(colors: [color, color.opacity(0.8)], startPoint: .top, endPoint: .bottom) :
-            color.opacity(0.1)
+            AnyShapeStyle(LinearGradient(colors: [color, color.opacity(0.8)], startPoint: .top, endPoint: .bottom)) :
+            AnyShapeStyle(color.opacity(0.1))
         )
         .cornerRadius(8)
         .overlay(

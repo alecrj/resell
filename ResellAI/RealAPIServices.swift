@@ -323,8 +323,10 @@ class AIService: ObservableObject {
             ),
             marketTrend: MarketTrend(direction: .stable, strength: .weak, timeframe: "", seasonalFactors: []),
             demandIndicators: DemandIndicators(
-                watchersPerListing: 0, viewsPerListing: 0,
-                timeToSell: .difficult, searchVolume: .low
+                watchersPerListing: 0,
+                viewsPerListing: 0,
+                timeToSell: .difficult,
+                searchVolume: .low
             ),
             competitionLevel: .low,
             lastUpdated: Date()
@@ -411,8 +413,10 @@ class AIService: ObservableObject {
             ),
             marketTrend: MarketTrend(direction: .stable, strength: .weak, timeframe: "", seasonalFactors: []),
             demandIndicators: DemandIndicators(
-                watchersPerListing: 0, viewsPerListing: 0,
-                timeToSell: .difficult, searchVolume: .low
+                watchersPerListing: 0,
+                viewsPerListing: 0,
+                timeToSell: .difficult,
+                searchVolume: .low
             ),
             competitionLevel: .low,
             lastUpdated: Date()
@@ -502,8 +506,10 @@ class AIService: ObservableObject {
             ),
             marketTrend: MarketTrend(direction: .stable, strength: .weak, timeframe: "", seasonalFactors: []),
             demandIndicators: DemandIndicators(
-                watchersPerListing: 0, viewsPerListing: 0,
-                timeToSell: .difficult, searchVolume: .low
+                watchersPerListing: 0,
+                viewsPerListing: 0,
+                timeToSell: .difficult,
+                searchVolume: .low
             ),
             competitionLevel: .low,
             lastUpdated: Date()
@@ -595,8 +601,10 @@ class AIService: ObservableObject {
             ),
             marketTrend: MarketTrend(direction: .stable, strength: .moderate, timeframe: "", seasonalFactors: []),
             demandIndicators: DemandIndicators(
-                watchersPerListing: 5, viewsPerListing: 25,
-                timeToSell: .normal, searchVolume: .medium
+                watchersPerListing: 5,
+                viewsPerListing: 25,
+                timeToSell: .normal,
+                searchVolume: .medium
             ),
             competitionLevel: .moderate,
             lastUpdated: Date()
@@ -686,8 +694,10 @@ class AIService: ObservableObject {
             ),
             marketTrend: MarketTrend(direction: .stable, strength: .moderate, timeframe: "", seasonalFactors: []),
             demandIndicators: DemandIndicators(
-                watchersPerListing: 3, viewsPerListing: 20,
-                timeToSell: .normal, searchVolume: .medium
+                watchersPerListing: 3,
+                viewsPerListing: 20,
+                timeToSell: .normal,
+                searchVolume: .medium
             ),
             competitionLevel: .moderate,
             lastUpdated: Date()

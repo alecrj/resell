@@ -358,11 +358,12 @@ enum TrendStrength {
     case strong, moderate, weak
 }
 
+// MARK: - FIXED: DemandIndicators struct
 struct DemandIndicators {
     let watchersPerListing: Double
     let viewsPerListing: Double
     let timeToSell: TimeToSell
-    case searchVolume: SearchVolume
+    let searchVolume: SearchVolume  // FIXED: Changed from 'case' to 'let'
 }
 
 enum TimeToSell {
