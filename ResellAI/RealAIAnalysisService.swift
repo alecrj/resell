@@ -444,7 +444,7 @@ class RealAIAnalysisService: ObservableObject {
                         category: self.mapUPCCategory(firstItem["category"] as? String ?? ""),
                         size: firstItem["size"] as? String ?? "",
                         colorway: "",
-                        retailPrice: self.parsePrice(firstItem["lowest_recorded_price"] as? String),
+                        retailPrice: self.parsePrice(firstItem["lowest_recorded_price"] as? String) ?? 0.0,
                         releaseYear: "",
                         confidence: 0.85
                     )
@@ -961,7 +961,7 @@ class RealAIAnalysisService: ObservableObject {
         )
     }
     
-    // Market data parsing
+    // Market data parsing - FIXED to handle optional Double properly
     private func parseEbayResponseReal(_ json: [String: Any]) -> RealMarketData? {
         var soldPrices: [Double] = []
         var competitors = 0
@@ -971,19 +971,17 @@ class RealAIAnalysisService: ObservableObject {
             for item in items {
                 if let price = item["price"] as? Double {
                     soldPrices.append(price)
-                } else if let priceStr = item["price"] as? String {
-                    if let price = parsePrice(priceStr) {
-                        soldPrices.append(price)
-                    }
+                } else if let priceStr = item["price"] as? String,
+                          let price = parsePrice(priceStr) {
+                    soldPrices.append(price)
                 }
             }
             competitors = items.count
         } else if let averagePrice = json["average_price"] as? Double {
             soldPrices = [averagePrice]
-        } else if let priceStr = json["average_price"] as? String {
-            if let price = parsePrice(priceStr) {
-                soldPrices = [price]
-            }
+        } else if let priceStr = json["average_price"] as? String,
+                  let price = parsePrice(priceStr) {
+            soldPrices = [price]
         }
         
         guard !soldPrices.isEmpty else {
@@ -1001,6 +999,7 @@ class RealAIAnalysisService: ObservableObject {
         )
     }
     
+    // FIXED parsePrice method to return Double instead of Double?
     private func parsePrice(_ priceString: String?) -> Double? {
         guard let str = priceString else { return nil }
         let numericString = str.replacingOccurrences(of: "[^0-9.]", with: "", options: .regularExpression)
