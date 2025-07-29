@@ -71,7 +71,7 @@ struct ModeToggleView: View {
                     .cornerRadius(4)
             }
             
-            // Mode Toggle with Enhanced Design
+            // Mode Toggle with Design
             HStack(spacing: 0) {
                 // Business Mode Button
                 Button(action: {
@@ -88,11 +88,14 @@ struct ModeToggleView: View {
                     .frame(maxWidth: .infinity)
                     .padding()
                     .background(
-                        isProspectingMode ?
-                        AnyShapeStyle(Color.gray.opacity(0.2)) :
-                        AnyShapeStyle(LinearGradient(colors: [.blue, .blue.opacity(0.8)], startPoint: .top, endPoint: .bottom))
+                        Group {
+                            if isProspectingMode {
+                                Color.gray.opacity(0.2)
+                            } else {
+                                LinearGradient(colors: [.blue, .blue.opacity(0.8)], startPoint: .top, endPoint: .bottom)
+                            }
+                        }
                     )
-
                     .animation(.easeInOut(duration: 0.2), value: isProspectingMode)
                 }
                 
@@ -111,11 +114,14 @@ struct ModeToggleView: View {
                     .frame(maxWidth: .infinity)
                     .padding()
                     .background(
-                        isProspectingMode ?
-                        AnyShapeStyle(LinearGradient(colors: [.purple, .purple.opacity(0.8)], startPoint: .top, endPoint: .bottom)) :
-                        AnyShapeStyle(Color.gray.opacity(0.2))
+                        Group {
+                            if isProspectingMode {
+                                LinearGradient(colors: [.purple, .purple.opacity(0.8)], startPoint: .top, endPoint: .bottom)
+                            } else {
+                                Color.gray.opacity(0.2)
+                            }
+                        }
                     )
-
                     .animation(.easeInOut(duration: 0.2), value: isProspectingMode)
                 }
             }
@@ -136,7 +142,7 @@ struct ModeToggleView: View {
     }
 }
 
-// MARK: - Business Tab View (Enhanced)
+// MARK: - Business Tab View
 struct BusinessTabView: View {
     var body: some View {
         TabView {
@@ -215,7 +221,7 @@ struct RealAIAnalysisView: View {
                             }
                         }
                         
-                        Text(" Real time market research • Professional analysis")
+                        Text("Real time market research • Professional analysis")
                             .font(.headline)
                             .foregroundColor(.secondary)
                             .multilineTextAlignment(.center)
@@ -282,7 +288,7 @@ struct RealAIAnalysisView: View {
                         }
                     }
                     
-                    // Enhanced Action Buttons
+                    // Action Buttons
                     RealActionButtonsView(
                         hasPhotos: !capturedImages.isEmpty,
                         isAnalyzing: aiService.isAnalyzing,
@@ -390,7 +396,7 @@ struct RealAIAnalysisView: View {
     }
 }
 
-// MARK: - Real Photo Gallery View (Enhanced)
+// MARK: - Real Photo Gallery View
 struct RealPhotoGalleryView: View {
     @Binding var images: [UIImage]
     @State private var selectedIndex = 0
@@ -413,7 +419,7 @@ struct RealPhotoGalleryView: View {
                 .tabViewStyle(PageTabViewStyle(indexDisplayMode: .always))
                 .frame(height: 320)
                 
-                // Enhanced image counter overlay with AI badge
+                // Image counter overlay with AI badge
                 VStack {
                     HStack {
                         Spacer()
@@ -442,13 +448,13 @@ struct RealPhotoGalleryView: View {
                 }
             }
             
-            // Enhanced Photo Controls
+            // Photo Controls
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("🧠 Analysis Ready")
                         .font(.headline)
                         .fontWeight(.semibold)
-                    Text("Resell AI will analyze all \(images.count) photos for maximum accuracy")
+                    Text("ResellAI will analyze all \(images.count) photos for maximum accuracy")
                         .font(.caption)
                         .foregroundColor(.blue)
                 }
@@ -552,7 +558,7 @@ struct RealPhotoPlaceholderView: View {
     }
 }
 
-// MARK: - Real Action Buttons (Enhanced)
+// MARK: - Real Action Buttons View (Fixed for compilation)
 struct RealActionButtonsView: View {
     let hasPhotos: Bool
     let isAnalyzing: Bool
@@ -569,73 +575,28 @@ struct RealActionButtonsView: View {
             // Photo and Barcode Row
             HStack(spacing: 12) {
                 // Take Photos Button
-                Button(action: onTakePhotos) {
-                    VStack(spacing: 4) {
-                        Image(systemName: "camera.fill")
-                            .font(.title2)
-                        Text("Camera")
-                            .font(.caption)
-                            .fontWeight(.semibold)
-                    }
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 16)
-                    .background(
-                        LinearGradient(
-                            colors: [.blue, .blue.opacity(0.8)],
-                            startPoint: .top,
-                            endPoint: .bottom
-                        )
-                    )
-                    .foregroundColor(.white)
-                    .cornerRadius(12)
-                    .shadow(color: .blue.opacity(0.3), radius: 4, x: 0, y: 2)
-                }
+                createActionButton(
+                    icon: "camera.fill",
+                    title: "Camera",
+                    colors: [.blue, .blue.opacity(0.8)],
+                    action: onTakePhotos
+                )
                 
                 // Add Photos Button
-                Button(action: onAddPhotos) {
-                    VStack(spacing: 4) {
-                        Image(systemName: "photo.on.rectangle")
-                            .font(.title2)
-                        Text("Library")
-                            .font(.caption)
-                            .fontWeight(.semibold)
-                    }
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 16)
-                    .background(
-                        LinearGradient(
-                            colors: [.green, .green.opacity(0.8)],
-                            startPoint: .top,
-                            endPoint: .bottom
-                        )
-                    )
-                    .foregroundColor(.white)
-                    .cornerRadius(12)
-                    .shadow(color: .green.opacity(0.3), radius: 4, x: 0, y: 2)
-                }
+                createActionButton(
+                    icon: "photo.on.rectangle",
+                    title: "Library",
+                    colors: [.green, .green.opacity(0.8)],
+                    action: onAddPhotos
+                )
                 
                 // Barcode Scanner Button
-                Button(action: onBarcodeScan) {
-                    VStack(spacing: 4) {
-                        Image(systemName: "barcode.viewfinder")
-                            .font(.title2)
-                        Text("Scan")
-                            .font(.caption)
-                            .fontWeight(.semibold)
-                    }
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 16)
-                    .background(
-                        LinearGradient(
-                            colors: [.orange, .orange.opacity(0.8)],
-                            startPoint: .top,
-                            endPoint: .bottom
-                        )
-                    )
-                    .foregroundColor(.white)
-                    .cornerRadius(12)
-                    .shadow(color: .orange.opacity(0.3), radius: 4, x: 0, y: 2)
-                }
+                createActionButton(
+                    icon: "barcode.viewfinder",
+                    title: "Scan",
+                    colors: [.orange, .orange.opacity(0.8)],
+                    action: onBarcodeScan
+                )
             }
             
             // Real AI Analysis Button
@@ -707,6 +668,31 @@ struct RealActionButtonsView: View {
             }
         }
     }
+    
+    // Helper method to create action buttons
+    private func createActionButton(icon: String, title: String, colors: [Color], action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            VStack(spacing: 4) {
+                Image(systemName: icon)
+                    .font(.title2)
+                Text(title)
+                    .font(.caption)
+                    .fontWeight(.semibold)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 16)
+            .background(
+                LinearGradient(
+                    colors: colors,
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+            )
+            .foregroundColor(.white)
+            .cornerRadius(12)
+            .shadow(color: colors.first!.opacity(0.3), radius: 4, x: 0, y: 2)
+        }
+    }
 }
 
 // MARK: - Real Analysis Result View
@@ -744,11 +730,11 @@ struct RealAnalysisResultView: View {
                         }
                         
                         HStack {
-                            Text("AI Confidence: \(String(format: "%.0f", analysis.confidence * 100))%")
+                            Text("AI Confidence: \(String(format: "%.0f", analysis.confidence.overall * 100))%")
                                 .font(.caption)
                                 .foregroundColor(.secondary)
                             
-                            if analysis.confidence > 0.8 {
+                            if analysis.confidence.overall > 0.8 {
                                 Text("HIGH")
                                     .font(.caption2)
                                     .fontWeight(.bold)
@@ -790,25 +776,25 @@ struct RealAnalysisResultView: View {
                     Spacer()
                     
                     VStack(alignment: .center) {
-                        Text("Condition Score")
+                        Text("Market Data")
                             .font(.caption)
                             .foregroundColor(.secondary)
-                        Text("\(String(format: "%.0f", analysis.conditionScore))/100")
+                        Text("\(analysis.soldListings.count) sales")
                             .font(.headline)
                             .fontWeight(.semibold)
-                            .foregroundColor(getConditionColor(analysis.conditionScore))
+                            .foregroundColor(.purple)
                     }
                     
                     Spacer()
                     
                     VStack(alignment: .trailing) {
-                        Text("Market Data")
+                        Text("Confidence")
                             .font(.caption)
                             .foregroundColor(.secondary)
-                        Text("\(analysis.recentSoldPrices.count) sales")
+                        Text("\(String(format: "%.0f", analysis.confidence.overall * 100))%")
                             .font(.headline)
                             .fontWeight(.semibold)
-                            .foregroundColor(.purple)
+                            .foregroundColor(getConfidenceColor(analysis.confidence.overall))
                     }
                 }
             }
@@ -823,7 +809,7 @@ struct RealAnalysisResultView: View {
             PricingStrategyCard(analysis: analysis)
             MarketIntelligenceCard(analysis: analysis)
             
-            // Enhanced Action Buttons
+            // Action Buttons
             VStack(spacing: 12) {
                 Button(action: {
                     onAddToInventory()
@@ -873,11 +859,11 @@ struct RealAnalysisResultView: View {
         .cornerRadius(20)
     }
     
-    private func getConditionColor(_ score: Double) -> Color {
-        switch score {
-        case 90...100: return .green
-        case 70...89: return .blue
-        case 50...69: return .orange
+    private func getConfidenceColor(_ confidence: Double) -> Color {
+        switch confidence {
+        case 0.9...1.0: return .green
+        case 0.7...0.89: return .blue
+        case 0.5...0.69: return .orange
         default: return .red
         }
     }
@@ -965,7 +951,7 @@ struct APIStatusRow: View {
     }
 }
 
-// MARK: - Enhanced Prospecting View
+// MARK: - Prospecting View (Fixed complex expression)
 struct ProspectingView: View {
     @EnvironmentObject var inventoryManager: InventoryManager
     @EnvironmentObject var aiService: AIService
@@ -982,7 +968,7 @@ struct ProspectingView: View {
         NavigationView {
             ScrollView {
                 VStack(spacing: 20) {
-                    // Enhanced Prospecting Header
+                    // Prospecting Header
                     VStack(spacing: 12) {
                         HStack {
                             VStack(alignment: .leading, spacing: 4) {
@@ -1050,96 +1036,36 @@ struct ProspectingView: View {
                         }
                     }
                     
-                    // Enhanced Prospecting Analysis Methods
+                    // Prospecting Analysis Methods
                     VStack(spacing: 15) {
                         // Take Photos Button
-                        Button(action: {
+                        createProspectingButton(
+                            icon: "camera.fill",
+                            title: "📸 Real AI Photo Analysis",
+                            subtitle: "GPT-4 Vision identifies items and calculates max buy price",
+                            colors: [.purple, .blue]
+                        ) {
                             showingMultiCamera = true
-                        }) {
-                            HStack(spacing: 12) {
-                                Image(systemName: "camera.fill")
-                                    .font(.title2)
-                                VStack(alignment: .leading) {
-                                    Text("📸 Real AI Photo Analysis")
-                                        .fontWeight(.bold)
-                                    Text("GPT-4 Vision identifies items and calculates max buy price")
-                                        .font(.caption)
-                                }
-                                Spacer()
-                                Image(systemName: "chevron.right")
-                            }
-                            .frame(maxWidth: .infinity)
-                            .padding()
-                            .background(
-                                LinearGradient(
-                                    colors: [.purple, .blue],
-                                    startPoint: .leading,
-                                    endPoint: .trailing
-                                )
-                            )
-                            .foregroundColor(.white)
-                            .cornerRadius(12)
-                            .shadow(color: .purple.opacity(0.3), radius: 4, x: 0, y: 2)
                         }
                         
                         // Add from Library Button
-                        Button(action: {
+                        createProspectingButton(
+                            icon: "photo.on.rectangle",
+                            title: "🖼️ Analyze Existing Photos",
+                            subtitle: "Select photos from your library for AI analysis",
+                            colors: [.green, .mint]
+                        ) {
                             showingPhotoLibrary = true
-                        }) {
-                            HStack(spacing: 12) {
-                                Image(systemName: "photo.on.rectangle")
-                                    .font(.title2)
-                                VStack(alignment: .leading) {
-                                    Text("🖼️ Analyze Existing Photos")
-                                        .fontWeight(.bold)
-                                    Text("Select photos from your library for AI analysis")
-                                        .font(.caption)
-                                }
-                                Spacer()
-                                Image(systemName: "chevron.right")
-                            }
-                            .frame(maxWidth: .infinity)
-                            .padding()
-                            .background(
-                                LinearGradient(
-                                    colors: [.green, .mint],
-                                    startPoint: .leading,
-                                    endPoint: .trailing
-                                )
-                            )
-                            .foregroundColor(.white)
-                            .cornerRadius(12)
-                            .shadow(color: .green.opacity(0.3), radius: 4, x: 0, y: 2)
                         }
                         
                         // Barcode Lookup Button
-                        Button(action: {
+                        createProspectingButton(
+                            icon: "barcode.viewfinder",
+                            title: "📱 Real Barcode Lookup",
+                            subtitle: "Scan for instant product identification and pricing",
+                            colors: [.orange, .red]
+                        ) {
                             showingBarcodeLookup = true
-                        }) {
-                            HStack(spacing: 12) {
-                                Image(systemName: "barcode.viewfinder")
-                                    .font(.title2)
-                                VStack(alignment: .leading) {
-                                    Text("📱 Real Barcode Lookup")
-                                        .fontWeight(.bold)
-                                    Text("Scan for instant product identification and pricing")
-                                        .font(.caption)
-                                }
-                                Spacer()
-                                Image(systemName: "chevron.right")
-                            }
-                            .frame(maxWidth: .infinity)
-                            .padding()
-                            .background(
-                                LinearGradient(
-                                    colors: [.orange, .red],
-                                    startPoint: .leading,
-                                    endPoint: .trailing
-                                )
-                            )
-                            .foregroundColor(.white)
-                            .cornerRadius(12)
-                            .shadow(color: .orange.opacity(0.3), radius: 4, x: 0, y: 2)
                         }
                         
                         // Analyze Photos Button
@@ -1210,6 +1136,42 @@ struct ProspectingView: View {
         }
     }
     
+    // Helper method to create prospecting buttons (fixes complex expression issue)
+    private func createProspectingButton(
+        icon: String,
+        title: String,
+        subtitle: String,
+        colors: [Color],
+        action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
+            HStack(spacing: 12) {
+                Image(systemName: icon)
+                    .font(.title2)
+                VStack(alignment: .leading) {
+                    Text(title)
+                        .fontWeight(.bold)
+                    Text(subtitle)
+                        .font(.caption)
+                }
+                Spacer()
+                Image(systemName: "chevron.right")
+            }
+            .frame(maxWidth: .infinity)
+            .padding()
+            .background(
+                LinearGradient(
+                    colors: colors,
+                    startPoint: .leading,
+                    endPoint: .trailing
+                )
+            )
+            .foregroundColor(.white)
+            .cornerRadius(12)
+            .shadow(color: colors.first!.opacity(0.3), radius: 4, x: 0, y: 2)
+        }
+    }
+    
     private func analyzeForMaxBuyPrice() {
         guard !capturedImages.isEmpty else { return }
         
@@ -1234,13 +1196,6 @@ struct ProspectingView: View {
                 prospectAnalysis = analysis
             }
         }
-    }
-    
-    private func refreshAnalysis() {
-        capturedImages = []
-        prospectAnalysis = nil
-        scannedBarcode = nil
-        print("🔄 Real AI Prospecting refreshed")
     }
 }
 
