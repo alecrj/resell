@@ -5,7 +5,6 @@
 //  Created by Alec on 7/28/25.
 //
 
-
 import SwiftUI
 import MessageUI
 
@@ -145,24 +144,49 @@ struct SettingsQuickStats: View {
     
     var body: some View {
         HStack {
-            StatCard(
+            SettingsStatCard(
                 title: "Total Items",
                 value: "\(inventoryManager.items.count)",
                 color: .blue
             )
             
-            StatCard(
+            SettingsStatCard(
                 title: "Total Value",
                 value: "$\(String(format: "%.0f", inventoryManager.totalEstimatedValue))",
                 color: .green
             )
             
-            StatCard(
+            SettingsStatCard(
                 title: "Categories",
                 value: "\(inventoryManager.getInventoryOverview().count)",
                 color: .orange
             )
         }
+    }
+}
+
+// MARK: - Settings Stat Card (Fixed)
+struct SettingsStatCard: View {
+    let title: String
+    let value: String
+    let color: Color
+    
+    var body: some View {
+        VStack(spacing: 6) {
+            Text(value)
+                .font(.title3)
+                .fontWeight(.bold)
+                .foregroundColor(color)
+            
+            Text(title)
+                .font(.caption)
+                .foregroundColor(.secondary)
+                .multilineTextAlignment(.center)
+        }
+        .frame(maxWidth: .infinity)
+        .padding()
+        .background(color.opacity(0.1))
+        .cornerRadius(12)
     }
 }
 
