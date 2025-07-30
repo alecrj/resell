@@ -844,7 +844,7 @@ struct CleanPriceCard: View {
 
 // MARK: - Clean Button Style
 struct CleanButtonStyle: ButtonStyle {
-    func makeBody(configuration: Configuration) -> some View {
+    func makeBody(configuration: ButtonStyle.Configuration) -> some View {
         configuration.label
             .scaleEffect(configuration.isPressed ? 0.97 : 1.0)
             .animation(.easeInOut(duration: 0.1), value: configuration.isPressed)

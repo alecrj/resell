@@ -1131,6 +1131,68 @@ class RealAIAnalysisService: ObservableObject {
         return nil
     }
     
+    // MARK: - Missing Helper Functions
+    private func parseEbayDate(_ dateString: String?) -> Date? {
+        guard let dateString = dateString else { return nil }
+        
+        let formatter = ISO8601DateFormatter()
+        if let date = formatter.date(from: dateString) {
+            return date
+        }
+        
+        let altFormatter = DateFormatter()
+        altFormatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"
+        return altFormatter.date(from: dateString)
+    }
+    
+    private func parsePrice(_ priceString: String?) -> Double? {
+        guard let priceString = priceString else { return nil }
+        
+        let cleanedString = priceString.replacingOccurrences(of: "$", with: "")
+            .replacingOccurrences(of: ",", with: "")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        
+        return Double(cleanedString)
+    }
+    
+    private func mapToEbayCategory(_ category: ProductCategory) -> String {
+        switch category {
+        case .sneakers: return "Clothing, Shoes & Accessories > Unisex Shoes"
+        case .clothing: return "Clothing, Shoes & Accessories"
+        case .electronics: return "Consumer Electronics"
+        case .accessories: return "Clothing, Shoes & Accessories > Accessories"
+        case .home: return "Home & Garden"
+        case .collectibles: return "Collectibles"
+        case .books: return "Books & Magazines"
+        case .toys: return "Toys & Hobbies"
+        case .sports: return "Sporting Goods"
+        case .other: return "Everything Else"
+        }
+    }
+    
+    private func generateDescription(product: PrecisionIdentificationResult, condition: EbayConditionAssessment) -> String {
+        return """
+        \(product.exactModelName)
+        
+        Condition: \(condition.detectedCondition.rawValue)
+        \(condition.detectedCondition.description)
+        
+        Details:
+        • Brand: \(product.brand)
+        • Model: \(product.exactModelName)
+        • Size: \(product.size)
+        • Style Code: \(product.styleCode)
+        • Color: \(product.colorway)
+        
+        Condition Notes:
+        \(condition.conditionNotes.joined(separator: "\n"))
+        
+        Fast shipping with tracking
+        30-day returns accepted
+        100% authentic guarantee
+        """
+    }
+    
     // MARK: - Default/Fallback Creation Methods
     private func createDefaultIdentificationResult() -> PrecisionIdentificationResult {
         return PrecisionIdentificationResult(
@@ -1234,7 +1296,7 @@ class RealAIAnalysisService: ObservableObject {
         )
     }
     
-    // MARK: - Add missing methods and data structures
+    // MARK: - Data Structures
     struct AdvancedTextData {
         let allText: [String]
         let productCodes: [String]
@@ -1260,7 +1322,7 @@ class RealAIAnalysisService: ObservableObject {
         let priceDistribution: [Double]
     }
     
-    // Add other missing helper methods...
+    // MARK: - Helper methods
     private func analyzeTextForCategory(_ textData: AdvancedTextData) -> ProductCategory {
         let allText = textData.allText.joined(separator: " ").lowercased()
         
@@ -1373,7 +1435,6 @@ class RealAIAnalysisService: ObservableObject {
         )
     }
     
-    // Helper methods
     private func createFallbackIdentification(textData: AdvancedTextData) -> PrecisionIdentificationResult {
         return PrecisionIdentificationResult(
             exactModelName: "Product Identified",
@@ -1489,3 +1550,4 @@ class RealAIAnalysisService: ObservableObject {
         case .saturated: return 0.90
         }
     }
+}

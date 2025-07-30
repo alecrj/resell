@@ -938,20 +938,3 @@ class EbayListingService: ObservableObject {
         }
     }
 }
-
-// MARK: - Legacy APIConfig Compatibility
-struct APIConfig {
-    static let openAIKey = Configuration.openAIKey
-    static let spreadsheetID = Configuration.spreadsheetID
-    static let openAIEndpoint = Configuration.openAIEndpoint
-    static let googleAppsScriptURL = Configuration.googleScriptURL
-    static let googleCloudAPIKey = Configuration.googleCloudAPIKey
-    static let rapidAPIKey = Configuration.rapidAPIKey
-    static let ebayAPIKey = Configuration.ebayAPIKey
-    static let ebayClientSecret = ""
-    static let ebayEnvironment = Configuration.ebayEnvironment
-    
-    static func validateConfiguration() {
-        Configuration.validateConfiguration()
-    }
-}
