@@ -3,29 +3,26 @@ import UIKit
 import AVFoundation
 import PhotosUI
 
-// MARK: - Main Content View with Real AI Integration
+// MARK: - Main Content View with Clean UI
 struct ContentView: View {
     @StateObject private var inventoryManager = InventoryManager()
-    @StateObject private var aiService = AIService() // Now uses RealAIAnalysisService internally
+    @StateObject private var aiService = AIService()
     @StateObject private var googleSheetsService = GoogleSheetsService()
     @StateObject private var ebayListingService = EbayListingService()
     
-    // Homepage mode toggle
     @State private var isProspectingMode = false
     
     var body: some View {
         VStack(spacing: 0) {
-            // Homepage Mode Toggle
-            ModeToggleView(isProspectingMode: $isProspectingMode)
+            // Clean Mode Toggle
+            CleanModeToggle(isProspectingMode: $isProspectingMode)
             
             // Main Content
             if isProspectingMode {
-                // Prospecting Mode with Real AI
                 ProspectingView()
                     .environmentObject(inventoryManager)
                     .environmentObject(aiService)
             } else {
-                // Business Mode with Real AI
                 BusinessTabView()
                     .environmentObject(inventoryManager)
                     .environmentObject(aiService)
@@ -40,306 +37,238 @@ struct ContentView: View {
     
     private func initializeServices() {
         googleSheetsService.authenticate()
-        
-        // Log initialization status
-        print("🚀 ResellAI Initialized with REAL AI Analysis")
-        print("📊 AI Service Ready: \(aiService.isAnalyzing ? "Analyzing" : "Ready")")
-        print("🔗 Google Sheets: \(googleSheetsService.isConnected ? "Connected" : "Disconnected")")
+        print("🚀 ResellAI Ready")
     }
 }
 
-// MARK: - Mode Toggle View (Enhanced)
-struct ModeToggleView: View {
+// MARK: - Clean Mode Toggle
+struct CleanModeToggle: View {
     @Binding var isProspectingMode: Bool
     
     var body: some View {
-        VStack(spacing: 12) {
-            // App Title with AI Badge
+        VStack(spacing: 16) {
+            // Simple App Title
             HStack {
                 Text("ResellAI")
-                    .font(.largeTitle)
+                    .font(.title)
                     .fontWeight(.bold)
-                    .foregroundColor(.blue)
+                    .foregroundColor(.primary)
                 
-                Text("AI")
-                    .font(.caption)
-                    .fontWeight(.bold)
-                    .foregroundColor(.white)
-                    .padding(.horizontal, 6)
-                    .padding(.vertical, 2)
-                    .background(Color.green)
-                    .cornerRadius(4)
+                Spacer()
+                
+                // API Status Indicator
+                Circle()
+                    .fill(isAPIConfigured ? .green : .red)
+                    .frame(width: 8, height: 8)
             }
             
-            // Mode Toggle with Design
+            // Clean Mode Selector
             HStack(spacing: 0) {
-                // Business Mode Button
-                Button(action: {
-                    withAnimation(.easeInOut(duration: 0.3)) {
+                ModeButton(
+                    title: "Business",
+                    icon: "building.2",
+                    isSelected: !isProspectingMode
+                ) {
+                    withAnimation(.easeInOut(duration: 0.2)) {
                         isProspectingMode = false
                     }
-                }) {
-                    HStack {
-                        Image(systemName: "building.2.fill")
-                        Text("Business Mode")
-                    }
-                    .font(.headline)
-                    .foregroundColor(isProspectingMode ? .secondary : .white)
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(
-                        Group {
-                            if isProspectingMode {
-                                Color.gray.opacity(0.2)
-                            } else {
-                                LinearGradient(colors: [.blue, .blue.opacity(0.8)], startPoint: .top, endPoint: .bottom)
-                            }
-                        }
-                    )
-                    .animation(.easeInOut(duration: 0.2), value: isProspectingMode)
                 }
                 
-                // Prospecting Mode Button
-                Button(action: {
-                    withAnimation(.easeInOut(duration: 0.3)) {
+                ModeButton(
+                    title: "Prospect",
+                    icon: "magnifyingglass",
+                    isSelected: isProspectingMode
+                ) {
+                    withAnimation(.easeInOut(duration: 0.2)) {
                         isProspectingMode = true
                     }
-                }) {
-                    HStack {
-                        Image(systemName: "magnifyingglass.circle.fill")
-                        Text("Prospecting")
-                    }
-                    .font(.headline)
-                    .foregroundColor(isProspectingMode ? .white : .secondary)
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(
-                        Group {
-                            if isProspectingMode {
-                                LinearGradient(colors: [.purple, .purple.opacity(0.8)], startPoint: .top, endPoint: .bottom)
-                            } else {
-                                Color.gray.opacity(0.2)
-                            }
-                        }
-                    )
-                    .animation(.easeInOut(duration: 0.2), value: isProspectingMode)
                 }
             }
-            .cornerRadius(12)
-            .padding(.horizontal)
-            
-            // Mode Description with Real AI Features
-            Text(isProspectingMode ?
-                 "🔍 Real-time item identification • AI condition analysis • Accurate max buy prices" :
-                 "📦 Complete business management • Real market research • Professional eBay listings")
-                .font(.caption)
-                .foregroundColor(.secondary)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal)
+            .background(Color.gray.opacity(0.1))
+            .cornerRadius(10)
         }
-        .padding()
-        .background(Color.gray.opacity(0.05))
+        .padding(.horizontal)
+        .padding(.vertical, 12)
+        .background(Color(.systemBackground))
+        .shadow(color: .black.opacity(0.05), radius: 1, x: 0, y: 1)
+    }
+    
+    private var isAPIConfigured: Bool {
+        !APIConfig.openAIKey.isEmpty
     }
 }
 
-// MARK: - Business Tab View
+struct ModeButton: View {
+    let title: String
+    let icon: String
+    let isSelected: Bool
+    let action: () -> Void
+    
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 6) {
+                Image(systemName: icon)
+                    .font(.caption)
+                Text(title)
+                    .font(.subheadline)
+                    .fontWeight(.medium)
+            }
+            .foregroundColor(isSelected ? .white : .secondary)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 8)
+            .background(
+                isSelected ? Color.blue : Color.clear
+            )
+            .cornerRadius(8)
+            .animation(.easeInOut(duration: 0.2), value: isSelected)
+        }
+    }
+}
+
+// MARK: - Clean Business Tab View
 struct BusinessTabView: View {
     var body: some View {
         TabView {
-            RealAIAnalysisView()
+            CleanAnalysisView()
                 .tabItem {
-                    Image(systemName: "brain.head.profile")
-                    Text("🚀 AI Analysis")
+                    Image(systemName: "viewfinder")
+                    Text("Analyze")
                 }
             
             DashboardView()
                 .tabItem {
-                    Image(systemName: "chart.bar.fill")
-                    Text("📊 Dashboard")
+                    Image(systemName: "chart.bar")
+                    Text("Dashboard")
                 }
             
             SmartInventoryListView()
                 .tabItem {
                     Image(systemName: "list.bullet")
-                    Text("📦 Inventory")
+                    Text("Inventory")
                 }
             
             InventoryOrganizationView()
                 .tabItem {
-                    Image(systemName: "archivebox.fill")
-                    Text("🏷️ Organization")
+                    Image(systemName: "archivebox")
+                    Text("Storage")
                 }
             
             AppSettingsView()
                 .tabItem {
                     Image(systemName: "gear")
-                    Text("⚙️ Settings")
+                    Text("Settings")
                 }
         }
         .accentColor(.blue)
     }
 }
 
-// MARK: - Real AI Analysis View (Updated)
-struct RealAIAnalysisView: View {
+// MARK: - Clean Analysis View
+struct CleanAnalysisView: View {
     @EnvironmentObject var inventoryManager: InventoryManager
     @EnvironmentObject var aiService: AIService
     @EnvironmentObject var googleSheetsService: GoogleSheetsService
     @EnvironmentObject var ebayListingService: EbayListingService
     
     @State private var capturedImages: [UIImage] = []
-    @State private var showingMultiCamera = false
+    @State private var showingCamera = false
     @State private var showingPhotoLibrary = false
     @State private var analysisResult: AnalysisResult?
     @State private var showingItemForm = false
     @State private var showingDirectListing = false
     @State private var showingBarcodeLookup = false
     @State private var scannedBarcode: String?
-    @State private var showingAPIStatus = false
     
     var body: some View {
         NavigationView {
             ScrollView {
-                VStack(spacing: 20) {
-                    // Header with Real AI Status
-                    VStack(spacing: 8) {
-                        HStack {
-                            Text("ITEM ANALYSIS")
-                                .font(.largeTitle)
-                                .fontWeight(.bold)
-                                .foregroundColor(.blue)
-                            
-                            Spacer()
-                            
-                            // API Status Button
-                            Button(action: {
-                                showingAPIStatus = true
-                            }) {
-                                Image(systemName: isAPIConfigured ? "checkmark.circle.fill" : "exclamationmark.triangle.fill")
-                                    .font(.title2)
-                                    .foregroundColor(isAPIConfigured ? .green : .red)
-                            }
-                        }
+                LazyVStack(spacing: 20) {
+                    // Clean Header
+                    VStack(spacing: 12) {
+                        Text("Item Analysis")
+                            .font(.largeTitle)
+                            .fontWeight(.bold)
                         
-                        Text("Real time market research • Professional analysis")
-                            .font(.headline)
-                            .foregroundColor(.secondary)
-                            .multilineTextAlignment(.center)
-                        
-                        // API Configuration Status
                         if !isAPIConfigured {
-                            HStack {
-                                Image(systemName: "exclamationmark.triangle.fill")
-                                    .foregroundColor(.orange)
-                                Text("Configure API keys for real analysis")
-                                    .font(.caption)
-                                    .foregroundColor(.orange)
-                            }
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 6)
-                            .background(Color.orange.opacity(0.1))
-                            .cornerRadius(8)
+                            Text("Configure API keys for analysis")
+                                .font(.caption)
+                                .foregroundColor(.orange)
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 6)
+                                .background(Color.orange.opacity(0.1))
+                                .cornerRadius(6)
                         }
                         
-                        // Real-time Analysis Progress
+                        // Clean Progress Indicator
                         if aiService.isAnalyzing {
-                            VStack(spacing: 12) {
+                            VStack(spacing: 8) {
                                 ProgressView(value: Double(aiService.currentStep), total: Double(aiService.totalSteps))
                                     .progressViewStyle(LinearProgressViewStyle(tint: .blue))
-                                    .frame(height: 8)
                                 
                                 Text(aiService.analysisProgress)
-                                    .font(.body)
-                                    .fontWeight(.semibold)
+                                    .font(.subheadline)
                                     .foregroundColor(.blue)
-                                    .multilineTextAlignment(.center)
                                 
-                                HStack {
-                                    Text("Step \(aiService.currentStep)/\(aiService.totalSteps)")
-                                        .font(.caption)
-                                        .foregroundColor(.secondary)
-                                    
-                                    Spacer()
-                                    
-                                    Text("Real AI Processing...")
-                                        .font(.caption)
-                                        .foregroundColor(.green)
-                                }
-                                
-                                // Cancel button for long-running analysis
-                                Button("Cancel Analysis") {
+                                Button("Cancel") {
                                     resetAnalysis()
                                 }
                                 .font(.caption)
                                 .foregroundColor(.red)
                             }
                             .padding()
-                            .background(Color.blue.opacity(0.1))
+                            .background(Color.blue.opacity(0.05))
                             .cornerRadius(12)
                         }
                     }
                     
-                    // Photo Interface
+                    // Photo Section
                     if !capturedImages.isEmpty {
-                        RealPhotoGalleryView(images: $capturedImages)
+                        CleanPhotoGallery(images: $capturedImages)
                     } else {
-                        RealPhotoPlaceholderView {
-                            showingMultiCamera = true
+                        CleanPhotoPlaceholder {
+                            showingCamera = true
                         }
                     }
                     
                     // Action Buttons
-                    RealActionButtonsView(
+                    CleanActionButtons(
                         hasPhotos: !capturedImages.isEmpty,
                         isAnalyzing: aiService.isAnalyzing,
-                        photoCount: capturedImages.count,
                         isAPIConfigured: isAPIConfigured,
-                        onTakePhotos: { showingMultiCamera = true },
-                        onAddPhotos: { showingPhotoLibrary = true },
-                        onBarcodeScan: { showingBarcodeLookup = true },
-                        onAnalyze: { analyzeWithRealAI() },
+                        onCamera: { showingCamera = true },
+                        onLibrary: { showingPhotoLibrary = true },
+                        onBarcode: { showingBarcodeLookup = true },
+                        onAnalyze: { analyzeItem() },
                         onReset: { resetAnalysis() }
                     )
                     
-                    // Analysis Results with Real Data Indicators
+                    // Results
                     if let result = analysisResult {
-                        RealAnalysisResultView(analysis: result) {
+                        CleanAnalysisResult(analysis: result) {
                             showingItemForm = true
                         } onDirectList: {
                             showingDirectListing = true
                         }
                     }
-                    
-                    Spacer(minLength: 20)
                 }
                 .padding()
             }
             .navigationBarHidden(true)
         }
-        .sheet(isPresented: $showingMultiCamera) {
+        .sheet(isPresented: $showingCamera) {
             CameraView { photos in
-                capturedImages.append(contentsOf: photos)
-                analysisResult = nil
+                appendImages(photos)
             }
         }
         .sheet(isPresented: $showingPhotoLibrary) {
             PhotoLibraryPicker { photos in
-                capturedImages.append(contentsOf: photos)
-                analysisResult = nil
+                appendImages(photos)
             }
         }
         .sheet(isPresented: $showingItemForm) {
             if let result = analysisResult {
-                ItemFormView(
-                    analysis: result,
-                    onSave: { item in
-                        let savedItem = inventoryManager.addItem(item)
-                        googleSheetsService.uploadItem(savedItem)
-                        showingItemForm = false
-                        resetAnalysis()
-                    }
-                )
-                .environmentObject(inventoryManager)
+                ItemFormView(analysis: result, onSave: saveItem)
+                    .environmentObject(inventoryManager)
             }
         }
         .sheet(isPresented: $showingDirectListing) {
@@ -356,127 +285,112 @@ struct RealAIAnalysisView: View {
                     }
                 }
         }
-        .sheet(isPresented: $showingAPIStatus) {
-            APIStatusView()
-        }
     }
     
     private var isAPIConfigured: Bool {
         !APIConfig.openAIKey.isEmpty
     }
     
-    private func analyzeWithRealAI() {
-        guard !capturedImages.isEmpty else { return }
+    // MARK: - Performance Optimized Methods
+    private func appendImages(_ photos: [UIImage]) {
+        // Optimize images for performance
+        let optimizedPhotos = photos.compactMap { image -> UIImage? in
+            return optimizeImage(image)
+        }
+        capturedImages.append(contentsOf: optimizedPhotos)
+        analysisResult = nil
+    }
+    
+    private func optimizeImage(_ image: UIImage) -> UIImage? {
+        let maxSize: CGFloat = 1024
+        let size = image.size
         
-        print("🚀 Starting Analysis with \(capturedImages.count) images")
+        if size.width <= maxSize && size.height <= maxSize {
+            return image
+        }
+        
+        let ratio = min(maxSize / size.width, maxSize / size.height)
+        let newSize = CGSize(width: size.width * ratio, height: size.height * ratio)
+        
+        UIGraphicsBeginImageContextWithOptions(newSize, false, 1.0)
+        image.draw(in: CGRect(origin: .zero, size: newSize))
+        let optimizedImage = UIGraphicsGetImageFromCurrentImageContext()
+        UIGraphicsEndImageContext()
+        
+        return optimizedImage
+    }
+    
+    private func analyzeItem() {
+        guard !capturedImages.isEmpty else { return }
         
         aiService.analyzeItem(capturedImages) { result in
             DispatchQueue.main.async {
-                analysisResult = result
-                print("✅ Analysis Complete: \(result.itemName) - $\(String(format: "%.2f", result.realisticPrice))")
+                self.analysisResult = result
             }
         }
     }
     
     private func analyzeBarcode(_ barcode: String) {
-        print("📱 Analyzing barcode: \(barcode)")
-        
         aiService.analyzeBarcode(barcode, images: capturedImages) { result in
             DispatchQueue.main.async {
-                analysisResult = result
+                self.analysisResult = result
             }
         }
+    }
+    
+    private func saveItem(_ item: InventoryItem) {
+        let savedItem = inventoryManager.addItem(item)
+        googleSheetsService.uploadItem(savedItem)
+        showingItemForm = false
+        resetAnalysis()
     }
     
     private func resetAnalysis() {
         capturedImages = []
         analysisResult = nil
         scannedBarcode = nil
-        print("🔄 Analysis reset")
     }
 }
 
-// MARK: - Real Photo Gallery View
-struct RealPhotoGalleryView: View {
+// MARK: - Clean Photo Gallery
+struct CleanPhotoGallery: View {
     @Binding var images: [UIImage]
     @State private var selectedIndex = 0
     
     var body: some View {
-        VStack(spacing: 15) {
-            // Main Photo Display with Real AI Indicators
-            ZStack {
-                TabView(selection: $selectedIndex) {
-                    ForEach(0..<images.count, id: \.self) { index in
-                        Image(uiImage: images[index])
-                            .resizable()
-                            .aspectRatio(contentMode: .fit)
-                            .frame(maxHeight: 300)
-                            .cornerRadius(16)
-                            .shadow(color: .black.opacity(0.2), radius: 8, x: 0, y: 4)
-                            .tag(index)
-                    }
-                }
-                .tabViewStyle(PageTabViewStyle(indexDisplayMode: .always))
-                .frame(height: 320)
-                
-                // Image counter overlay with AI badge
-                VStack {
-                    HStack {
-                        Spacer()
-                        HStack {
-                            Text("\(selectedIndex + 1)/\(images.count)")
-                                .font(.caption)
-                                .fontWeight(.semibold)
-                            
-                            Text("AI")
-                                .font(.caption2)
-                                .fontWeight(.bold)
-                                .foregroundColor(.green)
-                                .padding(.horizontal, 4)
-                                .padding(.vertical, 1)
-                                .background(Color.white)
-                                .cornerRadius(3)
-                        }
-                        .foregroundColor(.white)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 4)
-                        .background(Color.black.opacity(0.6))
-                        .cornerRadius(8)
-                        .padding()
-                    }
-                    Spacer()
+        VStack(spacing: 12) {
+            // Main Photo
+            TabView(selection: $selectedIndex) {
+                ForEach(0..<images.count, id: \.self) { index in
+                    Image(uiImage: images[index])
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(maxHeight: 300)
+                        .cornerRadius(12)
+                        .tag(index)
                 }
             }
+            .tabViewStyle(PageTabViewStyle(indexDisplayMode: .always))
+            .frame(height: 320)
             
-            // Photo Controls
+            // Simple Controls
             HStack {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("🧠 Analysis Ready")
-                        .font(.headline)
-                        .fontWeight(.semibold)
-                    Text("ResellAI will analyze all \(images.count) photos for maximum accuracy")
-                        .font(.caption)
-                        .foregroundColor(.blue)
-                }
+                Text("\(images.count) photos ready")
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
                 
                 Spacer()
                 
-                Button(action: {
+                Button("Delete") {
                     deleteCurrentPhoto()
-                }) {
-                    HStack {
-                        Image(systemName: "trash")
-                        Text("Delete")
-                    }
-                    .font(.caption)
-                    .foregroundColor(.red)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 6)
-                    .background(Color.red.opacity(0.1))
-                    .cornerRadius(8)
                 }
+                .font(.caption)
+                .foregroundColor(.red)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 4)
+                .background(Color.red.opacity(0.1))
+                .cornerRadius(6)
             }
-            .padding(.horizontal)
         }
     }
     
@@ -493,633 +407,386 @@ struct RealPhotoGalleryView: View {
     }
 }
 
-// MARK: - Real Photo Placeholder View
-struct RealPhotoPlaceholderView: View {
+// MARK: - Clean Photo Placeholder
+struct CleanPhotoPlaceholder: View {
     let onTakePhotos: () -> Void
     
     var body: some View {
-        ZStack {
-            RoundedRectangle(cornerRadius: 20)
-                .fill(
-                    LinearGradient(
-                        colors: [.blue.opacity(0.1), .purple.opacity(0.1)],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                )
-                .frame(height: 300)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 20)
-                        .stroke(Color.blue.opacity(0.3), lineWidth: 2)
-                        .strokeBorder(style: StrokeStyle(lineWidth: 2, dash: [10, 5]))
-                )
-            
+        Button(action: onTakePhotos) {
             VStack(spacing: 20) {
-                HStack {
-                    Image(systemName: "camera.fill")
-                        .font(.system(size: 50))
-                        .foregroundColor(.blue)
-                    
-                    Text("AI")
-                        .font(.title)
-                        .fontWeight(.bold)
-                        .foregroundColor(.white)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 4)
-                        .background(Color.green)
-                        .cornerRadius(6)
-                }
+                Image(systemName: "camera")
+                    .font(.system(size: 50))
+                    .foregroundColor(.blue)
                 
                 VStack(spacing: 8) {
-                    Text("Photo Analysis")
+                    Text("Take Photos")
                         .font(.title2)
-                        .fontWeight(.bold)
-                        .foregroundColor(.primary)
+                        .fontWeight(.semibold)
                     
-                    Text("Take multiple photos for complete GPT-4 Vision analysis")
-                        .font(.body)
+                    Text("Multiple photos for better analysis")
+                        .font(.subheadline)
                         .foregroundColor(.secondary)
-                        .multilineTextAlignment(.center)
                 }
-                
-                VStack(spacing: 4) {
-                    Text("✓ Real AI Analysis")
-                    Text("✓ Live Market Research & Pricing")
-                    Text("✓ Accurate Condition Assessment")
-                    Text("✓ Professional eBay Listing Generation")
-                }
-                .font(.caption)
-                .foregroundColor(.blue)
             }
+            .frame(maxWidth: .infinity)
+            .frame(height: 200)
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .stroke(Color.blue.opacity(0.3), style: StrokeStyle(lineWidth: 2, dash: [8, 4]))
+            )
         }
-        .onTapGesture {
-            onTakePhotos()
-        }
+        .buttonStyle(PlainButtonStyle())
     }
 }
 
-// MARK: - Real Action Buttons View (Fixed for compilation)
-struct RealActionButtonsView: View {
+// MARK: - Clean Action Buttons
+struct CleanActionButtons: View {
     let hasPhotos: Bool
     let isAnalyzing: Bool
-    let photoCount: Int
     let isAPIConfigured: Bool
-    let onTakePhotos: () -> Void
-    let onAddPhotos: () -> Void
-    let onBarcodeScan: () -> Void
+    let onCamera: () -> Void
+    let onLibrary: () -> Void
+    let onBarcode: () -> Void
     let onAnalyze: () -> Void
     let onReset: () -> Void
     
     var body: some View {
-        VStack(spacing: 15) {
-            // Photo and Barcode Row
+        VStack(spacing: 12) {
+            // Photo Actions
             HStack(spacing: 12) {
-                // Take Photos Button
-                createActionButton(
-                    icon: "camera.fill",
-                    title: "Camera",
-                    colors: [.blue, .blue.opacity(0.8)],
-                    action: onTakePhotos
-                )
-                
-                // Add Photos Button
-                createActionButton(
-                    icon: "photo.on.rectangle",
-                    title: "Library",
-                    colors: [.green, .green.opacity(0.8)],
-                    action: onAddPhotos
-                )
-                
-                // Barcode Scanner Button
-                createActionButton(
-                    icon: "barcode.viewfinder",
-                    title: "Scan",
-                    colors: [.orange, .orange.opacity(0.8)],
-                    action: onBarcodeScan
-                )
+                ActionButton(icon: "camera", title: "Camera", color: .blue, action: onCamera)
+                ActionButton(icon: "photo", title: "Library", color: .green, action: onLibrary)
+                ActionButton(icon: "barcode", title: "Scan", color: .orange, action: onBarcode)
             }
             
-            // Real AI Analysis Button
+            // Analyze Button
             if hasPhotos {
                 Button(action: onAnalyze) {
-                    HStack(spacing: 12) {
+                    HStack {
                         if isAnalyzing {
                             ProgressView()
-                                .scaleEffect(0.9)
+                                .scaleEffect(0.8)
                                 .progressViewStyle(CircularProgressViewStyle(tint: .white))
-                            Text("🧠 ANALYZING...")
-                                .fontWeight(.bold)
+                            Text("Analyzing...")
                         } else {
-                            Image(systemName: "brain.head.profile")
-                                .font(.title2)
-                            
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text("🧠 ANALYZE WITH RESELL AI")
-                                    .fontWeight(.bold)
-                                Text("\(photoCount) photos • Live market data")
-                                    .font(.caption)
-                                    .opacity(0.9)
-                            }
+                            Image(systemName: "brain")
+                            Text("Analyze Items")
                         }
                     }
                     .frame(maxWidth: .infinity)
-                    .padding(.vertical, 18)
-                    .background(
-                        LinearGradient(
-                            colors: isAPIConfigured ? [.purple, .pink] : [.gray, .gray.opacity(0.8)],
-                            startPoint: .leading,
-                            endPoint: .trailing
-                        )
-                    )
+                    .padding()
+                    .background(isAPIConfigured ? Color.blue : Color.gray)
                     .foregroundColor(.white)
-                    .cornerRadius(16)
+                    .cornerRadius(12)
                     .font(.headline)
-                    .shadow(color: isAPIConfigured ? .purple.opacity(0.4) : .gray.opacity(0.3), radius: 8, x: 0, y: 4)
                 }
                 .disabled(isAnalyzing || !isAPIConfigured)
-                .scaleEffect(isAnalyzing ? 0.98 : 1.0)
-                .animation(.easeInOut(duration: 0.1), value: isAnalyzing)
-                
-                // API Configuration Warning
-                if !isAPIConfigured {
-                    HStack {
-                        Image(systemName: "exclamationmark.triangle.fill")
-                            .foregroundColor(.orange)
-                        Text("Configure OpenAI API key to enable real analysis")
-                            .font(.caption)
-                            .foregroundColor(.orange)
-                    }
-                }
                 
                 // Reset Button
                 if !isAnalyzing {
-                    Button(action: onReset) {
-                        HStack {
-                            Image(systemName: "arrow.clockwise")
-                            Text("Reset Analysis")
-                        }
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 12)
-                        .background(Color.gray.opacity(0.2))
-                        .foregroundColor(.primary)
-                        .cornerRadius(12)
-                    }
+                    Button("Reset", action: onReset)
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
                 }
             }
-        }
-    }
-    
-    // Helper method to create action buttons
-    private func createActionButton(icon: String, title: String, colors: [Color], action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            VStack(spacing: 4) {
-                Image(systemName: icon)
-                    .font(.title2)
-                Text(title)
-                    .font(.caption)
-                    .fontWeight(.semibold)
-            }
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 16)
-            .background(
-                LinearGradient(
-                    colors: colors,
-                    startPoint: .top,
-                    endPoint: .bottom
-                )
-            )
-            .foregroundColor(.white)
-            .cornerRadius(12)
-            .shadow(color: colors.first!.opacity(0.3), radius: 4, x: 0, y: 2)
         }
     }
 }
 
-// MARK: - Real Analysis Result View
-struct RealAnalysisResultView: View {
+struct ActionButton: View {
+    let icon: String
+    let title: String
+    let color: Color
+    let action: () -> Void
+    
+    var body: some View {
+        Button(action: action) {
+            VStack(spacing: 4) {
+                Image(systemName: icon)
+                    .font(.title3)
+                Text(title)
+                    .font(.caption)
+                    .fontWeight(.medium)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 12)
+            .background(color.opacity(0.1))
+            .foregroundColor(color)
+            .cornerRadius(8)
+        }
+    }
+}
+
+// MARK: - Clean Analysis Result
+struct CleanAnalysisResult: View {
     let analysis: AnalysisResult
     let onAddToInventory: () -> Void
     let onDirectList: () -> Void
     
     var body: some View {
-        VStack(spacing: 20) {
-            // Real AI Analysis Header
-            VStack(spacing: 12) {
+        VStack(spacing: 16) {
+            // Result Header
+            VStack(spacing: 8) {
                 HStack {
                     VStack(alignment: .leading, spacing: 4) {
-                        HStack {
-                            Text(analysis.itemName)
-                                .font(.title2)
-                                .fontWeight(.bold)
-                                .foregroundColor(.primary)
-                            
-                            Text("AI")
-                                .font(.caption)
-                                .fontWeight(.bold)
-                                .foregroundColor(.white)
-                                .padding(.horizontal, 4)
-                                .padding(.vertical, 1)
-                                .background(Color.green)
-                                .cornerRadius(3)
-                        }
+                        Text(analysis.itemName)
+                            .font(.title2)
+                            .fontWeight(.bold)
                         
                         if !analysis.brand.isEmpty {
                             Text(analysis.brand)
-                                .font(.headline)
+                                .font(.subheadline)
                                 .foregroundColor(.blue)
-                        }
-                        
-                        HStack {
-                            Text("AI Confidence: \(String(format: "%.0f", analysis.confidence.overall * 100))%")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                            
-                            if analysis.confidence.overall > 0.8 {
-                                Text("HIGH")
-                                    .font(.caption2)
-                                    .fontWeight(.bold)
-                                    .foregroundColor(.green)
-                                    .padding(.horizontal, 4)
-                                    .padding(.vertical, 1)
-                                    .background(Color.green.opacity(0.2))
-                                    .cornerRadius(3)
-                            }
                         }
                     }
                     
                     Spacer()
                     
                     VStack(alignment: .trailing, spacing: 4) {
-                        Text("$\(String(format: "%.2f", analysis.realisticPrice))")
+                        Text("$\(String(format: "%.0f", analysis.realisticPrice))")
                             .font(.title2)
                             .fontWeight(.bold)
                             .foregroundColor(.green)
                         
-                        Text("Market Price")
+                        Text("\(String(format: "%.0f", analysis.confidence.overall * 100))% confident")
                             .font(.caption)
                             .foregroundColor(.secondary)
                     }
                 }
                 
-                // Real Condition and Score
+                // Quick Stats
                 HStack {
-                    VStack(alignment: .leading) {
-                        Text("AI Condition Analysis")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                        Text(analysis.actualCondition)
-                            .font(.headline)
-                            .fontWeight(.semibold)
-                            .foregroundColor(.blue)
-                    }
-                    
-                    Spacer()
-                    
-                    VStack(alignment: .center) {
-                        Text("Market Data")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                        Text("\(analysis.soldListings.count) sales")
-                            .font(.headline)
-                            .fontWeight(.semibold)
-                            .foregroundColor(.purple)
-                    }
-                    
-                    Spacer()
-                    
-                    VStack(alignment: .trailing) {
-                        Text("Confidence")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                        Text("\(String(format: "%.0f", analysis.confidence.overall * 100))%")
-                            .font(.headline)
-                            .fontWeight(.semibold)
-                            .foregroundColor(getConfidenceColor(analysis.confidence.overall))
-                    }
+                    StatChip(label: "Condition", value: analysis.actualCondition, color: .blue)
+                    StatChip(label: "Sales", value: "\(analysis.soldListings.count)", color: .purple)
+                    StatChip(label: "Market", value: analysis.demandLevel, color: .orange)
                 }
             }
             .padding()
-            .background(
-                RoundedRectangle(cornerRadius: 16)
-                    .fill(Color.blue.opacity(0.1))
-                    .stroke(Color.blue.opacity(0.3), lineWidth: 1)
-            )
+            .background(Color.gray.opacity(0.05))
+            .cornerRadius(12)
             
-            // Use existing components for the rest
-            PricingStrategyCard(analysis: analysis)
-            MarketIntelligenceCard(analysis: analysis)
+            // Pricing Strategy
+            CleanPricingStrategy(analysis: analysis)
             
             // Action Buttons
-            VStack(spacing: 12) {
-                Button(action: {
-                    onAddToInventory()
-                }) {
+            VStack(spacing: 8) {
+                Button(action: onAddToInventory) {
                     HStack {
-                        Image(systemName: "plus.circle.fill")
-                        Text("📦 Add to Smart Inventory")
+                        Image(systemName: "plus")
+                        Text("Add to Inventory")
                     }
                     .frame(maxWidth: .infinity)
                     .padding()
-                    .background(
-                        LinearGradient(
-                            colors: [.blue, .purple],
-                            startPoint: .leading,
-                            endPoint: .trailing
-                        )
-                    )
+                    .background(Color.blue)
                     .foregroundColor(.white)
-                    .cornerRadius(12)
-                    .font(.headline)
+                    .cornerRadius(10)
                 }
                 
-                Button(action: {
-                    onDirectList()
-                }) {
+                Button(action: onDirectList) {
                     HStack {
-                        Image(systemName: "bolt.fill")
-                        Text("🚀 Generate Professional Listing")
+                        Image(systemName: "square.and.arrow.up")
+                        Text("Create Listing")
                     }
                     .frame(maxWidth: .infinity)
                     .padding()
-                    .background(
-                        LinearGradient(
-                            colors: [.green, .mint],
-                            startPoint: .leading,
-                            endPoint: .trailing
-                        )
-                    )
+                    .background(Color.green)
                     .foregroundColor(.white)
-                    .cornerRadius(12)
-                    .font(.headline)
+                    .cornerRadius(10)
                 }
+            }
+        }
+        .padding()
+        .background(Color.white)
+        .cornerRadius(16)
+        .shadow(color: .black.opacity(0.05), radius: 4, x: 0, y: 2)
+    }
+}
+
+struct StatChip: View {
+    let label: String
+    let value: String
+    let color: Color
+    
+    var body: some View {
+        VStack(spacing: 2) {
+            Text(value)
+                .font(.caption)
+                .fontWeight(.semibold)
+                .foregroundColor(color)
+            Text(label)
+                .font(.caption2)
+                .foregroundColor(.secondary)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 6)
+        .background(color.opacity(0.1))
+        .cornerRadius(6)
+    }
+}
+
+// MARK: - Clean Pricing Strategy
+struct CleanPricingStrategy: View {
+    let analysis: AnalysisResult
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Pricing Strategy")
+                .font(.headline)
+                .fontWeight(.semibold)
+            
+            HStack(spacing: 12) {
+                PriceCard(
+                    title: "Quick Sale",
+                    price: analysis.quickSalePrice,
+                    color: .orange
+                )
+                
+                PriceCard(
+                    title: "Recommended",
+                    price: analysis.realisticPrice,
+                    color: .blue,
+                    isRecommended: true
+                )
+                
+                PriceCard(
+                    title: "Max Profit",
+                    price: analysis.maxProfitPrice,
+                    color: .green
+                )
             }
         }
         .padding()
         .background(Color.gray.opacity(0.05))
-        .cornerRadius(20)
-    }
-    
-    private func getConfidenceColor(_ confidence: Double) -> Color {
-        switch confidence {
-        case 0.9...1.0: return .green
-        case 0.7...0.89: return .blue
-        case 0.5...0.69: return .orange
-        default: return .red
-        }
+        .cornerRadius(12)
     }
 }
 
-// MARK: - API Status View
-struct APIStatusView: View {
-    @Environment(\.presentationMode) var presentationMode
-    
-    var body: some View {
-        NavigationView {
-            VStack(spacing: 20) {
-                Text("🔧 API Status")
-                    .font(.title)
-                    .fontWeight(.bold)
-                
-                VStack(spacing: 15) {
-                    APIStatusRow(
-                        title: "OpenAI GPT-4 Vision",
-                        isConfigured: !APIConfig.openAIKey.isEmpty,
-                        description: "Required for real item analysis"
-                    )
-                    
-                    APIStatusRow(
-                        title: "RapidAPI Market Research",
-                        isConfigured: !APIConfig.rapidAPIKey.isEmpty,
-                        description: "Required for live market data"
-                    )
-                    
-                    APIStatusRow(
-                        title: "Google Sheets Sync",
-                        isConfigured: !APIConfig.googleAppsScriptURL.isEmpty,
-                        description: "Optional for data backup"
-                    )
-                }
-                
-                Text("Configure these APIs in your app's environment variables for full functionality.")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                    .multilineTextAlignment(.center)
-                
-                Spacer()
-            }
-            .padding()
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Done") {
-                        presentationMode.wrappedValue.dismiss()
-                    }
-                }
-            }
-        }
-    }
-}
-
-struct APIStatusRow: View {
+struct PriceCard: View {
     let title: String
-    let isConfigured: Bool
-    let description: String
+    let price: Double
+    let color: Color
+    let isRecommended: Bool
+    
+    init(title: String, price: Double, color: Color, isRecommended: Bool = false) {
+        self.title = title
+        self.price = price
+        self.color = color
+        self.isRecommended = isRecommended
+    }
     
     var body: some View {
-        HStack {
-            Image(systemName: isConfigured ? "checkmark.circle.fill" : "xmark.circle.fill")
-                .foregroundColor(isConfigured ? .green : .red)
-            
-            VStack(alignment: .leading) {
-                Text(title)
-                    .fontWeight(.semibold)
-                Text(description)
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-            }
-            
-            Spacer()
-            
-            Text(isConfigured ? "Configured" : "Missing")
+        VStack(spacing: 4) {
+            Text(title)
                 .font(.caption)
-                .fontWeight(.semibold)
-                .foregroundColor(isConfigured ? .green : .red)
+                .fontWeight(.medium)
+                .foregroundColor(isRecommended ? .white : color)
+            
+            Text("$\(String(format: "%.0f", price))")
+                .font(.subheadline)
+                .fontWeight(.bold)
+                .foregroundColor(isRecommended ? .white : color)
         }
-        .padding()
-        .background(Color.gray.opacity(0.1))
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 8)
+        .background(isRecommended ? color : color.opacity(0.1))
         .cornerRadius(8)
+        .overlay(
+            RoundedRectangle(cornerRadius: 8)
+                .stroke(color, lineWidth: isRecommended ? 0 : 1)
+        )
     }
 }
 
-// MARK: - Prospecting View (Fixed complex expression)
+// MARK: - Clean Prospecting View
 struct ProspectingView: View {
     @EnvironmentObject var inventoryManager: InventoryManager
     @EnvironmentObject var aiService: AIService
     
     @State private var capturedImages: [UIImage] = []
-    @State private var showingMultiCamera = false
+    @State private var showingCamera = false
     @State private var showingPhotoLibrary = false
     @State private var prospectAnalysis: ProspectAnalysis?
     @State private var showingBarcodeLookup = false
     @State private var scannedBarcode: String?
-    @State private var showingAPIStatus = false
     
     var body: some View {
         NavigationView {
             ScrollView {
-                VStack(spacing: 20) {
-                    // Prospecting Header
+                LazyVStack(spacing: 20) {
+                    // Simple Header
                     VStack(spacing: 12) {
-                        HStack {
-                            VStack(alignment: .leading, spacing: 4) {
-                                HStack {
-                                    Text("🔍 REAL AI PROSPECTING")
-                                        .font(.largeTitle)
-                                        .fontWeight(.bold)
-                                        .foregroundColor(.purple)
-                                    
-                                    Text("AI")
-                                        .font(.caption)
-                                        .fontWeight(.bold)
-                                        .foregroundColor(.white)
-                                        .padding(.horizontal, 4)
-                                        .padding(.vertical, 2)
-                                        .background(Color.green)
-                                        .cornerRadius(4)
-                                }
-                                
-                                Text("Real-time analysis • Accurate max buy prices • Perfect for sourcing")
-                                    .font(.headline)
-                                    .foregroundColor(.secondary)
-                            }
-                            
-                            Spacer()
-                            
-                            // API Status Button
-                            Button(action: {
-                                showingAPIStatus = true
-                            }) {
-                                Image(systemName: !APIConfig.openAIKey.isEmpty ? "checkmark.circle.fill" : "exclamationmark.triangle.fill")
-                                    .font(.title2)
-                                    .foregroundColor(!APIConfig.openAIKey.isEmpty ? .green : .red)
-                            }
-                        }
-                    }
-                    
-                    // Analysis Progress for Prospecting
-                    if aiService.isAnalyzing {
-                        VStack(spacing: 12) {
+                        Text("Prospecting")
+                            .font(.largeTitle)
+                            .fontWeight(.bold)
+                        
+                        Text("Get max buy prices instantly")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                        
+                        if aiService.isAnalyzing {
                             ProgressView(value: Double(aiService.currentStep), total: Double(aiService.totalSteps))
                                 .progressViewStyle(LinearProgressViewStyle(tint: .purple))
                             
                             Text(aiService.analysisProgress)
-                                .font(.body)
-                                .fontWeight(.semibold)
+                                .font(.subheadline)
                                 .foregroundColor(.purple)
-                                .multilineTextAlignment(.center)
-                            
-                            Text("Real AI Prospecting: Step \(aiService.currentStep)/\(aiService.totalSteps)")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
                         }
-                        .padding()
-                        .background(Color.purple.opacity(0.1))
-                        .cornerRadius(12)
                     }
                     
                     // Photo Interface
                     if !capturedImages.isEmpty {
-                        RealPhotoGalleryView(images: $capturedImages)
+                        CleanPhotoGallery(images: $capturedImages)
                     } else {
-                        ProspectingPhotoPlaceholderView {
-                            showingMultiCamera = true
+                        ProspectPhotoPlaceholder {
+                            showingCamera = true
                         }
                     }
                     
-                    // Prospecting Analysis Methods
-                    VStack(spacing: 15) {
-                        // Take Photos Button
-                        createProspectingButton(
-                            icon: "camera.fill",
-                            title: "📸 Real AI Photo Analysis",
-                            subtitle: "GPT-4 Vision identifies items and calculates max buy price",
-                            colors: [.purple, .blue]
-                        ) {
-                            showingMultiCamera = true
+                    // Prospect Actions
+                    VStack(spacing: 12) {
+                        HStack(spacing: 12) {
+                            ActionButton(icon: "camera", title: "Camera", color: .purple, action: { showingCamera = true })
+                            ActionButton(icon: "photo", title: "Library", color: .green, action: { showingPhotoLibrary = true })
+                            ActionButton(icon: "barcode", title: "Scan", color: .orange, action: { showingBarcodeLookup = true })
                         }
                         
-                        // Add from Library Button
-                        createProspectingButton(
-                            icon: "photo.on.rectangle",
-                            title: "🖼️ Analyze Existing Photos",
-                            subtitle: "Select photos from your library for AI analysis",
-                            colors: [.green, .mint]
-                        ) {
-                            showingPhotoLibrary = true
-                        }
-                        
-                        // Barcode Lookup Button
-                        createProspectingButton(
-                            icon: "barcode.viewfinder",
-                            title: "📱 Real Barcode Lookup",
-                            subtitle: "Scan for instant product identification and pricing",
-                            colors: [.orange, .red]
-                        ) {
-                            showingBarcodeLookup = true
-                        }
-                        
-                        // Analyze Photos Button
                         if !capturedImages.isEmpty {
-                            Button(action: {
-                                analyzeForMaxBuyPrice()
-                            }) {
-                                HStack(spacing: 12) {
-                                    Image(systemName: "brain.head.profile")
-                                        .font(.title2)
-                                    VStack(alignment: .leading) {
-                                        Text("🔍 ANALYZE WITH REAL AI")
-                                            .fontWeight(.bold)
-                                        Text("\(capturedImages.count) photos • Live market data • Accurate pricing")
-                                            .font(.caption)
-                                    }
+                            Button(action: analyzeForProspecting) {
+                                HStack {
+                                    Image(systemName: "magnifyingglass")
+                                    Text("Get Max Buy Price")
                                 }
                                 .frame(maxWidth: .infinity)
-                                .padding(.vertical, 18)
-                                .background(
-                                    LinearGradient(
-                                        colors: !APIConfig.openAIKey.isEmpty ? [.red, .pink] : [.gray, .gray.opacity(0.8)],
-                                        startPoint: .leading,
-                                        endPoint: .trailing
-                                    )
-                                )
+                                .padding()
+                                .background(Color.purple)
                                 .foregroundColor(.white)
                                 .cornerRadius(12)
-                                .shadow(color: !APIConfig.openAIKey.isEmpty ? .red.opacity(0.4) : .gray.opacity(0.3), radius: 8, x: 0, y: 4)
+                                .font(.headline)
                             }
                             .disabled(aiService.isAnalyzing || APIConfig.openAIKey.isEmpty)
                         }
                     }
                     
-                    // Analysis Results
+                    // Results
                     if let analysis = prospectAnalysis {
-                        ImprovedProspectAnalysisResultView(analysis: analysis)
+                        CleanProspectResult(analysis: analysis)
                     }
-                    
-                    Spacer(minLength: 20)
                 }
                 .padding()
             }
             .navigationBarHidden(true)
         }
-        .sheet(isPresented: $showingMultiCamera) {
+        .sheet(isPresented: $showingCamera) {
             CameraView { photos in
-                capturedImages.append(contentsOf: photos)
+                let optimized = photos.compactMap { optimizeImage($0) }
+                capturedImages.append(contentsOf: optimized)
                 prospectAnalysis = nil
             }
         }
         .sheet(isPresented: $showingPhotoLibrary) {
             PhotoLibraryPicker { photos in
-                capturedImages.append(contentsOf: photos)
+                let optimized = photos.compactMap { optimizeImage($0) }
+                capturedImages.append(contentsOf: optimized)
                 prospectAnalysis = nil
             }
         }
@@ -1131,71 +798,193 @@ struct ProspectingView: View {
                     }
                 }
         }
-        .sheet(isPresented: $showingAPIStatus) {
-            APIStatusView()
-        }
     }
     
-    // Helper method to create prospecting buttons (fixes complex expression issue)
-    private func createProspectingButton(
-        icon: String,
-        title: String,
-        subtitle: String,
-        colors: [Color],
-        action: @escaping () -> Void
-    ) -> some View {
-        Button(action: action) {
-            HStack(spacing: 12) {
-                Image(systemName: icon)
-                    .font(.title2)
-                VStack(alignment: .leading) {
-                    Text(title)
-                        .fontWeight(.bold)
-                    Text(subtitle)
-                        .font(.caption)
-                }
-                Spacer()
-                Image(systemName: "chevron.right")
-            }
-            .frame(maxWidth: .infinity)
-            .padding()
-            .background(
-                LinearGradient(
-                    colors: colors,
-                    startPoint: .leading,
-                    endPoint: .trailing
-                )
-            )
-            .foregroundColor(.white)
-            .cornerRadius(12)
-            .shadow(color: colors.first!.opacity(0.3), radius: 4, x: 0, y: 2)
+    private func optimizeImage(_ image: UIImage) -> UIImage? {
+        let maxSize: CGFloat = 1024
+        let size = image.size
+        
+        if size.width <= maxSize && size.height <= maxSize {
+            return image
         }
+        
+        let ratio = min(maxSize / size.width, maxSize / size.height)
+        let newSize = CGSize(width: size.width * ratio, height: size.height * ratio)
+        
+        UIGraphicsBeginImageContextWithOptions(newSize, false, 1.0)
+        image.draw(in: CGRect(origin: .zero, size: newSize))
+        let optimizedImage = UIGraphicsGetImageFromCurrentImageContext()
+        UIGraphicsEndImageContext()
+        
+        return optimizedImage
     }
     
-    private func analyzeForMaxBuyPrice() {
+    private func analyzeForProspecting() {
         guard !capturedImages.isEmpty else { return }
         
-        print("🔍 Starting REAL Prospecting Analysis with \(capturedImages.count) images")
-        
-        aiService.analyzeForProspecting(
-            images: capturedImages,
-            category: "All Categories"
-        ) { analysis in
+        aiService.analyzeForProspecting(images: capturedImages, category: "All") { analysis in
             DispatchQueue.main.async {
-                prospectAnalysis = analysis
-                print("✅ REAL Prospecting Complete: \(analysis.recommendation.title) - Max Pay: $\(String(format: "%.2f", analysis.maxBuyPrice))")
+                self.prospectAnalysis = analysis
             }
         }
     }
     
     private func lookupBarcode(_ barcode: String) {
-        print("📱 Looking up barcode with Real AI: \(barcode)")
-        
         aiService.lookupBarcodeForProspecting(barcode) { analysis in
             DispatchQueue.main.async {
-                prospectAnalysis = analysis
+                self.prospectAnalysis = analysis
             }
         }
+    }
+}
+
+struct ProspectPhotoPlaceholder: View {
+    let onTakePhotos: () -> Void
+    
+    var body: some View {
+        Button(action: onTakePhotos) {
+            VStack(spacing: 20) {
+                Image(systemName: "magnifyingglass")
+                    .font(.system(size: 50))
+                    .foregroundColor(.purple)
+                
+                VStack(spacing: 8) {
+                    Text("Prospect Items")
+                        .font(.title2)
+                        .fontWeight(.semibold)
+                    
+                    Text("Get instant max buy prices")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                }
+            }
+            .frame(maxWidth: .infinity)
+            .frame(height: 200)
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .stroke(Color.purple.opacity(0.3), style: StrokeStyle(lineWidth: 2, dash: [8, 4]))
+            )
+        }
+        .buttonStyle(PlainButtonStyle())
+    }
+}
+
+// MARK: - Clean Prospect Result
+struct CleanProspectResult: View {
+    let analysis: ProspectAnalysis
+    
+    var body: some View {
+        VStack(spacing: 16) {
+            // Header
+            VStack(spacing: 8) {
+                HStack {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(analysis.itemName)
+                            .font(.title2)
+                            .fontWeight(.bold)
+                        
+                        if !analysis.brand.isEmpty {
+                            Text(analysis.brand)
+                                .font(.subheadline)
+                                .foregroundColor(.blue)
+                        }
+                    }
+                    
+                    Spacer()
+                    
+                    VStack(alignment: .trailing, spacing: 4) {
+                        Text(analysis.recommendation.emoji)
+                            .font(.title)
+                        Text(analysis.recommendation.title)
+                            .font(.caption)
+                            .fontWeight(.semibold)
+                            .foregroundColor(analysis.recommendation.color)
+                    }
+                }
+            }
+            
+            // Max Buy Price Strategy
+            VStack(alignment: .leading, spacing: 12) {
+                Text("Pricing Strategy")
+                    .font(.headline)
+                    .fontWeight(.semibold)
+                
+                HStack(spacing: 12) {
+                    PriceCard(
+                        title: "Max Pay",
+                        price: analysis.maxBuyPrice,
+                        color: .red,
+                        isRecommended: true
+                    )
+                    
+                    PriceCard(
+                        title: "Target",
+                        price: analysis.targetBuyPrice,
+                        color: .orange
+                    )
+                    
+                    PriceCard(
+                        title: "Sell For",
+                        price: analysis.estimatedSellPrice,
+                        color: .green
+                    )
+                }
+                
+                // Profit Display
+                if analysis.potentialProfit > 0 {
+                    HStack {
+                        Text("Potential Profit:")
+                        Spacer()
+                        Text("$\(String(format: "%.2f", analysis.potentialProfit))")
+                            .fontWeight(.bold)
+                            .foregroundColor(.green)
+                        Text("(\(String(format: "%.0f", analysis.expectedROI))% ROI)")
+                            .foregroundColor(.secondary)
+                    }
+                    .padding(.top, 8)
+                }
+            }
+            .padding()
+            .background(Color.gray.opacity(0.05))
+            .cornerRadius(12)
+            
+            // Market Intelligence
+            if !analysis.recentSales.isEmpty {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Recent Sales")
+                        .font(.headline)
+                        .fontWeight(.semibold)
+                    
+                    ForEach(analysis.recentSales.prefix(3), id: \.title) { sale in
+                        HStack {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(sale.title)
+                                    .font(.caption)
+                                    .lineLimit(1)
+                                Text(sale.condition)
+                                    .font(.caption2)
+                                    .foregroundColor(.secondary)
+                            }
+                            
+                            Spacer()
+                            
+                            Text("$\(String(format: "%.0f", sale.price))")
+                                .font(.caption)
+                                .fontWeight(.semibold)
+                                .foregroundColor(.green)
+                        }
+                        .padding(.vertical, 4)
+                    }
+                }
+                .padding()
+                .background(Color.blue.opacity(0.05))
+                .cornerRadius(12)
+            }
+        }
+        .padding()
+        .background(Color.white)
+        .cornerRadius(16)
+        .shadow(color: .black.opacity(0.05), radius: 4, x: 0, y: 2)
     }
 }
 

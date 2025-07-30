@@ -1,9 +1,9 @@
 import SwiftUI
 import PhotosUI
 
-// MARK: - Smart Inventory Organization Views
+// MARK: - Clean Inventory Organization Views
 
-// MARK: - Main Inventory Organization View
+// MARK: - Main Clean Inventory Organization View
 struct InventoryOrganizationView: View {
     @EnvironmentObject var inventoryManager: InventoryManager
     @State private var selectedCategory: String?
@@ -12,84 +12,29 @@ struct InventoryOrganizationView: View {
     var body: some View {
         NavigationView {
             ScrollView {
-                VStack(spacing: 20) {
-                    // Header
+                LazyVStack(spacing: 20) {
+                    // Clean Header
                     VStack(spacing: 8) {
-                        Text("📦 SMART INVENTORY")
+                        Text("Storage Organization")
                             .font(.largeTitle)
                             .fontWeight(.bold)
-                            .foregroundColor(.blue)
                         
-                        Text("Auto-organized • Easy to find • Ready to ship")
-                            .font(.headline)
+                        Text("Smart inventory management")
+                            .font(.subheadline)
                             .foregroundColor(.secondary)
-                            .multilineTextAlignment(.center)
                     }
                     
-                    // Quick Stats
-                    InventoryQuickStats(inventoryManager: inventoryManager)
+                    // Quick Storage Stats
+                    CleanStorageStats(inventoryManager: inventoryManager)
                     
-                    // Category Organization Grid
-                    LazyVGrid(columns: [
-                        GridItem(.flexible()),
-                        GridItem(.flexible())
-                    ], spacing: 15) {
-                        ForEach(inventoryManager.getInventoryOverview(), id: \.letter) { overview in
-                            CategoryCard(
-                                letter: overview.letter,
-                                category: overview.category,
-                                itemCount: overview.count,
-                                items: overview.items
-                            ) {
-                                selectedCategory = overview.letter
-                            }
-                        }
-                    }
+                    // Category Grid
+                    CleanCategoryGrid(
+                        inventoryManager: inventoryManager,
+                        onCategorySelected: { selectedCategory = $0 }
+                    )
                     
-                    // Storage Management Actions
-                    VStack(alignment: .leading, spacing: 15) {
-                        Text("📦 STORAGE MANAGEMENT")
-                            .font(.title2)
-                            .fontWeight(.bold)
-                        
-                        HStack(spacing: 15) {
-                            ActionButton(
-                                title: "📚 Storage Guide",
-                                description: "How to organize items",
-                                color: .green
-                            ) {
-                                showingStorageGuide = true
-                            }
-                            
-                            ActionButton(
-                                title: "📋 Ready to Ship",
-                                description: "\(inventoryManager.getPackagedItems().count) items",
-                                color: .orange
-                            ) {
-                                // Show packaged items
-                            }
-                        }
-                        
-                        HStack(spacing: 15) {
-                            ActionButton(
-                                title: "🏷️ Missing Photos",
-                                description: "\(inventoryManager.getItemsNeedingPhotos().count) items",
-                                color: .red
-                            ) {
-                                // Show items needing photos
-                            }
-                            
-                            ActionButton(
-                                title: "🚀 Ready to List",
-                                description: "\(inventoryManager.getItemsReadyToList().count) items",
-                                color: .blue
-                            ) {
-                                // Show items ready to list
-                            }
-                        }
-                    }
-                    
-                    Spacer(minLength: 20)
+                    // Storage Actions
+                    CleanStorageActions(onStorageGuide: { showingStorageGuide = true })
                 }
                 .padding()
             }
@@ -117,26 +62,26 @@ struct CategorySelection: Identifiable {
     let letter: String
 }
 
-// MARK: - Inventory Quick Stats
-struct InventoryQuickStats: View {
+// MARK: - Clean Storage Stats
+struct CleanStorageStats: View {
     let inventoryManager: InventoryManager
     
     var body: some View {
         HStack {
-            StatCard(
+            StorageStat(
                 title: "Total Items",
                 value: "\(inventoryManager.items.count)",
                 color: .blue
             )
             
-            StatCard(
+            StorageStat(
                 title: "Categories",
                 value: "\(inventoryManager.getInventoryOverview().count)",
                 color: .green
             )
             
-            StatCard(
-                title: "Ready to Ship",
+            StorageStat(
+                title: "Packaged",
                 value: "\(inventoryManager.getPackagedItems().count)",
                 color: .orange
             )
@@ -144,8 +89,62 @@ struct InventoryQuickStats: View {
     }
 }
 
-// MARK: - Category Card
-struct CategoryCard: View {
+struct StorageStat: View {
+    let title: String
+    let value: String
+    let color: Color
+    
+    var body: some View {
+        VStack(spacing: 4) {
+            Text(value)
+                .font(.title2)
+                .fontWeight(.bold)
+                .foregroundColor(color)
+            
+            Text(title)
+                .font(.caption)
+                .foregroundColor(.secondary)
+                .multilineTextAlignment(.center)
+        }
+        .frame(maxWidth: .infinity)
+        .padding()
+        .background(color.opacity(0.1))
+        .cornerRadius(12)
+    }
+}
+
+// MARK: - Clean Category Grid
+struct CleanCategoryGrid: View {
+    let inventoryManager: InventoryManager
+    let onCategorySelected: (String) -> Void
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Categories")
+                .font(.headline)
+                .fontWeight(.semibold)
+            
+            LazyVGrid(columns: [
+                GridItem(.flexible()),
+                GridItem(.flexible())
+            ], spacing: 12) {
+                ForEach(inventoryManager.getInventoryOverview(), id: \.letter) { overview in
+                    CleanCategoryCard(
+                        letter: overview.letter,
+                        category: overview.category,
+                        itemCount: overview.count,
+                        items: overview.items
+                    ) {
+                        onCategorySelected(overview.letter)
+                    }
+                }
+            }
+        }
+    }
+}
+
+// MARK: - Clean Category Card
+struct CleanCategoryCard: View {
     let letter: String
     let category: String
     let itemCount: Int
@@ -154,22 +153,22 @@ struct CategoryCard: View {
     
     var body: some View {
         Button(action: onTap) {
-            VStack(spacing: 12) {
-                // Category Letter Badge
+            VStack(spacing: 10) {
+                // Category Letter
                 ZStack {
                     Circle()
                         .fill(getColorForLetter(letter))
-                        .frame(width: 50, height: 50)
+                        .frame(width: 40, height: 40)
                     
                     Text(letter)
-                        .font(.title)
+                        .font(.title2)
                         .fontWeight(.bold)
                         .foregroundColor(.white)
                 }
                 
                 VStack(spacing: 4) {
                     Text(category)
-                        .font(.headline)
+                        .font(.subheadline)
                         .fontWeight(.semibold)
                         .foregroundColor(.primary)
                         .multilineTextAlignment(.center)
@@ -180,20 +179,20 @@ struct CategoryCard: View {
                         .foregroundColor(.secondary)
                 }
                 
-                // Recent items preview
+                // Item Preview
                 if !items.isEmpty {
-                    HStack(spacing: 4) {
+                    HStack(spacing: 3) {
                         ForEach(items.prefix(3), id: \.id) { item in
                             if let imageData = item.imageData, let uiImage = UIImage(data: imageData) {
                                 Image(uiImage: uiImage)
                                     .resizable()
                                     .aspectRatio(contentMode: .fill)
-                                    .frame(width: 20, height: 20)
-                                    .cornerRadius(4)
+                                    .frame(width: 16, height: 16)
+                                    .cornerRadius(3)
                             } else {
-                                RoundedRectangle(cornerRadius: 4)
+                                RoundedRectangle(cornerRadius: 3)
                                     .fill(Color.gray.opacity(0.3))
-                                    .frame(width: 20, height: 20)
+                                    .frame(width: 16, height: 16)
                             }
                         }
                         
@@ -207,9 +206,10 @@ struct CategoryCard: View {
             }
             .frame(maxWidth: .infinity)
             .padding()
-            .background(
-                RoundedRectangle(cornerRadius: 16)
-                    .fill(Color.gray.opacity(0.05))
+            .background(Color.gray.opacity(0.05))
+            .cornerRadius(12)
+            .overlay(
+                RoundedRectangle(cornerRadius: 12)
                     .stroke(getColorForLetter(letter).opacity(0.3), lineWidth: 1)
             )
         }
@@ -233,6 +233,72 @@ struct CategoryCard: View {
         case "M": return .primary
         default: return .gray
         }
+    }
+}
+
+// MARK: - Clean Storage Actions
+struct CleanStorageActions: View {
+    let onStorageGuide: () -> Void
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Storage Management")
+                .font(.headline)
+                .fontWeight(.semibold)
+            
+            HStack(spacing: 12) {
+                StorageActionButton(
+                    title: "Storage Guide",
+                    subtitle: "How to organize",
+                    color: .green,
+                    icon: "book",
+                    action: onStorageGuide
+                )
+                
+                StorageActionButton(
+                    title: "Coming Soon",
+                    subtitle: "More features",
+                    color: .gray,
+                    icon: "plus",
+                    action: {}
+                )
+            }
+        }
+    }
+}
+
+struct StorageActionButton: View {
+    let title: String
+    let subtitle: String
+    let color: Color
+    let icon: String
+    let action: () -> Void
+    
+    var body: some View {
+        Button(action: action) {
+            VStack(alignment: .leading, spacing: 6) {
+                HStack {
+                    Image(systemName: icon)
+                        .font(.title3)
+                        .foregroundColor(color)
+                    Spacer()
+                }
+                
+                Text(title)
+                    .font(.subheadline)
+                    .fontWeight(.semibold)
+                    .foregroundColor(.primary)
+                
+                Text(subtitle)
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding()
+            .background(color.opacity(0.1))
+            .cornerRadius(12)
+        }
+        .buttonStyle(PlainButtonStyle())
     }
 }
 
@@ -260,10 +326,10 @@ struct CategoryDetailView: View {
                     ZStack {
                         Circle()
                             .fill(getColorForLetter(categoryLetter))
-                            .frame(width: 80, height: 80)
+                            .frame(width: 60, height: 60)
                         
                         Text(categoryLetter)
-                            .font(.largeTitle)
+                            .font(.title)
                             .fontWeight(.bold)
                             .foregroundColor(.white)
                     }
@@ -273,47 +339,23 @@ struct CategoryDetailView: View {
                         .fontWeight(.bold)
                     
                     Text("\(categoryItems.count) items")
-                        .font(.headline)
+                        .font(.subheadline)
                         .foregroundColor(.secondary)
                 }
                 .padding()
                 
                 // Storage Tips
                 if let category = categoryInfo {
-                    StorageTipsCard(category: category)
+                    CleanStorageTipsCard(category: category)
                 }
                 
                 // Items List
                 List {
                     ForEach(categoryItems) { item in
-                        CategoryItemRow(item: item) { updatedItem in
+                        CleanCategoryItemRow(item: item) { updatedItem in
                             inventoryManager.updateItem(updatedItem)
                         }
                     }
-                }
-                
-                // Bulk Actions
-                if !selectedItems.isEmpty {
-                    HStack(spacing: 15) {
-                        Button("📦 Mark as Packaged") {
-                            // Bulk package items
-                        }
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(Color.green)
-                        .foregroundColor(.white)
-                        .cornerRadius(12)
-                        
-                        Button("📍 Update Storage") {
-                            showingStorageUpdate = true
-                        }
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(Color.blue)
-                        .foregroundColor(.white)
-                        .cornerRadius(12)
-                    }
-                    .padding()
                 }
             }
             .navigationTitle("Category \(categoryLetter)")
@@ -325,10 +367,6 @@ struct CategoryDetailView: View {
                     }
                 }
             }
-        }
-        .sheet(isPresented: $showingStorageUpdate) {
-            StorageUpdateView(categoryLetter: categoryLetter, selectedItems: selectedItems)
-                .environmentObject(inventoryManager)
         }
     }
     
@@ -352,23 +390,24 @@ struct CategoryDetailView: View {
     }
 }
 
-// MARK: - Storage Tips Card
-struct StorageTipsCard: View {
+// MARK: - Clean Storage Tips Card
+struct CleanStorageTipsCard: View {
     let category: InventoryCategory
     
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("📦 Storage Tips")
+            Text("Storage Tips")
                 .font(.headline)
-                .fontWeight(.bold)
+                .fontWeight(.semibold)
             
-            ForEach(category.storageTips, id: \.self) { tip in
-                HStack {
+            ForEach(category.storageTips.prefix(3), id: \.self) { tip in
+                HStack(alignment: .top) {
                     Text("•")
                         .foregroundColor(.blue)
+                        .fontWeight(.bold)
                     Text(tip)
-                        .font(.caption)
-                        .foregroundColor(.secondary)
+                        .font(.subheadline)
+                        .foregroundColor(.primary)
                 }
             }
         }
@@ -379,8 +418,8 @@ struct StorageTipsCard: View {
     }
 }
 
-// MARK: - Category Item Row
-struct CategoryItemRow: View {
+// MARK: - Clean Category Item Row
+struct CleanCategoryItemRow: View {
     let item: InventoryItem
     let onUpdate: (InventoryItem) -> Void
     @State private var showingDetail = false
@@ -396,7 +435,7 @@ struct CategoryItemRow: View {
                     .cornerRadius(8)
             } else {
                 RoundedRectangle(cornerRadius: 8)
-                    .fill(Color.gray.opacity(0.3))
+                    .fill(Color.gray.opacity(0.2))
                     .frame(width: 50, height: 50)
                     .overlay(
                         Image(systemName: "photo")
@@ -412,26 +451,27 @@ struct CategoryItemRow: View {
                     .foregroundColor(.blue)
                 
                 Text(item.name)
-                    .font(.headline)
+                    .font(.subheadline)
+                    .fontWeight(.medium)
                     .lineLimit(1)
                 
                 HStack {
                     Text(item.condition)
-                        .font(.caption)
-                        .padding(.horizontal, 6)
+                        .font(.caption2)
+                        .padding(.horizontal, 4)
                         .padding(.vertical, 2)
-                        .background(Color.blue.opacity(0.2))
-                        .cornerRadius(4)
+                        .background(Color.blue.opacity(0.1))
+                        .cornerRadius(3)
                     
                     if item.isPackaged {
-                        Text("📦 Packaged")
-                            .font(.caption)
+                        Text("Packaged")
+                            .font(.caption2)
                             .foregroundColor(.green)
                     }
                     
                     if !item.storageLocation.isEmpty {
-                        Text("📍 \(item.storageLocation)")
-                            .font(.caption)
+                        Text(item.storageLocation)
+                            .font(.caption2)
                             .foregroundColor(.secondary)
                     }
                 }
@@ -439,20 +479,20 @@ struct CategoryItemRow: View {
             
             Spacer()
             
-            // Status and Price
+            // Price and Status
             VStack(alignment: .trailing, spacing: 4) {
                 Text("$\(String(format: "%.0f", item.suggestedPrice))")
-                    .font(.headline)
+                    .font(.subheadline)
                     .fontWeight(.bold)
                     .foregroundColor(.green)
                 
                 Text(item.status.rawValue)
-                    .font(.caption)
+                    .font(.caption2)
                     .padding(.horizontal, 6)
                     .padding(.vertical, 2)
-                    .background(item.status.color.opacity(0.2))
+                    .background(item.status.color.opacity(0.1))
                     .foregroundColor(item.status.color)
-                    .cornerRadius(8)
+                    .cornerRadius(6)
             }
         }
         .contentShape(Rectangle())
@@ -465,7 +505,7 @@ struct CategoryItemRow: View {
     }
 }
 
-// MARK: - Storage Guide View
+// MARK: - Clean Storage Guide View
 struct StorageGuideView: View {
     @Environment(\.presentationMode) var presentationMode
     
@@ -473,20 +513,17 @@ struct StorageGuideView: View {
         NavigationView {
             ScrollView {
                 VStack(alignment: .leading, spacing: 20) {
-                    Text("📚 SMART STORAGE GUIDE")
+                    Text("Storage Guide")
                         .font(.largeTitle)
                         .fontWeight(.bold)
-                        .foregroundColor(.blue)
                     
-                    Text("Maximize organization and protect your inventory")
-                        .font(.headline)
+                    Text("Organize your inventory for maximum efficiency")
+                        .font(.subheadline)
                         .foregroundColor(.secondary)
                     
-                    ForEach(InventoryCategory.allCases, id: \.self) { category in
-                        CategoryStorageGuide(category: category)
+                    ForEach(InventoryCategory.allCases.prefix(6), id: \.self) { category in
+                        CleanCategoryStorageGuide(category: category)
                     }
-                    
-                    Spacer(minLength: 50)
                 }
                 .padding()
             }
@@ -502,36 +539,36 @@ struct StorageGuideView: View {
     }
 }
 
-// MARK: - Category Storage Guide
-struct CategoryStorageGuide: View {
+// MARK: - Clean Category Storage Guide
+struct CleanCategoryStorageGuide: View {
     let category: InventoryCategory
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 10) {
             HStack {
                 ZStack {
                     Circle()
                         .fill(getColorForCategory(category))
-                        .frame(width: 40, height: 40)
+                        .frame(width: 30, height: 30)
                     
                     Text(category.inventoryLetter)
-                        .font(.headline)
+                        .font(.subheadline)
                         .fontWeight(.bold)
                         .foregroundColor(.white)
                 }
                 
                 Text(category.rawValue)
                     .font(.headline)
-                    .fontWeight(.bold)
+                    .fontWeight(.semibold)
             }
             
-            ForEach(category.storageTips, id: \.self) { tip in
+            ForEach(category.storageTips.prefix(3), id: \.self) { tip in
                 HStack(alignment: .top) {
                     Text("•")
                         .foregroundColor(getColorForCategory(category))
                         .fontWeight(.bold)
                     Text(tip)
-                        .font(.body)
+                        .font(.subheadline)
                 }
             }
         }
@@ -560,127 +597,12 @@ struct CategoryStorageGuide: View {
     }
 }
 
-// MARK: - Storage Update View
-struct StorageUpdateView: View {
-    let categoryLetter: String
-    let selectedItems: Set<UUID>
-    @EnvironmentObject var inventoryManager: InventoryManager
-    @Environment(\.presentationMode) var presentationMode
-    @State private var storageLocation = ""
-    @State private var binNumber = ""
-    
-    var body: some View {
-        NavigationView {
-            Form {
-                Section("Update Storage Location") {
-                    TextField("Storage Location (e.g., Closet A, Shelf 2)", text: $storageLocation)
-                    TextField("Bin Number (optional)", text: $binNumber)
-                }
-                
-                Section("Selected Items") {
-                    Text("\(selectedItems.count) items selected")
-                        .foregroundColor(.secondary)
-                }
-            }
-            .navigationTitle("Update Storage")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Button("Cancel") {
-                        presentationMode.wrappedValue.dismiss()
-                    }
-                }
-                
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Update") {
-                        updateStorage()
-                        presentationMode.wrappedValue.dismiss()
-                    }
-                    .disabled(storageLocation.isEmpty)
-                }
-            }
-        }
-    }
-    
-    private func updateStorage() {
-        for itemId in selectedItems {
-            if let item = inventoryManager.items.first(where: { $0.id == itemId }) {
-                inventoryManager.updateStorageLocation(
-                    for: item,
-                    location: storageLocation,
-                    binNumber: binNumber
-                )
-            }
-        }
-    }
-}
-
-// MARK: - Supporting Components
-struct StatCard: View {
-    let title: String
-    let value: String
-    let color: Color
-    
-    var body: some View {
-        VStack(spacing: 8) {
-            Text(value)
-                .font(.title2)
-                .fontWeight(.bold)
-                .foregroundColor(color)
-            
-            Text(title)
-                .font(.caption)
-                .foregroundColor(.secondary)
-                .multilineTextAlignment(.center)
-        }
-        .frame(maxWidth: .infinity)
-        .padding()
-        .background(
-            RoundedRectangle(cornerRadius: 12)
-                .fill(color.opacity(0.1))
-        )
-    }
-}
-
-struct ActionButton: View {
-    let title: String
-    let description: String
-    let color: Color
-    let action: () -> Void
-    
-    var body: some View {
-        Button(action: action) {
-            VStack(alignment: .leading, spacing: 8) {
-                Text(title)
-                    .font(.headline)
-                    .fontWeight(.bold)
-                    .foregroundColor(.white)
-                
-                Text(description)
-                    .font(.caption)
-                    .foregroundColor(.white.opacity(0.8))
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding()
-            .background(
-                LinearGradient(
-                    colors: [color, color.opacity(0.8)],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
-            )
-            .cornerRadius(12)
-        }
-    }
-}
-
-// MARK: - Smart Inventory List View with Editing
+// MARK: - Clean Smart Inventory List View
 struct SmartInventoryListView: View {
     @EnvironmentObject var inventoryManager: InventoryManager
     @EnvironmentObject var googleSheetsService: GoogleSheetsService
     @State private var searchText = ""
     @State private var filterStatus: ItemStatus?
-    @State private var showingFilters = false
     @State private var showingBarcodeLookup = false
     @State private var scannedBarcode: String?
     @State private var selectedItem: InventoryItem?
@@ -710,9 +632,9 @@ struct SmartInventoryListView: View {
     var body: some View {
         NavigationView {
             VStack {
-                // Smart Search Bar with Barcode Scanner
+                // Clean Search Bar
                 HStack {
-                    SearchBarView(text: $searchText)
+                    CleanSearchBar(text: $searchText)
                     
                     Button(action: {
                         showingBarcodeLookup = true
@@ -720,27 +642,27 @@ struct SmartInventoryListView: View {
                         Image(systemName: "barcode.viewfinder")
                             .font(.title2)
                             .foregroundColor(.blue)
-                            .padding(.trailing, 8)
                     }
                 }
+                .padding(.horizontal)
                 
-                // Filter Status Bar
+                // Filter Bar
                 if filteredItems.count != inventoryManager.items.count || filterStatus != nil {
                     HStack {
                         if let status = filterStatus {
-                            Text("Filtered by: \(status.rawValue)")
+                            Text("Filter: \(status.rawValue)")
                                 .font(.caption)
                                 .foregroundColor(.blue)
                         }
                         
-                        Text("Showing \(filteredItems.count) of \(inventoryManager.items.count) items")
+                        Text("\(filteredItems.count) of \(inventoryManager.items.count)")
                             .font(.caption)
                             .foregroundColor(.secondary)
                         
                         Spacer()
                         
                         if filterStatus != nil {
-                            Button("Clear Filter") {
+                            Button("Clear") {
                                 filterStatus = nil
                             }
                             .font(.caption)
@@ -752,9 +674,10 @@ struct SmartInventoryListView: View {
                     .background(Color.gray.opacity(0.1))
                 }
                 
+                // Items List
                 List {
                     ForEach(filteredItems) { item in
-                        InventoryItemRowView(item: item) { updatedItem in
+                        CleanInventoryItemRow(item: item) { updatedItem in
                             inventoryManager.updateItem(updatedItem)
                             googleSheetsService.updateItem(updatedItem)
                         } onAutoList: { item in
@@ -768,7 +691,7 @@ struct SmartInventoryListView: View {
                     .onDelete(perform: deleteItems)
                 }
             }
-            .navigationTitle("Smart Inventory (\(filteredItems.count))")
+            .navigationTitle("Inventory (\(filteredItems.count))")
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Menu {
@@ -781,10 +704,10 @@ struct SmartInventoryListView: View {
                             }
                         }
                         Divider()
-                        Button("📊 Export to CSV") {
+                        Button("Export CSV") {
                             exportToCSV()
                         }
-                        Button("🔄 Sync to Google Sheets") {
+                        Button("Sync Sheets") {
                             googleSheetsService.syncAllItems(inventoryManager.items)
                         }
                     } label: {
@@ -825,22 +748,37 @@ struct SmartInventoryListView: View {
     
     private func exportToCSV() {
         let csv = inventoryManager.exportCSV()
-        print("📄 CSV Export generated with smart inventory codes")
+        print("CSV Export generated")
     }
     
     private func lookupItemByBarcode(barcode: String) {
-        // Find item by barcode or inventory code
         if let item = inventoryManager.findItem(byInventoryCode: barcode) {
             selectedItem = item
             showingAutoListing = true
-        } else {
-            print("🔍 Item not found with code: \(barcode)")
         }
     }
 }
 
-// MARK: - Inventory Item Row with Edit Button
-struct InventoryItemRowView: View {
+// MARK: - Clean Search Bar
+struct CleanSearchBar: View {
+    @Binding var text: String
+    
+    var body: some View {
+        HStack {
+            Image(systemName: "magnifyingglass")
+                .foregroundColor(.secondary)
+            
+            TextField("Search items...", text: $text)
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 8)
+        .background(Color.gray.opacity(0.1))
+        .cornerRadius(8)
+    }
+}
+
+// MARK: - Clean Inventory Item Row
+struct CleanInventoryItemRow: View {
     let item: InventoryItem
     let onUpdate: (InventoryItem) -> Void
     let onAutoList: (InventoryItem) -> Void
@@ -854,16 +792,12 @@ struct InventoryItemRowView: View {
                 Image(uiImage: uiImage)
                     .resizable()
                     .aspectRatio(contentMode: .fill)
-                    .frame(width: 65, height: 65)
+                    .frame(width: 60, height: 60)
                     .cornerRadius(8)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 8)
-                            .stroke(Color.blue.opacity(0.3), lineWidth: 1)
-                    )
             } else {
                 RoundedRectangle(cornerRadius: 8)
                     .fill(Color.gray.opacity(0.2))
-                    .frame(width: 65, height: 65)
+                    .frame(width: 60, height: 60)
                     .overlay(
                         Image(systemName: "photo")
                             .foregroundColor(.gray)
@@ -872,7 +806,6 @@ struct InventoryItemRowView: View {
             
             // Item Details
             VStack(alignment: .leading, spacing: 4) {
-                // Smart Inventory Code Display
                 HStack {
                     Text(item.inventoryCode.isEmpty ? "No Code" : item.inventoryCode)
                         .font(.caption)
@@ -885,95 +818,75 @@ struct InventoryItemRowView: View {
                     
                     Spacer()
                     
-                    // Item Number
                     Text("#\(item.itemNumber)")
                         .font(.caption2)
                         .foregroundColor(.secondary)
                 }
                 
-                // Item Name and Brand
                 VStack(alignment: .leading, spacing: 2) {
                     Text(item.name)
-                        .font(.headline)
+                        .font(.subheadline)
+                        .fontWeight(.medium)
                         .lineLimit(2)
                     
                     if !item.brand.isEmpty {
                         Text(item.brand)
-                            .font(.subheadline)
+                            .font(.caption)
                             .foregroundColor(.blue)
                     }
                 }
                 
-                // Purchase Info and Storage
                 HStack {
-                    Text("\(item.source) • $\(String(format: "%.2f", item.purchasePrice))")
+                    Text("\(item.source) • $\(String(format: "%.0f", item.purchasePrice))")
                         .font(.caption)
                         .foregroundColor(.secondary)
                     
                     if !item.storageLocation.isEmpty {
-                        Text("📍 \(item.storageLocation)")
+                        Text(item.storageLocation)
                             .font(.caption)
                             .foregroundColor(.green)
-                    }
-                }
-                
-                // Profit Display
-                if item.estimatedProfit > 0 {
-                    HStack {
-                        Text("Est. Profit: $\(String(format: "%.2f", item.estimatedProfit))")
-                            .font(.caption)
-                            .foregroundColor(.green)
-                        
-                        Text("(\(String(format: "%.0f", item.estimatedROI))% ROI)")
-                            .font(.caption)
-                            .foregroundColor(item.estimatedROI > 100 ? .green : item.estimatedROI > 50 ? .orange : .red)
                     }
                 }
             }
             
             Spacer()
             
-            // Action Buttons
-            VStack(alignment: .trailing, spacing: 8) {
-                // Status Badge
+            // Price and Actions
+            VStack(alignment: .trailing, spacing: 6) {
                 Text(item.status.rawValue)
-                    .font(.caption)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 4)
-                    .background(item.status.color.opacity(0.2))
+                    .font(.caption2)
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 2)
+                    .background(item.status.color.opacity(0.1))
                     .foregroundColor(item.status.color)
-                    .cornerRadius(12)
+                    .cornerRadius(8)
                 
-                // Suggested Price
-                Text("$\(String(format: "%.2f", item.suggestedPrice))")
-                    .font(.headline)
+                Text("$\(String(format: "%.0f", item.suggestedPrice))")
+                    .font(.subheadline)
                     .fontWeight(.bold)
                     .foregroundColor(.green)
                 
-                // Action Buttons Row
-                HStack(spacing: 8) {
-                    // Edit Button
+                HStack(spacing: 6) {
                     Button(action: {
                         onEdit(item)
                     }) {
                         Image(systemName: "pencil")
                             .font(.caption)
                             .foregroundColor(.orange)
-                            .padding(6)
+                            .padding(4)
                             .background(Color.orange.opacity(0.1))
-                            .cornerRadius(6)
+                            .cornerRadius(4)
                     }
                     
-                    // Auto-List Button
                     Button(action: {
                         onAutoList(item)
                     }) {
-                        Image(systemName: "wand.and.stars")
+                        Image(systemName: "square.and.arrow.up")
                             .font(.caption)
                             .foregroundColor(.blue)
-                            .padding(6)
+                            .padding(4)
                             .background(Color.blue.opacity(0.1))
-                            .cornerRadius(6)
+                            .cornerRadius(4)
                     }
                 }
             }
@@ -988,547 +901,106 @@ struct InventoryItemRowView: View {
     }
 }
 
-// MARK: - Complete Inventory Item Editor
-struct InventoryItemEditorView: View {
-    @State var item: InventoryItem
-    let onSave: (InventoryItem) -> Void
-    @EnvironmentObject var inventoryManager: InventoryManager
-    @Environment(\.presentationMode) var presentationMode
-    
-    // Edit states
-    @State private var editingImages: [UIImage] = []
-    @State private var showingImagePicker = false
-    @State private var showingCamera = false
-    @State private var editingName = ""
-    @State private var editingBrand = ""
-    @State private var editingTitle = ""
-    @State private var editingDescription = ""
-    @State private var editingKeywords = ""
-    @State private var editingCondition = ""
-    @State private var editingSize = ""
-    @State private var editingColorway = ""
-    @State private var editingPurchasePrice: Double = 0
-    @State private var editingSuggestedPrice: Double = 0
-    @State private var editingSource = ""
-    @State private var editingStorageLocation = ""
-    @State private var editingBinNumber = ""
-    @State private var editingStatus: ItemStatus = .analyzed
-    @State private var editingNotes = ""
-    
-    let sources = ["Thrift Store", "Goodwill Bins", "Estate Sale", "Yard Sale", "Facebook Marketplace", "OfferUp", "Auction", "Other"]
-    let conditions = ["Like New", "Excellent", "Very Good", "Good", "Fair", "Poor"]
-    
-    var body: some View {
-        NavigationView {
-            Form {
-                // Photos Section
-                Section("📸 Photos") {
-                    ScrollView(.horizontal, showsIndicators: false) {
-                        HStack {
-                            // Existing photos
-                            ForEach(0..<editingImages.count, id: \.self) { index in
-                                ZStack(alignment: .topTrailing) {
-                                    Image(uiImage: editingImages[index])
-                                        .resizable()
-                                        .aspectRatio(contentMode: .fill)
-                                        .frame(width: 80, height: 80)
-                                        .cornerRadius(8)
-                                    
-                                    Button(action: {
-                                        editingImages.remove(at: index)
-                                    }) {
-                                        Image(systemName: "xmark.circle.fill")
-                                            .foregroundColor(.red)
-                                            .background(Color.white, in: Circle())
-                                    }
-                                    .offset(x: 5, y: -5)
-                                }
-                            }
-                            
-                            // Add Photo Buttons
-                            Button(action: {
-                                showingCamera = true
-                            }) {
-                                VStack {
-                                    Image(systemName: "camera.fill")
-                                    Text("Camera")
-                                        .font(.caption)
-                                }
-                                .frame(width: 80, height: 80)
-                                .background(Color.blue.opacity(0.1))
-                                .cornerRadius(8)
-                            }
-                            
-                            Button(action: {
-                                showingImagePicker = true
-                            }) {
-                                VStack {
-                                    Image(systemName: "photo.on.rectangle")
-                                    Text("Library")
-                                        .font(.caption)
-                                }
-                                .frame(width: 80, height: 80)
-                                .background(Color.green.opacity(0.1))
-                                .cornerRadius(8)
-                            }
-                        }
-                        .padding(.horizontal)
-                    }
-                    
-                    Text("\(editingImages.count)/8 photos")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                }
-                
-                // Basic Information
-                Section("📋 Basic Information") {
-                    HStack {
-                        Text("Inventory Code")
-                            .fontWeight(.semibold)
-                        Spacer()
-                        Text(item.inventoryCode.isEmpty ? "Auto-assigned" : item.inventoryCode)
-                            .foregroundColor(.blue)
-                            .fontWeight(.bold)
-                    }
-                    
-                    TextField("Item Name", text: $editingName)
-                        .textFieldStyle(RoundedBorderTextFieldStyle())
-                    
-                    TextField("Brand", text: $editingBrand)
-                        .textFieldStyle(RoundedBorderTextFieldStyle())
-                    
-                    Picker("Condition", selection: $editingCondition) {
-                        ForEach(conditions, id: \.self) { condition in
-                            Text(condition).tag(condition)
-                        }
-                    }
-                    
-                    HStack {
-                        Text("Size")
-                        TextField("Size", text: $editingSize)
-                            .textFieldStyle(RoundedBorderTextFieldStyle())
-                    }
-                    
-                    HStack {
-                        Text("Colorway")
-                        TextField("Color/Style", text: $editingColorway)
-                            .textFieldStyle(RoundedBorderTextFieldStyle())
-                    }
-                }
-                
-                // Pricing Information
-                Section("💰 Pricing") {
-                    HStack {
-                        Text("Purchase Price")
-                        Spacer()
-                        Text("$")
-                        TextField("0.00", value: $editingPurchasePrice, format: .number.precision(.fractionLength(2)))
-                            .keyboardType(.decimalPad)
-                            .textFieldStyle(RoundedBorderTextFieldStyle())
-                            .frame(width: 80)
-                    }
-                    
-                    HStack {
-                        Text("Suggested Price")
-                        Spacer()
-                        Text("$")
-                        TextField("0.00", value: $editingSuggestedPrice, format: .number.precision(.fractionLength(2)))
-                            .keyboardType(.decimalPad)
-                            .textFieldStyle(RoundedBorderTextFieldStyle())
-                            .frame(width: 80)
-                    }
-                    
-                    // Profit Calculation
-                    if editingPurchasePrice > 0 && editingSuggestedPrice > 0 {
-                        let estimatedFees = editingSuggestedPrice * 0.1325 + 8.50 + 0.30
-                        let estimatedProfit = editingSuggestedPrice - editingPurchasePrice - estimatedFees
-                        let estimatedROI = (estimatedProfit / editingPurchasePrice) * 100
-                        
-                        HStack {
-                            Text("Est. Profit")
-                            Spacer()
-                            Text("$\(String(format: "%.2f", estimatedProfit))")
-                                .foregroundColor(estimatedProfit > 0 ? .green : .red)
-                                .fontWeight(.bold)
-                        }
-                        
-                        HStack {
-                            Text("Est. ROI")
-                            Spacer()
-                            Text("\(String(format: "%.1f", estimatedROI))%")
-                                .foregroundColor(estimatedROI > 100 ? .green : estimatedROI > 50 ? .orange : .red)
-                                .fontWeight(.bold)
-                        }
-                    }
-                }
-                
-                // Source and Status
-                Section("📦 Source & Status") {
-                    Picker("Source", selection: $editingSource) {
-                        ForEach(sources, id: \.self) { source in
-                            Text(source).tag(source)
-                        }
-                    }
-                    
-                    Picker("Status", selection: $editingStatus) {
-                        ForEach(ItemStatus.allCases, id: \.self) { status in
-                            Text(status.rawValue).tag(status)
-                        }
-                    }
-                }
-                
-                // Storage Location
-                Section("📍 Storage") {
-                    TextField("Storage Location", text: $editingStorageLocation)
-                        .textFieldStyle(RoundedBorderTextFieldStyle())
-                    
-                    TextField("Bin Number", text: $editingBinNumber)
-                        .textFieldStyle(RoundedBorderTextFieldStyle())
-                    
-                    Toggle("Packaged for Shipping", isOn: Binding(
-                        get: { item.isPackaged },
-                        set: { item.isPackaged = $0 }
-                    ))
-                }
-                
-                // Listing Information
-                Section("🏷️ Listing Details") {
-                    TextField("eBay Title", text: $editingTitle, axis: .vertical)
-                        .textFieldStyle(RoundedBorderTextFieldStyle())
-                        .lineLimit(2...3)
-                    
-                    TextField("Description", text: $editingDescription, axis: .vertical)
-                        .textFieldStyle(RoundedBorderTextFieldStyle())
-                        .lineLimit(4...8)
-                    
-                    TextField("Keywords (comma separated)", text: $editingKeywords, axis: .vertical)
-                        .textFieldStyle(RoundedBorderTextFieldStyle())
-                        .lineLimit(2...4)
-                }
-                
-                // Notes
-                Section("📝 Notes") {
-                    TextField("Additional Notes", text: $editingNotes, axis: .vertical)
-                        .textFieldStyle(RoundedBorderTextFieldStyle())
-                        .lineLimit(3...6)
-                }
-            }
-            .navigationTitle("Edit Item")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Button("Cancel") {
-                        presentationMode.wrappedValue.dismiss()
-                    }
-                }
-                
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Save") {
-                        saveChanges()
-                    }
-                    .fontWeight(.bold)
-                }
-            }
-        }
-        .onAppear {
-            loadItemData()
-        }
-        .sheet(isPresented: $showingCamera) {
-            CameraView { photos in
-                editingImages.append(contentsOf: photos)
-            }
-        }
-        .sheet(isPresented: $showingImagePicker) {
-            PhotoLibraryPicker { photos in
-                editingImages.append(contentsOf: photos)
-            }
-        }
-    }
-    
-    private func loadItemData() {
-        // Load existing data into editing states
-        editingName = item.name
-        editingBrand = item.brand
-        editingTitle = item.title
-        editingDescription = item.description
-        editingKeywords = item.keywords.joined(separator: ", ")
-        editingCondition = item.condition
-        editingSize = item.size
-        editingColorway = item.colorway
-        editingPurchasePrice = item.purchasePrice
-        editingSuggestedPrice = item.suggestedPrice
-        editingSource = item.source
-        editingStorageLocation = item.storageLocation
-        editingBinNumber = item.binNumber
-        editingStatus = item.status
-        editingNotes = item.marketNotes ?? ""
-        
-        // Load existing images
-        if let imageData = item.imageData, let image = UIImage(data: imageData) {
-            editingImages.append(image)
-        }
-        
-        if let additionalImageData = item.additionalImageData {
-            for data in additionalImageData {
-                if let image = UIImage(data: data) {
-                    editingImages.append(image)
-                }
-            }
-        }
-    }
-    
-    private func saveChanges() {
-        // Convert images to data
-        let imageData = editingImages.first?.jpegData(compressionQuality: 0.8)
-        let additionalImageData = editingImages.dropFirst().compactMap { $0.jpegData(compressionQuality: 0.8) }
-        
-        // Create updated item
-        var updatedItem = item
-        updatedItem.name = editingName
-        updatedItem.brand = editingBrand
-        updatedItem.title = editingTitle
-        updatedItem.description = editingDescription
-        updatedItem.keywords = editingKeywords.split(separator: ",").map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
-        updatedItem.condition = editingCondition
-        updatedItem.size = editingSize
-        updatedItem.colorway = editingColorway
-        updatedItem.purchasePrice = editingPurchasePrice
-        updatedItem.suggestedPrice = editingSuggestedPrice
-        updatedItem.source = editingSource
-        updatedItem.storageLocation = editingStorageLocation
-        updatedItem.binNumber = editingBinNumber
-        updatedItem.status = editingStatus
-        updatedItem.marketNotes = editingNotes
-        updatedItem.imageData = imageData
-        updatedItem.additionalImageData = additionalImageData.isEmpty ? nil : additionalImageData
-        
-        onSave(updatedItem)
-    }
-}
-
-// MARK: - Item Detail View with Photo Gallery
+// MARK: - Item Detail View (Simplified)
 struct ItemDetailView: View {
     @State var item: InventoryItem
     let onUpdate: (InventoryItem) -> Void
     @Environment(\.presentationMode) var presentationMode
     @State private var showingEditor = false
-    @State private var currentImageIndex = 0
-    
-    var allImages: [UIImage] {
-        var images: [UIImage] = []
-        
-        if let imageData = item.imageData, let image = UIImage(data: imageData) {
-            images.append(image)
-        }
-        
-        if let additionalImageData = item.additionalImageData {
-            for data in additionalImageData {
-                if let image = UIImage(data: data) {
-                    images.append(image)
-                }
-            }
-        }
-        
-        return images
-    }
     
     var body: some View {
         NavigationView {
-            ScrollView {
-                VStack(spacing: 20) {
-                    // Image Gallery
-                    if !allImages.isEmpty {
-                        VStack(spacing: 10) {
-                            TabView(selection: $currentImageIndex) {
-                                ForEach(0..<allImages.count, id: \.self) { index in
-                                    Image(uiImage: allImages[index])
-                                        .resizable()
-                                        .aspectRatio(contentMode: .fit)
-                                        .frame(maxHeight: 300)
-                                        .cornerRadius(12)
-                                        .shadow(radius: 5)
-                                        .tag(index)
-                                }
-                            }
-                            .tabViewStyle(PageTabViewStyle(indexDisplayMode: .always))
-                            .frame(height: 320)
-                            
-                            Text("Image \(currentImageIndex + 1) of \(allImages.count)")
+            VStack(spacing: 20) {
+                // Item Preview
+                if let imageData = item.imageData, let uiImage = UIImage(data: imageData) {
+                    Image(uiImage: uiImage)
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(maxHeight: 200)
+                        .cornerRadius(12)
+                }
+                
+                // Item Info
+                VStack(alignment: .leading, spacing: 12) {
+                    HStack {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(item.inventoryCode)
                                 .font(.caption)
-                                .foregroundColor(.secondary)
-                        }
-                    }
-                    
-                    // Item Header
-                    VStack(alignment: .leading, spacing: 12) {
-                        HStack {
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text(item.inventoryCode)
-                                    .font(.caption)
-                                    .fontWeight(.bold)
+                                .fontWeight(.bold)
+                                .foregroundColor(.blue)
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 4)
+                                .background(Color.blue.opacity(0.1))
+                                .cornerRadius(6)
+                            
+                            Text(item.name)
+                                .font(.title2)
+                                .fontWeight(.bold)
+                            
+                            if !item.brand.isEmpty {
+                                Text(item.brand)
+                                    .font(.headline)
                                     .foregroundColor(.blue)
-                                    .padding(.horizontal, 8)
-                                    .padding(.vertical, 4)
-                                    .background(Color.blue.opacity(0.1))
-                                    .cornerRadius(6)
-                                
-                                Text(item.name)
-                                    .font(.title2)
-                                    .fontWeight(.bold)
-                                
-                                if !item.brand.isEmpty {
-                                    Text(item.brand)
-                                        .font(.headline)
-                                        .foregroundColor(.blue)
-                                }
-                            }
-                            
-                            Spacer()
-                            
-                            VStack(alignment: .trailing, spacing: 4) {
-                                Text("$\(String(format: "%.2f", item.suggestedPrice))")
-                                    .font(.title2)
-                                    .fontWeight(.bold)
-                                    .foregroundColor(.green)
-                                
-                                Text(item.status.rawValue)
-                                    .font(.caption)
-                                    .padding(.horizontal, 8)
-                                    .padding(.vertical, 4)
-                                    .background(item.status.color.opacity(0.2))
-                                    .foregroundColor(item.status.color)
-                                    .cornerRadius(8)
                             }
                         }
-                    }
-                    .padding()
-                    .background(Color.gray.opacity(0.05))
-                    .cornerRadius(12)
-                    
-                    // Details Grid
-                    LazyVGrid(columns: [
-                        GridItem(.flexible()),
-                        GridItem(.flexible())
-                    ], spacing: 15) {
                         
-                        DetailCard(title: "Condition", value: item.condition, icon: "checkmark.seal", color: .green)
-                        DetailCard(title: "Category", value: item.category, icon: "tag", color: .blue)
-                        DetailCard(title: "Source", value: item.source, icon: "location", color: .orange)
-                        DetailCard(title: "Purchase Price", value: "$\(String(format: "%.2f", item.purchasePrice))", icon: "dollarsign.circle", color: .red)
+                        Spacer()
                         
-                        if !item.size.isEmpty {
-                            DetailCard(title: "Size", value: item.size, icon: "ruler", color: .purple)
-                        }
-                        
-                        if !item.colorway.isEmpty {
-                            DetailCard(title: "Colorway", value: item.colorway, icon: "paintpalette", color: .pink)
-                        }
-                        
-                        if !item.storageLocation.isEmpty {
-                            DetailCard(title: "Storage", value: item.storageLocation, icon: "archivebox", color: .brown)
-                        }
-                        
-                        if item.estimatedProfit > 0 {
-                            DetailCard(title: "Est. Profit", value: "$\(String(format: "%.2f", item.estimatedProfit))", icon: "chart.line.uptrend.xyaxis", color: .green)
-                        }
-                    }
-                    
-                    // Description
-                    if !item.description.isEmpty {
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("Description")
-                                .font(.headline)
+                        VStack(alignment: .trailing, spacing: 4) {
+                            Text("$\(String(format: "%.0f", item.suggestedPrice))")
+                                .font(.title2)
                                 .fontWeight(.bold)
+                                .foregroundColor(.green)
                             
-                            Text(item.description)
-                                .font(.body)
-                                .foregroundColor(.secondary)
-                        }
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding()
-                        .background(Color.gray.opacity(0.05))
-                        .cornerRadius(12)
-                    }
-                    
-                    // Keywords
-                    if !item.keywords.isEmpty {
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("Keywords")
-                                .font(.headline)
-                                .fontWeight(.bold)
-                            
-                            LazyVGrid(columns: [
-                                GridItem(.adaptive(minimum: 80))
-                            ], spacing: 8) {
-                                ForEach(item.keywords, id: \.self) { keyword in
-                                    Text(keyword)
-                                        .font(.caption)
-                                        .padding(.horizontal, 8)
-                                        .padding(.vertical, 4)
-                                        .background(Color.blue.opacity(0.1))
-                                        .foregroundColor(.blue)
-                                        .cornerRadius(8)
-                                }
-                            }
-                        }
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding()
-                        .background(Color.gray.opacity(0.05))
-                        .cornerRadius(12)
-                    }
-                    
-                    // Action Buttons
-                    VStack(spacing: 12) {
-                        Button(action: {
-                            showingEditor = true
-                        }) {
-                            HStack {
-                                Image(systemName: "pencil")
-                                Text("Edit Item")
-                            }
-                            .frame(maxWidth: .infinity)
-                            .padding()
-                            .background(Color.orange)
-                            .foregroundColor(.white)
-                            .cornerRadius(12)
-                            .font(.headline)
-                        }
-                        
-                        HStack(spacing: 12) {
-                            Button(action: {
-                                markAsPackaged()
-                            }) {
-                                HStack {
-                                    Image(systemName: item.isPackaged ? "checkmark" : "shippingbox")
-                                    Text(item.isPackaged ? "Packaged" : "Mark Packaged")
-                                }
-                                .frame(maxWidth: .infinity)
-                                .padding()
-                                .background(item.isPackaged ? Color.green : Color.blue)
-                                .foregroundColor(.white)
-                                .cornerRadius(12)
-                            }
-                            
-                            Button(action: {
-                                updateStatus()
-                            }) {
-                                HStack {
-                                    Image(systemName: "arrow.up.circle")
-                                    Text("Next Status")
-                                }
-                                .frame(maxWidth: .infinity)
-                                .padding()
-                                .background(Color.purple)
-                                .foregroundColor(.white)
-                                .cornerRadius(12)
-                            }
+                            Text(item.status.rawValue)
+                                .font(.caption)
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 4)
+                                .background(item.status.color.opacity(0.1))
+                                .foregroundColor(item.status.color)
+                                .cornerRadius(8)
                         }
                     }
-                    
-                    Spacer(minLength: 20)
                 }
                 .padding()
+                .background(Color.gray.opacity(0.05))
+                .cornerRadius(12)
+                
+                // Actions
+                VStack(spacing: 12) {
+                    Button("Edit Item") {
+                        showingEditor = true
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .background(Color.orange)
+                    .foregroundColor(.white)
+                    .cornerRadius(12)
+                    
+                    HStack(spacing: 12) {
+                        Button(item.isPackaged ? "Packaged" : "Mark Packaged") {
+                            markAsPackaged()
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(item.isPackaged ? Color.green : Color.blue)
+                        .foregroundColor(.white)
+                        .cornerRadius(10)
+                        
+                        Button("Update Status") {
+                            updateStatus()
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(Color.purple)
+                        .foregroundColor(.white)
+                        .cornerRadius(10)
+                    }
+                }
+                
+                Spacer()
             }
+            .padding()
             .navigationTitle("Item Details")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -1564,47 +1036,71 @@ struct ItemDetailView: View {
     }
 }
 
-// MARK: - Detail Card Component
-struct DetailCard: View {
-    let title: String
-    let value: String
-    let icon: String
-    let color: Color
+// MARK: - Inventory Item Editor (Simplified)
+struct InventoryItemEditorView: View {
+    @State var item: InventoryItem
+    let onSave: (InventoryItem) -> Void
+    @EnvironmentObject var inventoryManager: InventoryManager
+    @Environment(\.presentationMode) var presentationMode
     
     var body: some View {
-        VStack(spacing: 8) {
-            Image(systemName: icon)
-                .font(.title2)
-                .foregroundColor(color)
-            
-            Text(title)
-                .font(.caption)
-                .foregroundColor(.secondary)
-            
-            Text(value)
-                .font(.body)
-                .fontWeight(.semibold)
-                .multilineTextAlignment(.center)
+        NavigationView {
+            Form {
+                Section("Item Details") {
+                    TextField("Name", text: $item.name)
+                    TextField("Brand", text: $item.brand)
+                    TextField("Size", text: $item.size)
+                    TextField("Color", text: $item.colorway)
+                }
+                
+                Section("Pricing") {
+                    HStack {
+                        Text("Purchase Price")
+                        Spacer()
+                        TextField("0.00", value: $item.purchasePrice, format: .number.precision(.fractionLength(2)))
+                            .keyboardType(.decimalPad)
+                            .multilineTextAlignment(.trailing)
+                    }
+                    
+                    HStack {
+                        Text("Suggested Price")
+                        Spacer()
+                        TextField("0.00", value: $item.suggestedPrice, format: .number.precision(.fractionLength(2)))
+                            .keyboardType(.decimalPad)
+                            .multilineTextAlignment(.trailing)
+                    }
+                }
+                
+                Section("Storage") {
+                    TextField("Storage Location", text: $item.storageLocation)
+                    TextField("Bin Number", text: $item.binNumber)
+                    Toggle("Packaged", isOn: $item.isPackaged)
+                }
+                
+                Section("Status") {
+                    Picker("Status", selection: $item.status) {
+                        ForEach(ItemStatus.allCases, id: \.self) { status in
+                            Text(status.rawValue).tag(status)
+                        }
+                    }
+                }
+            }
+            .navigationTitle("Edit Item")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button("Cancel") {
+                        presentationMode.wrappedValue.dismiss()
+                    }
+                }
+                
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("Save") {
+                        onSave(item)
+                    }
+                    .fontWeight(.semibold)
+                }
+            }
         }
-        .frame(maxWidth: .infinity)
-        .padding()
-        .background(color.opacity(0.1))
-        .cornerRadius(12)
-    }
-}
-
-// MARK: - Search Bar View
-struct SearchBarView: View {
-    @Binding var text: String
-    
-    var body: some View {
-        HStack {
-            Image(systemName: "magnifyingglass")
-                .foregroundColor(.secondary)
-            
-            TextField("Search by name, code, brand, or source...", text: $text)
-                .textFieldStyle(RoundedBorderTextFieldStyle())
-        }
-        .padding(.horizontal)
     }
 }
