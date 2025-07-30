@@ -376,8 +376,8 @@ struct APIConfigurationView: View {
                     AppleAPICard(
                         title: "OpenAI GPT-4",
                         description: "Powers item identification and analysis",
-                        status: !APIConfig.openAIKey.isEmpty ? "Configured" : "Not Configured",
-                        isConfigured: !APIConfig.openAIKey.isEmpty
+                        status: !Configuration.openAIKey.isEmpty ? "Configured" : "Not Configured",
+                        isConfigured: !Configuration.openAIKey.isEmpty
                     )
                     
                     Text("Configure your OpenAI API key in environment variables")
@@ -415,8 +415,8 @@ struct APIConfigurationView: View {
                     AppleAPICard(
                         title: "eBay API",
                         description: "Direct listing to eBay",
-                        status: !APIConfig.ebayAPIKey.isEmpty ? "Configured" : "Not Configured",
-                        isConfigured: !APIConfig.ebayAPIKey.isEmpty
+                        status: !Configuration.ebayAPIKey.isEmpty ? "Configured" : "Not Configured",
+                        isConfigured: !Configuration.ebayAPIKey.isEmpty
                     )
                     
                     Text("eBay direct listing requires eBay Developer API access")
@@ -428,8 +428,8 @@ struct APIConfigurationView: View {
                     AppleAPICard(
                         title: "RapidAPI",
                         description: "Live market data and pricing",
-                        status: !APIConfig.rapidAPIKey.isEmpty ? "Configured" : "Not Configured",
-                        isConfigured: !APIConfig.rapidAPIKey.isEmpty
+                        status: !Configuration.rapidAPIKey.isEmpty ? "Configured" : "Not Configured",
+                        isConfigured: !Configuration.rapidAPIKey.isEmpty
                     )
                 }
                 
