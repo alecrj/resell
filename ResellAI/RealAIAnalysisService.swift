@@ -9,9 +9,9 @@ class RealAIAnalysisService: ObservableObject {
     @Published var currentStep = 0
     @Published var totalSteps = 12 // Increased for more thorough analysis
     
-    private let openAIAPIKey = APIConfig.openAIKey
-    private let rapidAPIKey = APIConfig.rapidAPIKey
-    private let ebayAPIKey = APIConfig.ebayAPIKey
+    private let openAIAPIKey = Configuration.openAIKey
+    private let rapidAPIKey = Configuration.rapidAPIKey
+    private let ebayAPIKey = Configuration.ebayAPIKey
     
     // Cache for market data (24 hour expiration)
     private var marketDataCache: [String: (data: EbayMarketData, timestamp: Date)] = [:]
@@ -33,7 +33,7 @@ class RealAIAnalysisService: ObservableObject {
         }
     }
     
-    // MARK: - FIXED: Added Missing Barcode Lookup Methods
+    // MARK: - Barcode Lookup Methods
     func lookupProductByBarcode(_ barcode: String, completion: @escaping (RealProductData?) -> Void) {
         print("📱 Looking up barcode: \(barcode)")
         
@@ -438,7 +438,7 @@ class RealAIAnalysisService: ObservableObject {
             categoryHint: categoryHint
         )
         
-        var request = URLRequest(url: URL(string: "https://api.openai.com/v1/chat/completions")!)
+        var request = URLRequest(url: URL(string: Configuration.openAIEndpoint)!)
         request.httpMethod = "POST"
         request.setValue("Bearer \(openAIAPIKey)", forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
@@ -524,7 +524,7 @@ class RealAIAnalysisService: ObservableObject {
         
         let conditionPrompt = createEbayConditionPrompt(product: product)
         
-        var request = URLRequest(url: URL(string: "https://api.openai.com/v1/chat/completions")!)
+        var request = URLRequest(url: URL(string: Configuration.openAIEndpoint)!)
         request.httpMethod = "POST"
         request.setValue("Bearer \(openAIAPIKey)", forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
@@ -1070,8 +1070,8 @@ class RealAIAnalysisService: ObservableObject {
         let competitivePrice = conditionAdjustedPrice * competitionMultiplier
         
         // Calculate price range
-        let quickSalePrice = competitivePrice * 0.90
-        let maxProfitPrice = competitivePrice * 1.15
+        let quickSalePrice = competitivePrice * Configuration.quickSalePriceMultiplier
+        let maxProfitPrice = competitivePrice * Configuration.premiumPriceMultiplier
         
         let strategy: PricingStrategy
         if condition.detectedCondition == .newWithTags || condition.detectedCondition == .likeNew {
@@ -1489,47 +1489,3 @@ class RealAIAnalysisService: ObservableObject {
         case .saturated: return 0.90
         }
     }
-    
-    private func mapToEbayCategory(_ category: ProductCategory) -> String {
-        switch category {
-        case .sneakers: return "Clothing, Shoes & Accessories > Unisex Shoes > Athletic Shoes"
-        case .clothing: return "Clothing, Shoes & Accessories"
-        case .electronics: return "Consumer Electronics"
-        case .accessories: return "Clothing, Shoes & Accessories > Accessories"
-        case .home: return "Home & Garden"
-        case .collectibles: return "Collectibles"
-        case .books: return "Books & Magazines"
-        case .toys: return "Toys & Hobbies"
-        case .sports: return "Sporting Goods"
-        case .other: return "Everything Else"
-        }
-    }
-    
-    private func generateDescription(product: PrecisionIdentificationResult, condition: EbayConditionAssessment) -> String {
-        return """
-        \(product.brand) \(product.exactModelName)
-        
-        Condition: \(condition.detectedCondition.rawValue)
-        \(condition.detectedCondition.description)
-        
-        \(condition.conditionNotes.joined(separator: "\n"))
-        
-        Authentic item - see photos for exact condition details
-        Fast shipping with tracking included
-        Returns accepted within 30 days
-        """
-    }
-    
-    private func parsePrice(_ priceString: String?) -> Double? {
-        guard let str = priceString else { return nil }
-        let numericString = str.replacingOccurrences(of: "[^0-9.]", with: "", options: .regularExpression)
-        return Double(numericString)
-    }
-    
-    private func parseEbayDate(_ dateString: String?) -> Date? {
-        guard let dateStr = dateString else { return nil }
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"
-        return formatter.date(from: dateStr)
-    }
-}

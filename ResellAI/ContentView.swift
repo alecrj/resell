@@ -3,7 +3,7 @@ import UIKit
 import AVFoundation
 import PhotosUI
 
-// MARK: - Main Content View with Apple-Style UI
+// MARK: - Clean Main Content View
 struct ContentView: View {
     @StateObject private var inventoryManager = InventoryManager()
     @StateObject private var aiService = AIService()
@@ -14,8 +14,8 @@ struct ContentView: View {
     
     var body: some View {
         VStack(spacing: 0) {
-            // Apple-Style Mode Toggle
-            AppleModeToggle(isProspectingMode: $isProspectingMode)
+            // Clean Header
+            CleanHeader(isProspectingMode: $isProspectingMode)
             
             // Main Content
             if isProspectingMode {
@@ -36,80 +36,104 @@ struct ContentView: View {
     }
     
     private func initializeServices() {
+        Configuration.validateConfiguration()
         googleSheetsService.authenticate()
-        print("🚀 ResellAI Ready")
+        print("🚀 ResellAI Ready - \(Configuration.configurationStatus)")
     }
 }
 
-// MARK: - Apple-Style Mode Toggle
-struct AppleModeToggle: View {
+// MARK: - Clean Header Design
+struct CleanHeader: View {
     @Binding var isProspectingMode: Bool
     
     var body: some View {
         VStack(spacing: 0) {
-            // Header with proper Apple spacing
-            HStack(alignment: .center) {
-                Text("ResellAI")
-                    .font(.system(size: 34, weight: .bold, design: .default))
-                    .foregroundColor(.primary)
+            // Top section with logo and status
+            HStack {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("ResellAI")
+                        .font(.system(size: 28, weight: .bold, design: .default))
+                        .foregroundColor(.primary)
+                    
+                    Text("Ultimate Reselling Tool")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(.secondary)
+                }
                 
                 Spacer()
                 
-                // Status indicator with haptic feedback
+                // Clean status indicator
                 HStack(spacing: 8) {
                     Circle()
-                        .fill(isAPIConfigured ? Color.green : Color.red)
+                        .fill(Configuration.isFullyConfigured ? Color.green : Color.orange)
                         .frame(width: 8, height: 8)
                     
-                    Text(isAPIConfigured ? "Ready" : "Setup Required")
-                        .font(.system(size: 13, weight: .medium))
-                        .foregroundColor(.secondary)
+                    Text(Configuration.isFullyConfigured ? "Ready" : "Setup")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundColor(Configuration.isFullyConfigured ? .green : .orange)
                 }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 6)
+                .background(
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill((Configuration.isFullyConfigured ? Color.green : Color.orange).opacity(0.1))
+                )
             }
             .padding(.horizontal, 20)
-            .padding(.top, 8)
+            .padding(.top, 12)
             .padding(.bottom, 20)
             
-            // Apple-style segmented control
-            HStack(spacing: 0) {
-                ModeSegment(
-                    title: "Business",
-                    icon: "building.2.fill",
-                    isSelected: !isProspectingMode
-                ) {
-                    withAnimation(.interpolatingSpring(stiffness: 300, damping: 30)) {
-                        isProspectingMode = false
-                    }
-                }
-                
-                ModeSegment(
-                    title: "Prospect",
-                    icon: "scope",
-                    isSelected: isProspectingMode
-                ) {
-                    withAnimation(.interpolatingSpring(stiffness: 300, damping: 30)) {
-                        isProspectingMode = true
-                    }
-                }
-            }
-            .background(Color(.secondarySystemBackground))
-            .cornerRadius(12)
-            .padding(.horizontal, 20)
-            .padding(.bottom, 16)
+            // Mode Toggle
+            CleanModeToggle(isProspectingMode: $isProspectingMode)
+                .padding(.horizontal, 20)
+                .padding(.bottom, 16)
         }
         .background(
             Color(.systemBackground)
                 .ignoresSafeArea(edges: .top)
         )
-        .shadow(color: Color.black.opacity(0.03), radius: 1, x: 0, y: 1)
-    }
-    
-    private var isAPIConfigured: Bool {
-        !APIConfig.openAIKey.isEmpty
+        .overlay(
+            Rectangle()
+                .frame(height: 0.5)
+                .foregroundColor(Color(.separator))
+                .opacity(0.3),
+            alignment: .bottom
+        )
     }
 }
 
-struct ModeSegment: View {
+// MARK: - Clean Mode Toggle
+struct CleanModeToggle: View {
+    @Binding var isProspectingMode: Bool
+    
+    var body: some View {
+        HStack(spacing: 0) {
+            ModeButton(
+                title: "Business",
+                icon: "building.2.fill",
+                isSelected: !isProspectingMode
+            ) {
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    isProspectingMode = false
+                }
+            }
+            
+            ModeButton(
+                title: "Prospect",
+                icon: "scope",
+                isSelected: isProspectingMode
+            ) {
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    isProspectingMode = true
+                }
+            }
+        }
+        .background(Color(.secondarySystemBackground))
+        .cornerRadius(14)
+    }
+}
+
+struct ModeButton: View {
     let title: String
     let icon: String
     let isSelected: Bool
@@ -117,41 +141,31 @@ struct ModeSegment: View {
     
     var body: some View {
         Button(action: action) {
-            HStack(spacing: 6) {
+            HStack(spacing: 8) {
                 Image(systemName: icon)
-                    .font(.system(size: 14, weight: .medium))
-                Text(title)
                     .font(.system(size: 16, weight: .semibold))
+                Text(title)
+                    .font(.system(size: 17, weight: .semibold))
             }
             .foregroundColor(isSelected ? .white : .primary)
             .frame(maxWidth: .infinity)
-            .frame(height: 36)
+            .frame(height: 44)
             .background(
-                RoundedRectangle(cornerRadius: 10)
+                RoundedRectangle(cornerRadius: 12)
                     .fill(isSelected ? Color.accentColor : Color.clear)
-                    .animation(.interpolatingSpring(stiffness: 300, damping: 30), value: isSelected)
+                    .animation(.easeInOut(duration: 0.2), value: isSelected)
             )
-            .padding(.horizontal, 2)
-            .padding(.vertical, 2)
+            .padding(2)
         }
-        .buttonStyle(ScaleButtonStyle())
+        .buttonStyle(PlainButtonStyle())
     }
 }
 
-// MARK: - Apple-Style Button Style
-struct ScaleButtonStyle: ButtonStyle {
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .scaleEffect(configuration.isPressed ? 0.96 : 1.0)
-            .animation(.easeInOut(duration: 0.1), value: configuration.isPressed)
-    }
-}
-
-// MARK: - Apple-Style Tab View
+// MARK: - Clean Tab View
 struct BusinessTabView: View {
     var body: some View {
         TabView {
-            AppleAnalysisView()
+            CleanAnalysisView()
                 .tabItem {
                     Image(systemName: "viewfinder")
                     Text("Analyze")
@@ -165,7 +179,7 @@ struct BusinessTabView: View {
             
             SmartInventoryListView()
                 .tabItem {
-                    Image(systemName: "list.bullet.rectangle")
+                    Image(systemName: "list.bullet.rectangle.portrait")
                     Text("Inventory")
                 }
             
@@ -185,8 +199,8 @@ struct BusinessTabView: View {
     }
 }
 
-// MARK: - Apple-Style Analysis View
-struct AppleAnalysisView: View {
+// MARK: - Clean Analysis View
+struct CleanAnalysisView: View {
     @EnvironmentObject var inventoryManager: InventoryManager
     @EnvironmentObject var aiService: AIService
     @EnvironmentObject var googleSheetsService: GoogleSheetsService
@@ -205,22 +219,25 @@ struct AppleAnalysisView: View {
         NavigationView {
             ScrollView {
                 LazyVStack(spacing: 24) {
-                    // Apple-style header
-                    VStack(spacing: 12) {
-                        Text("Item Analysis")
-                            .font(.system(size: 34, weight: .bold))
-                            .frame(maxWidth: .infinity, alignment: .leading)
+                    // Clean header
+                    VStack(spacing: 16) {
+                        HStack {
+                            Text("Item Analysis")
+                                .font(.system(size: 32, weight: .bold))
+                            Spacer()
+                        }
                         
-                        if !isAPIConfigured {
-                            NotificationBanner(
-                                message: "Configure API keys for analysis",
-                                style: .warning
+                        if !Configuration.isFullyConfigured {
+                            CleanWarningBanner(
+                                message: "Some APIs need configuration",
+                                actionText: "Check Settings",
+                                onAction: { }
                             )
                         }
                         
-                        // Progress indicator with Apple styling
+                        // Clean progress indicator
                         if aiService.isAnalyzing {
-                            AnalysisProgressCard(
+                            CleanProgressCard(
                                 progress: Double(aiService.currentStep) / Double(aiService.totalSteps),
                                 message: aiService.analysisProgress,
                                 onCancel: { resetAnalysis() }
@@ -230,18 +247,18 @@ struct AppleAnalysisView: View {
                     
                     // Photo section
                     if !capturedImages.isEmpty {
-                        ApplePhotoGallery(images: $capturedImages)
+                        CleanPhotoGallery(images: $capturedImages)
                     } else {
-                        ApplePhotoPlaceholder {
+                        CleanPhotoPlaceholder {
                             showingCamera = true
                         }
                     }
                     
-                    // Action buttons with Apple styling
-                    AppleActionButtons(
+                    // Action buttons
+                    CleanActionButtons(
                         hasPhotos: !capturedImages.isEmpty,
                         isAnalyzing: aiService.isAnalyzing,
-                        isAPIConfigured: isAPIConfigured,
+                        isConfigured: Configuration.isFullyConfigured,
                         onCamera: { showingCamera = true },
                         onLibrary: { showingPhotoLibrary = true },
                         onBarcode: { showingBarcodeLookup = true },
@@ -249,9 +266,9 @@ struct AppleAnalysisView: View {
                         onReset: { resetAnalysis() }
                     )
                     
-                    // Results with Apple card styling
+                    // Results
                     if let result = analysisResult {
-                        AppleAnalysisResult(analysis: result) {
+                        CleanAnalysisResult(analysis: result) {
                             showingItemForm = true
                         } onDirectList: {
                             showingDirectListing = true
@@ -294,10 +311,6 @@ struct AppleAnalysisView: View {
                     }
                 }
         }
-    }
-    
-    private var isAPIConfigured: Bool {
-        !APIConfig.openAIKey.isEmpty
     }
     
     // Performance optimized methods
@@ -360,58 +373,43 @@ struct AppleAnalysisView: View {
     }
 }
 
-// MARK: - Apple-Style Components
+// MARK: - Clean UI Components
 
-struct NotificationBanner: View {
+struct CleanWarningBanner: View {
     let message: String
-    let style: BannerStyle
-    
-    enum BannerStyle {
-        case info, warning, error
-        
-        var color: Color {
-            switch self {
-            case .info: return .blue
-            case .warning: return .orange
-            case .error: return .red
-            }
-        }
-        
-        var icon: String {
-            switch self {
-            case .info: return "info.circle.fill"
-            case .warning: return "exclamationmark.triangle.fill"
-            case .error: return "xmark.circle.fill"
-            }
-        }
-    }
+    let actionText: String
+    let onAction: () -> Void
     
     var body: some View {
         HStack(spacing: 12) {
-            Image(systemName: style.icon)
+            Image(systemName: "exclamationmark.triangle.fill")
                 .font(.system(size: 16, weight: .semibold))
-                .foregroundColor(style.color)
+                .foregroundColor(.orange)
             
             Text(message)
-                .font(.system(size: 14, weight: .medium))
+                .font(.system(size: 15, weight: .medium))
                 .foregroundColor(.primary)
             
             Spacer()
+            
+            Button(actionText, action: onAction)
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundColor(.orange)
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
         .background(
             RoundedRectangle(cornerRadius: 12)
-                .fill(style.color.opacity(0.1))
+                .fill(Color.orange.opacity(0.1))
         )
         .overlay(
             RoundedRectangle(cornerRadius: 12)
-                .stroke(style.color.opacity(0.3), lineWidth: 1)
+                .stroke(Color.orange.opacity(0.3), lineWidth: 1)
         )
     }
 }
 
-struct AnalysisProgressCard: View {
+struct CleanProgressCard: View {
     let progress: Double
     let message: String
     let onCancel: () -> Void
@@ -419,18 +417,18 @@ struct AnalysisProgressCard: View {
     var body: some View {
         VStack(spacing: 16) {
             HStack {
-                VStack(alignment: .leading, spacing: 4) {
+                VStack(alignment: .leading, spacing: 6) {
                     Text("Analyzing...")
-                        .font(.system(size: 18, weight: .semibold))
+                        .font(.system(size: 20, weight: .bold))
                     Text(message)
-                        .font(.system(size: 14, weight: .medium))
+                        .font(.system(size: 15, weight: .medium))
                         .foregroundColor(.secondary)
                 }
                 
                 Spacer()
                 
                 Button("Cancel", action: onCancel)
-                    .font(.system(size: 16, weight: .medium))
+                    .font(.system(size: 16, weight: .semibold))
                     .foregroundColor(.red)
             }
             
@@ -442,19 +440,18 @@ struct AnalysisProgressCard: View {
         .background(
             RoundedRectangle(cornerRadius: 16)
                 .fill(Color(.systemBackground))
-                .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 2)
+                .shadow(color: .black.opacity(0.06), radius: 10, x: 0, y: 2)
         )
     }
 }
 
-// MARK: - Apple Photo Gallery
-struct ApplePhotoGallery: View {
+struct CleanPhotoGallery: View {
     @Binding var images: [UIImage]
     @State private var selectedIndex = 0
     
     var body: some View {
         VStack(spacing: 16) {
-            // Main photo with rounded corners
+            // Main photo
             TabView(selection: $selectedIndex) {
                 ForEach(0..<images.count, id: \.self) { index in
                     Image(uiImage: images[index])
@@ -469,7 +466,7 @@ struct ApplePhotoGallery: View {
             .tabViewStyle(PageTabViewStyle(indexDisplayMode: .automatic))
             .frame(height: 300)
             
-            // Photo controls
+            // Controls
             HStack {
                 Text("\(images.count) photo\(images.count == 1 ? "" : "s")")
                     .font(.system(size: 16, weight: .medium))
@@ -479,10 +476,9 @@ struct ApplePhotoGallery: View {
                 
                 Button(action: deleteCurrentPhoto) {
                     Label("Delete", systemImage: "trash")
-                        .font(.system(size: 14, weight: .medium))
+                        .font(.system(size: 14, weight: .semibold))
                         .foregroundColor(.red)
                 }
-                .buttonStyle(ScaleButtonStyle())
             }
             .padding(.horizontal, 4)
         }
@@ -490,7 +486,7 @@ struct ApplePhotoGallery: View {
         .background(
             RoundedRectangle(cornerRadius: 16)
                 .fill(Color(.systemBackground))
-                .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 2)
+                .shadow(color: .black.opacity(0.06), radius: 10, x: 0, y: 2)
         )
     }
     
@@ -507,29 +503,28 @@ struct ApplePhotoGallery: View {
     }
 }
 
-// MARK: - Apple Photo Placeholder
-struct ApplePhotoPlaceholder: View {
+struct CleanPhotoPlaceholder: View {
     let onTakePhotos: () -> Void
     
     var body: some View {
         Button(action: onTakePhotos) {
             VStack(spacing: 20) {
                 Image(systemName: "camera.fill")
-                    .font(.system(size: 48, weight: .light))
+                    .font(.system(size: 48, weight: .ultraLight))
                     .foregroundColor(.accentColor)
                 
                 VStack(spacing: 8) {
                     Text("Take Photos")
-                        .font(.system(size: 22, weight: .semibold))
+                        .font(.system(size: 22, weight: .bold))
                     
-                    Text("Multiple angles improve analysis accuracy")
+                    Text("Multiple angles improve accuracy")
                         .font(.system(size: 16, weight: .medium))
                         .foregroundColor(.secondary)
                         .multilineTextAlignment(.center)
                 }
             }
             .frame(maxWidth: .infinity)
-            .frame(height: 220)
+            .frame(height: 200)
             .background(
                 RoundedRectangle(cornerRadius: 16)
                     .strokeBorder(
@@ -542,15 +537,14 @@ struct ApplePhotoPlaceholder: View {
                     .fill(Color.accentColor.opacity(0.03))
             )
         }
-        .buttonStyle(ScaleButtonStyle())
+        .buttonStyle(CleanButtonStyle())
     }
 }
 
-// MARK: - Apple Action Buttons
-struct AppleActionButtons: View {
+struct CleanActionButtons: View {
     let hasPhotos: Bool
     let isAnalyzing: Bool
-    let isAPIConfigured: Bool
+    let isConfigured: Bool
     let onCamera: () -> Void
     let onLibrary: () -> Void
     let onBarcode: () -> Void
@@ -561,21 +555,21 @@ struct AppleActionButtons: View {
         VStack(spacing: 16) {
             // Photo capture buttons
             HStack(spacing: 12) {
-                AppleActionButton(
+                CleanActionButton(
                     icon: "camera.fill",
                     title: "Camera",
                     color: .accentColor,
                     action: onCamera
                 )
                 
-                AppleActionButton(
+                CleanActionButton(
                     icon: "photo.on.rectangle",
                     title: "Photos",
                     color: .green,
                     action: onLibrary
                 )
                 
-                AppleActionButton(
+                CleanActionButton(
                     icon: "barcode.viewfinder",
                     title: "Scan",
                     color: .orange,
@@ -597,31 +591,31 @@ struct AppleActionButtons: View {
                             Text("Analyze Item")
                         }
                     }
-                    .font(.system(size: 18, weight: .semibold))
+                    .font(.system(size: 18, weight: .bold))
                     .foregroundColor(.white)
                     .frame(maxWidth: .infinity)
                     .frame(height: 56)
                     .background(
                         RoundedRectangle(cornerRadius: 16)
-                            .fill(isAPIConfigured ? Color.accentColor : Color.gray)
+                            .fill(isConfigured ? Color.accentColor : Color.gray)
                     )
                 }
-                .disabled(isAnalyzing || !isAPIConfigured)
-                .buttonStyle(ScaleButtonStyle())
+                .disabled(isAnalyzing || !isConfigured)
+                .buttonStyle(CleanButtonStyle())
                 
                 // Reset button
                 if !isAnalyzing {
                     Button("Start Over", action: onReset)
                         .font(.system(size: 16, weight: .medium))
                         .foregroundColor(.secondary)
-                        .buttonStyle(ScaleButtonStyle())
+                        .buttonStyle(CleanButtonStyle())
                 }
             }
         }
     }
 }
 
-struct AppleActionButton: View {
+struct CleanActionButton: View {
     let icon: String
     let title: String
     let color: Color
@@ -631,9 +625,9 @@ struct AppleActionButton: View {
         Button(action: action) {
             VStack(spacing: 8) {
                 Image(systemName: icon)
-                    .font(.system(size: 24, weight: .medium))
+                    .font(.system(size: 24, weight: .semibold))
                 Text(title)
-                    .font(.system(size: 14, weight: .semibold))
+                    .font(.system(size: 14, weight: .bold))
             }
             .foregroundColor(color)
             .frame(maxWidth: .infinity)
@@ -643,60 +637,59 @@ struct AppleActionButton: View {
                     .fill(color.opacity(0.1))
             )
         }
-        .buttonStyle(ScaleButtonStyle())
+        .buttonStyle(CleanButtonStyle())
     }
 }
 
-// MARK: - Apple Analysis Result
-struct AppleAnalysisResult: View {
+struct CleanAnalysisResult: View {
     let analysis: AnalysisResult
     let onAddToInventory: () -> Void
     let onDirectList: () -> Void
     
     var body: some View {
         VStack(spacing: 20) {
-            // Header section
+            // Header
             VStack(spacing: 16) {
                 HStack(alignment: .top) {
-                    VStack(alignment: .leading, spacing: 6) {
+                    VStack(alignment: .leading, spacing: 8) {
                         Text(analysis.itemName)
-                            .font(.system(size: 22, weight: .bold))
+                            .font(.system(size: 24, weight: .bold))
                             .lineLimit(2)
                         
                         if !analysis.brand.isEmpty {
                             Text(analysis.brand)
-                                .font(.system(size: 16, weight: .semibold))
+                                .font(.system(size: 18, weight: .bold))
                                 .foregroundColor(.accentColor)
                         }
                         
                         Text("\(String(format: "%.0f", analysis.confidence.overall * 100))% confident")
-                            .font(.system(size: 14, weight: .medium))
+                            .font(.system(size: 14, weight: .semibold))
                             .foregroundColor(.secondary)
                     }
                     
                     Spacer()
                     
-                    VStack(alignment: .trailing, spacing: 4) {
+                    VStack(alignment: .trailing, spacing: 6) {
                         Text("$\(String(format: "%.0f", analysis.realisticPrice))")
-                            .font(.system(size: 28, weight: .bold))
+                            .font(.system(size: 30, weight: .bold))
                             .foregroundColor(.green)
                         
                         Text("Market Price")
-                            .font(.system(size: 12, weight: .medium))
+                            .font(.system(size: 12, weight: .semibold))
                             .foregroundColor(.secondary)
                     }
                 }
                 
-                // Quick stats with Apple styling
+                // Quick stats
                 HStack(spacing: 12) {
-                    AppleStatChip(label: "Condition", value: analysis.actualCondition, color: .blue)
-                    AppleStatChip(label: "Sales", value: "\(analysis.soldListings.count)", color: .purple)
-                    AppleStatChip(label: "Demand", value: analysis.demandLevel, color: .orange)
+                    CleanStatChip(label: "Condition", value: analysis.actualCondition, color: .blue)
+                    CleanStatChip(label: "Sales", value: "\(analysis.soldListings.count)", color: .purple)
+                    CleanStatChip(label: "Demand", value: analysis.demandLevel, color: .orange)
                 }
             }
             
             // Pricing strategy
-            ApplePricingStrategy(analysis: analysis)
+            CleanPricingStrategy(analysis: analysis)
             
             // Action buttons
             VStack(spacing: 12) {
@@ -705,7 +698,7 @@ struct AppleAnalysisResult: View {
                         Image(systemName: "plus.circle.fill")
                         Text("Add to Inventory")
                     }
-                    .font(.system(size: 18, weight: .semibold))
+                    .font(.system(size: 18, weight: .bold))
                     .foregroundColor(.white)
                     .frame(maxWidth: .infinity)
                     .frame(height: 56)
@@ -714,14 +707,14 @@ struct AppleAnalysisResult: View {
                             .fill(Color.accentColor)
                     )
                 }
-                .buttonStyle(ScaleButtonStyle())
+                .buttonStyle(CleanButtonStyle())
                 
                 Button(action: onDirectList) {
                     HStack(spacing: 8) {
                         Image(systemName: "square.and.arrow.up.fill")
                         Text("Create eBay Listing")
                     }
-                    .font(.system(size: 18, weight: .semibold))
+                    .font(.system(size: 18, weight: .bold))
                     .foregroundColor(.white)
                     .frame(maxWidth: .infinity)
                     .frame(height: 56)
@@ -730,7 +723,7 @@ struct AppleAnalysisResult: View {
                             .fill(Color.green)
                     )
                 }
-                .buttonStyle(ScaleButtonStyle())
+                .buttonStyle(CleanButtonStyle())
             }
         }
         .padding(24)
@@ -742,7 +735,7 @@ struct AppleAnalysisResult: View {
     }
 }
 
-struct AppleStatChip: View {
+struct CleanStatChip: View {
     let label: String
     let value: String
     let color: Color
@@ -753,7 +746,7 @@ struct AppleStatChip: View {
                 .font(.system(size: 16, weight: .bold))
                 .foregroundColor(color)
             Text(label)
-                .font(.system(size: 12, weight: .medium))
+                .font(.system(size: 12, weight: .semibold))
                 .foregroundColor(.secondary)
         }
         .frame(maxWidth: .infinity)
@@ -765,24 +758,23 @@ struct AppleStatChip: View {
     }
 }
 
-// MARK: - Apple Pricing Strategy
-struct ApplePricingStrategy: View {
+struct CleanPricingStrategy: View {
     let analysis: AnalysisResult
     
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             Text("Pricing Strategy")
-                .font(.system(size: 18, weight: .semibold))
+                .font(.system(size: 20, weight: .bold))
             
             HStack(spacing: 12) {
-                ApplePriceCard(
+                CleanPriceCard(
                     title: "Quick Sale",
                     price: analysis.quickSalePrice,
                     subtitle: "Fast turnover",
                     color: .orange
                 )
                 
-                ApplePriceCard(
+                CleanPriceCard(
                     title: "Recommended",
                     price: analysis.realisticPrice,
                     subtitle: "Best value",
@@ -790,7 +782,7 @@ struct ApplePricingStrategy: View {
                     isHighlighted: true
                 )
                 
-                ApplePriceCard(
+                CleanPriceCard(
                     title: "Premium",
                     price: analysis.maxProfitPrice,
                     subtitle: "Max profit",
@@ -800,7 +792,7 @@ struct ApplePricingStrategy: View {
             
             if !analysis.soldListings.isEmpty {
                 Text("Based on \(analysis.soldListings.count) recent sales")
-                    .font(.system(size: 14, weight: .medium))
+                    .font(.system(size: 14, weight: .semibold))
                     .foregroundColor(.secondary)
             }
         }
@@ -812,7 +804,7 @@ struct ApplePricingStrategy: View {
     }
 }
 
-struct ApplePriceCard: View {
+struct CleanPriceCard: View {
     let title: String
     let price: Double
     let subtitle: String
@@ -830,7 +822,7 @@ struct ApplePriceCard: View {
     var body: some View {
         VStack(spacing: 6) {
             Text(title)
-                .font(.system(size: 14, weight: .semibold))
+                .font(.system(size: 14, weight: .bold))
                 .foregroundColor(isHighlighted ? .white : color)
             
             Text("$\(String(format: "%.0f", price))")
@@ -838,7 +830,7 @@ struct ApplePriceCard: View {
                 .foregroundColor(isHighlighted ? .white : color)
             
             Text(subtitle)
-                .font(.system(size: 12, weight: .medium))
+                .font(.system(size: 12, weight: .semibold))
                 .foregroundColor(isHighlighted ? .white.opacity(0.8) : .secondary)
         }
         .frame(maxWidth: .infinity)
@@ -850,7 +842,16 @@ struct ApplePriceCard: View {
     }
 }
 
-// MARK: - Apple Prospecting View
+// MARK: - Clean Button Style
+struct CleanButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .scaleEffect(configuration.isPressed ? 0.97 : 1.0)
+            .animation(.easeInOut(duration: 0.1), value: configuration.isPressed)
+    }
+}
+
+// MARK: - Clean Prospecting View
 struct ProspectingView: View {
     @EnvironmentObject var inventoryManager: InventoryManager
     @EnvironmentObject var aiService: AIService
@@ -867,10 +868,12 @@ struct ProspectingView: View {
             ScrollView {
                 LazyVStack(spacing: 24) {
                     // Header
-                    VStack(spacing: 12) {
-                        Text("Prospecting")
-                            .font(.system(size: 34, weight: .bold))
-                            .frame(maxWidth: .infinity, alignment: .leading)
+                    VStack(spacing: 16) {
+                        HStack {
+                            Text("Prospecting")
+                                .font(.system(size: 32, weight: .bold))
+                            Spacer()
+                        }
                         
                         Text("Get instant max buy prices")
                             .font(.system(size: 18, weight: .medium))
@@ -878,7 +881,7 @@ struct ProspectingView: View {
                             .frame(maxWidth: .infinity, alignment: .leading)
                         
                         if aiService.isAnalyzing {
-                            AnalysisProgressCard(
+                            CleanProgressCard(
                                 progress: Double(aiService.currentStep) / Double(aiService.totalSteps),
                                 message: aiService.analysisProgress,
                                 onCancel: { /* Cancel logic */ }
@@ -888,7 +891,7 @@ struct ProspectingView: View {
                     
                     // Photo interface
                     if !capturedImages.isEmpty {
-                        ApplePhotoGallery(images: $capturedImages)
+                        CleanPhotoGallery(images: $capturedImages)
                     } else {
                         ProspectPhotoPlaceholder {
                             showingCamera = true
@@ -898,9 +901,9 @@ struct ProspectingView: View {
                     // Actions
                     VStack(spacing: 16) {
                         HStack(spacing: 12) {
-                            AppleActionButton(icon: "camera.fill", title: "Camera", color: .purple, action: { showingCamera = true })
-                            AppleActionButton(icon: "photo.on.rectangle", title: "Photos", color: .green, action: { showingPhotoLibrary = true })
-                            AppleActionButton(icon: "barcode.viewfinder", title: "Scan", color: .orange, action: { showingBarcodeLookup = true })
+                            CleanActionButton(icon: "camera.fill", title: "Camera", color: .purple, action: { showingCamera = true })
+                            CleanActionButton(icon: "photo.on.rectangle", title: "Photos", color: .green, action: { showingPhotoLibrary = true })
+                            CleanActionButton(icon: "barcode.viewfinder", title: "Scan", color: .orange, action: { showingBarcodeLookup = true })
                         }
                         
                         if !capturedImages.isEmpty {
@@ -909,7 +912,7 @@ struct ProspectingView: View {
                                     Image(systemName: "scope")
                                     Text("Get Max Buy Price")
                                 }
-                                .font(.system(size: 18, weight: .semibold))
+                                .font(.system(size: 18, weight: .bold))
                                 .foregroundColor(.white)
                                 .frame(maxWidth: .infinity)
                                 .frame(height: 56)
@@ -918,14 +921,14 @@ struct ProspectingView: View {
                                         .fill(Color.purple)
                                 )
                             }
-                            .disabled(aiService.isAnalyzing || APIConfig.openAIKey.isEmpty)
-                            .buttonStyle(ScaleButtonStyle())
+                            .disabled(aiService.isAnalyzing || !Configuration.isFullyConfigured)
+                            .buttonStyle(CleanButtonStyle())
                         }
                     }
                     
                     // Results
                     if let analysis = prospectAnalysis {
-                        AppleProspectResult(analysis: analysis)
+                        CleanProspectResult(analysis: analysis)
                     }
                 }
                 .padding(.horizontal, 20)
@@ -1003,12 +1006,12 @@ struct ProspectPhotoPlaceholder: View {
         Button(action: onTakePhotos) {
             VStack(spacing: 20) {
                 Image(systemName: "scope")
-                    .font(.system(size: 48, weight: .light))
+                    .font(.system(size: 48, weight: .ultraLight))
                     .foregroundColor(.purple)
                 
                 VStack(spacing: 8) {
                     Text("Prospect Items")
-                        .font(.system(size: 22, weight: .semibold))
+                        .font(.system(size: 22, weight: .bold))
                     
                     Text("Get instant max buy prices")
                         .font(.system(size: 16, weight: .medium))
@@ -1016,7 +1019,7 @@ struct ProspectPhotoPlaceholder: View {
                 }
             }
             .frame(maxWidth: .infinity)
-            .frame(height: 220)
+            .frame(height: 200)
             .background(
                 RoundedRectangle(cornerRadius: 16)
                     .strokeBorder(
@@ -1029,12 +1032,11 @@ struct ProspectPhotoPlaceholder: View {
                     .fill(Color.purple.opacity(0.03))
             )
         }
-        .buttonStyle(ScaleButtonStyle())
+        .buttonStyle(CleanButtonStyle())
     }
 }
 
-// MARK: - Apple Prospect Result
-struct AppleProspectResult: View {
+struct CleanProspectResult: View {
     let analysis: ProspectAnalysis
     
     var body: some View {
@@ -1042,14 +1044,14 @@ struct AppleProspectResult: View {
             // Header with recommendation
             VStack(spacing: 16) {
                 HStack(alignment: .top) {
-                    VStack(alignment: .leading, spacing: 6) {
+                    VStack(alignment: .leading, spacing: 8) {
                         Text(analysis.itemName)
-                            .font(.system(size: 22, weight: .bold))
+                            .font(.system(size: 24, weight: .bold))
                             .lineLimit(2)
                         
                         if !analysis.brand.isEmpty {
                             Text(analysis.brand)
-                                .font(.system(size: 16, weight: .semibold))
+                                .font(.system(size: 18, weight: .bold))
                                 .foregroundColor(.accentColor)
                         }
                     }
@@ -1067,11 +1069,11 @@ struct AppleProspectResult: View {
             }
             
             // Buy pricing strategy
-            AppleBuyPricingStrategy(analysis: analysis)
+            CleanBuyPricingStrategy(analysis: analysis)
             
             // Market data if available
             if !analysis.recentSales.isEmpty {
-                AppleRecentSales(sales: Array(analysis.recentSales.prefix(3)))
+                CleanRecentSales(sales: Array(analysis.recentSales.prefix(3)))
             }
         }
         .padding(24)
@@ -1083,16 +1085,16 @@ struct AppleProspectResult: View {
     }
 }
 
-struct AppleBuyPricingStrategy: View {
+struct CleanBuyPricingStrategy: View {
     let analysis: ProspectAnalysis
     
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             Text("Buy Price Strategy")
-                .font(.system(size: 18, weight: .semibold))
+                .font(.system(size: 20, weight: .bold))
             
             HStack(spacing: 12) {
-                AppleBuyPriceCard(
+                CleanBuyPriceCard(
                     title: "Max Pay",
                     price: analysis.maxBuyPrice,
                     subtitle: "Don't exceed",
@@ -1100,14 +1102,14 @@ struct AppleBuyPricingStrategy: View {
                     isHighlighted: true
                 )
                 
-                AppleBuyPriceCard(
+                CleanBuyPriceCard(
                     title: "Target",
                     price: analysis.targetBuyPrice,
                     subtitle: "Good deal",
                     color: .orange
                 )
                 
-                AppleBuyPriceCard(
+                CleanBuyPriceCard(
                     title: "Sell For",
                     price: analysis.estimatedSellPrice,
                     subtitle: "Market price",
@@ -1120,7 +1122,7 @@ struct AppleBuyPricingStrategy: View {
                 HStack {
                     VStack(alignment: .leading, spacing: 4) {
                         Text("Potential Profit")
-                            .font(.system(size: 14, weight: .medium))
+                            .font(.system(size: 14, weight: .semibold))
                             .foregroundColor(.secondary)
                         Text("$\(String(format: "%.2f", analysis.potentialProfit))")
                             .font(.system(size: 18, weight: .bold))
@@ -1131,7 +1133,7 @@ struct AppleBuyPricingStrategy: View {
                     
                     VStack(alignment: .trailing, spacing: 4) {
                         Text("Expected ROI")
-                            .font(.system(size: 14, weight: .medium))
+                            .font(.system(size: 14, weight: .semibold))
                             .foregroundColor(.secondary)
                         Text("\(String(format: "%.0f", analysis.expectedROI))%")
                             .font(.system(size: 18, weight: .bold))
@@ -1157,7 +1159,7 @@ struct AppleBuyPricingStrategy: View {
     }
 }
 
-struct AppleBuyPriceCard: View {
+struct CleanBuyPriceCard: View {
     let title: String
     let price: Double
     let subtitle: String
@@ -1175,7 +1177,7 @@ struct AppleBuyPriceCard: View {
     var body: some View {
         VStack(spacing: 6) {
             Text(title)
-                .font(.system(size: 14, weight: .semibold))
+                .font(.system(size: 14, weight: .bold))
                 .foregroundColor(isHighlighted ? .white : color)
             
             Text("$\(String(format: "%.2f", price))")
@@ -1183,7 +1185,7 @@ struct AppleBuyPriceCard: View {
                 .foregroundColor(isHighlighted ? .white : color)
             
             Text(subtitle)
-                .font(.system(size: 12, weight: .medium))
+                .font(.system(size: 12, weight: .semibold))
                 .foregroundColor(isHighlighted ? .white.opacity(0.8) : .secondary)
         }
         .frame(maxWidth: .infinity)
@@ -1195,25 +1197,25 @@ struct AppleBuyPriceCard: View {
     }
 }
 
-struct AppleRecentSales: View {
+struct CleanRecentSales: View {
     let sales: [RecentSale]
     
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Recent Sales")
-                .font(.system(size: 18, weight: .semibold))
+                .font(.system(size: 20, weight: .bold))
             
             VStack(spacing: 8) {
                 ForEach(sales, id: \.title) { sale in
                     HStack {
                         VStack(alignment: .leading, spacing: 2) {
                             Text(sale.title)
-                                .font(.system(size: 14, weight: .medium))
+                                .font(.system(size: 14, weight: .semibold))
                                 .lineLimit(1)
                             
                             if !sale.condition.isEmpty {
                                 Text(sale.condition)
-                                    .font(.system(size: 12, weight: .medium))
+                                    .font(.system(size: 12, weight: .semibold))
                                     .foregroundColor(.secondary)
                             }
                         }
@@ -1226,7 +1228,7 @@ struct AppleRecentSales: View {
                                 .foregroundColor(.green)
                             
                             Text(formatSaleDate(sale.date))
-                                .font(.system(size: 12, weight: .medium))
+                                .font(.system(size: 12, weight: .semibold))
                                 .foregroundColor(.secondary)
                         }
                     }

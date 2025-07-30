@@ -3,60 +3,7 @@ import Foundation
 import PhotosUI
 import Vision
 
-// MARK: - Updated API Configuration with eBay
-struct APIConfig {
-    static let openAIKey = ProcessInfo.processInfo.environment["OPENAI_API_KEY"] ?? ""
-    static let spreadsheetID = ProcessInfo.processInfo.environment["SPREADSHEET_ID"] ?? ""
-    static let openAIEndpoint = "https://api.openai.com/v1/chat/completions"
-    static let googleAppsScriptURL = ProcessInfo.processInfo.environment["GOOGLE_SCRIPT_URL"] ?? ""
-    static let googleCloudAPIKey = ProcessInfo.processInfo.environment["GOOGLE_CLOUD_API_KEY"] ?? ""
-    static let rapidAPIKey = ProcessInfo.processInfo.environment["RAPID_API_KEY"] ?? ""
-    
-    // NEW: eBay API Configuration
-    static let ebayAPIKey = ProcessInfo.processInfo.environment["EBAY_APP_ID"] ?? "AlecRodr-resell-PRD-d0bc91504-be3e553a"
-    static let ebayClientSecret = ProcessInfo.processInfo.environment["EBAY_CLIENT_SECRET"] ?? ""
-    static let ebayEnvironment = ProcessInfo.processInfo.environment["EBAY_ENVIRONMENT"] ?? "PRODUCTION"
-    
-    static func validateConfiguration() {
-        print("🔧 COMPREHENSIVE API Configuration Status:")
-        print("✅ OpenAI Key: \(openAIKey.isEmpty ? "❌ Missing" : "✅ Configured (\(openAIKey.prefix(20))...)")")
-        print("✅ Google Script: \(googleAppsScriptURL.contains("script.google.com") ? "✅ Valid" : "❌ Missing")")
-        print("✅ Spreadsheet ID: \(spreadsheetID.isEmpty ? "❌ Missing" : "✅ Configured")")
-        print("✅ RapidAPI Key: \(rapidAPIKey.isEmpty ? "❌ Missing" : "✅ Configured (\(rapidAPIKey.prefix(20))...)")")
-        print("✅ eBay App ID: \(ebayAPIKey.isEmpty ? "❌ Missing" : "✅ Configured (\(ebayAPIKey))")")
-        print("✅ eBay Environment: \(ebayEnvironment)")
-        
-        if openAIKey.isEmpty {
-            print("⚠️ WARNING: OpenAI API key missing - Google Lens analysis will not work!")
-        }
-        if rapidAPIKey.isEmpty {
-            print("⚠️ WARNING: RapidAPI key missing - market research limited!")
-        }
-        if ebayAPIKey.isEmpty {
-            print("⚠️ WARNING: eBay API missing - using RapidAPI fallback only!")
-        }
-        
-        print("💰 Cost Analysis:")
-        print("📊 GPT-4o: ~$0.03-0.08 per analysis")
-        print("📊 eBay API: Free tier (5,000 calls/day)")
-        print("📊 RapidAPI: Varies by endpoint")
-    }
-}
-
-// MARK: - FIXED: Added Missing RealProductData Structure
-struct RealProductData {
-    let name: String
-    let brand: String
-    let model: String
-    let category: String
-    let size: String
-    let colorway: String
-    let retailPrice: Double
-    let releaseYear: String
-    let confidence: Double
-}
-
-// MARK: - Updated AI Service with Google Lens Integration
+// MARK: - AI Service with Direct Configuration
 class AIService: ObservableObject {
     @Published var isAnalyzing = false
     @Published var analysisProgress = "Ready"
@@ -66,7 +13,7 @@ class AIService: ObservableObject {
     private let realAnalyzer = RealAIAnalysisService()
     
     init() {
-        APIConfig.validateConfiguration()
+        Configuration.validateConfiguration()
         
         // Sync progress with real analyzer
         realAnalyzer.$isAnalyzing
@@ -88,9 +35,9 @@ class AIService: ObservableObject {
     
     // MARK: - Google Lens-Level Analysis
     func analyzeItem(_ images: [UIImage], completion: @escaping (AnalysisResult) -> Void) {
-        guard !APIConfig.openAIKey.isEmpty else {
+        guard !Configuration.openAIKey.isEmpty else {
             print("❌ OpenAI API key not configured!")
-            completion(createAPIErrorResult("OpenAI API key not configured. Check environment variables."))
+            completion(createAPIErrorResult("OpenAI API key not configured. Check Configuration.swift"))
             return
         }
         
@@ -120,7 +67,7 @@ class AIService: ObservableObject {
             return
         }
         
-        guard !APIConfig.openAIKey.isEmpty else {
+        guard !Configuration.openAIKey.isEmpty else {
             print("❌ OpenAI API key not configured for prospecting!")
             completion(createAPIErrorProspectAnalysis(images))
             return
@@ -143,11 +90,11 @@ class AIService: ObservableObject {
         }
     }
     
-    // MARK: - FIXED: Barcode Analysis with Product Database
+    // MARK: - Barcode Analysis with Product Database
     func analyzeBarcode(_ barcode: String, images: [UIImage], completion: @escaping (AnalysisResult) -> Void) {
         print("📱 Barcode Analysis: \(barcode)")
         
-        guard !APIConfig.openAIKey.isEmpty else {
+        guard !Configuration.openAIKey.isEmpty else {
             completion(createAPIErrorResult("OpenAI API key not configured for barcode analysis"))
             return
         }
@@ -182,7 +129,7 @@ class AIService: ObservableObject {
     func lookupBarcodeForProspecting(_ barcode: String, completion: @escaping (ProspectAnalysis) -> Void) {
         print("📱 Barcode Prospecting Lookup: \(barcode)")
         
-        guard !APIConfig.openAIKey.isEmpty else {
+        guard !Configuration.openAIKey.isEmpty else {
             completion(createAPIErrorProspectAnalysis([]))
             return
         }
@@ -223,7 +170,7 @@ class AIService: ObservableObject {
         )
         
         let targetBuyPrice = maxBuyPrice * 0.8
-        let estimatedFees = marketValue * 0.15
+        let estimatedFees = marketValue * Configuration.defaultEbayFeeRate
         let potentialProfit = marketValue - maxBuyPrice - estimatedFees
         let expectedROI = maxBuyPrice > 0 ? (potentialProfit / maxBuyPrice) * 100 : 0
         
@@ -274,13 +221,13 @@ class AIService: ObservableObject {
             maxBuy *= 1.03
         }
         
-        return max(5.0, min(maxBuy, marketValue * 0.6))
+        return max(5.0, min(maxBuy, marketValue * Configuration.maxBuyPriceMultiplier))
     }
     
     private func generateSmartRecommendation(expectedROI: Double, potentialProfit: Double, confidence: Double, soldCount: Int, marketValue: Double) -> ProspectDecision {
         
         // High confidence buy criteria
-        if expectedROI >= 100 &&
+        if expectedROI >= Configuration.preferredROIThreshold &&
            potentialProfit >= 15 &&
            confidence >= 0.7 &&
            soldCount >= 5 &&
@@ -289,7 +236,7 @@ class AIService: ObservableObject {
         }
         
         // Medium confidence buy criteria
-        if expectedROI >= 75 &&
+        if expectedROI >= Configuration.minimumROIThreshold &&
            potentialProfit >= 10 &&
            confidence >= 0.6 &&
            soldCount >= 3 {
@@ -484,7 +431,7 @@ class AIService: ObservableObject {
     }
     
     private func createAPIErrorProspectAnalysis(_ images: [UIImage]) -> ProspectAnalysis {
-        let errorMessage = APIConfig.openAIKey.isEmpty ? "Configure OpenAI API key" : "Analysis failed"
+        let errorMessage = Configuration.openAIKey.isEmpty ? "Configure OpenAI API key" : "Analysis failed"
         
         let errorIdentification = PrecisionIdentificationResult(
             exactModelName: "Configuration Error",
@@ -627,8 +574,8 @@ class AIService: ObservableObject {
             recommendedPrice: marketValue,
             priceRange: (min: marketValue * 0.8, max: marketValue * 1.2),
             competitivePrice: marketValue,
-            quickSalePrice: marketValue * 0.85,
-            maxProfitPrice: marketValue * 1.15,
+            quickSalePrice: marketValue * Configuration.quickSalePriceMultiplier,
+            maxProfitPrice: marketValue * Configuration.premiumPriceMultiplier,
             pricingStrategy: .competitive,
             priceJustification: ["Barcode verified authentic", "Estimated market value"]
         )
@@ -720,8 +667,8 @@ class AIService: ObservableObject {
             recommendedPrice: marketValue,
             priceRange: (min: marketValue * 0.8, max: marketValue * 1.2),
             competitivePrice: marketValue,
-            quickSalePrice: marketValue * 0.85,
-            maxProfitPrice: marketValue * 1.15,
+            quickSalePrice: marketValue * Configuration.quickSalePriceMultiplier,
+            maxProfitPrice: marketValue * Configuration.premiumPriceMultiplier,
             pricingStrategy: .competitive,
             priceJustification: ["Barcode verified"]
         )
@@ -796,9 +743,22 @@ class AIService: ObservableObject {
     }
 }
 
-// MARK: - Google Sheets Service (Keep existing implementation)
+// MARK: - Product Data Structure
+struct RealProductData {
+    let name: String
+    let brand: String
+    let model: String
+    let category: String
+    let size: String
+    let colorway: String
+    let retailPrice: Double
+    let releaseYear: String
+    let confidence: Double
+}
+
+// MARK: - Google Sheets Service
 class GoogleSheetsService: ObservableObject {
-    @Published var spreadsheetId = APIConfig.spreadsheetID
+    @Published var spreadsheetId = Configuration.spreadsheetID
     @Published var isConnected = true
     @Published var isSyncing = false
     @Published var lastSyncDate: Date?
@@ -810,7 +770,7 @@ class GoogleSheetsService: ObservableObject {
     
     func authenticate() {
         print("🔗 Google Sheets Service Initialized")
-        isConnected = !APIConfig.googleAppsScriptURL.isEmpty
+        isConnected = !Configuration.googleScriptURL.isEmpty
         syncStatus = isConnected ? "Connected to Google Sheets" : "Google Sheets not configured"
     }
     
@@ -904,7 +864,7 @@ class GoogleSheetsService: ObservableObject {
     }
     
     private func sendToGoogleSheets(data: [String: Any], completion: @escaping (Bool) -> Void) {
-        guard let url = URL(string: APIConfig.googleAppsScriptURL) else {
+        guard let url = URL(string: Configuration.googleScriptURL) else {
             completion(false)
             return
         }
@@ -952,7 +912,7 @@ class EbayListingService: ObservableObject {
     @Published var isConfigured = false
     
     init() {
-        isConfigured = !APIConfig.ebayAPIKey.isEmpty
+        isConfigured = !Configuration.ebayAPIKey.isEmpty
     }
     
     func listDirectlyToEbay(item: InventoryItem, analysis: AnalysisResult, completion: @escaping (Bool, String?) -> Void) {
@@ -976,5 +936,22 @@ class EbayListingService: ObservableObject {
             self.listingURL = "https://www.ebay.com/itm/fake-listing-url"
             completion(true, self.listingURL)
         }
+    }
+}
+
+// MARK: - Legacy APIConfig Compatibility
+struct APIConfig {
+    static let openAIKey = Configuration.openAIKey
+    static let spreadsheetID = Configuration.spreadsheetID
+    static let openAIEndpoint = Configuration.openAIEndpoint
+    static let googleAppsScriptURL = Configuration.googleScriptURL
+    static let googleCloudAPIKey = Configuration.googleCloudAPIKey
+    static let rapidAPIKey = Configuration.rapidAPIKey
+    static let ebayAPIKey = Configuration.ebayAPIKey
+    static let ebayClientSecret = ""
+    static let ebayEnvironment = Configuration.ebayEnvironment
+    
+    static func validateConfiguration() {
+        Configuration.validateConfiguration()
     }
 }
