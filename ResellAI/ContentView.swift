@@ -3,7 +3,7 @@ import UIKit
 import AVFoundation
 import PhotosUI
 
-// MARK: - Main Content View with Clean UI
+// MARK: - Main Content View with Apple-Style UI
 struct ContentView: View {
     @StateObject private var inventoryManager = InventoryManager()
     @StateObject private var aiService = AIService()
@@ -14,8 +14,8 @@ struct ContentView: View {
     
     var body: some View {
         VStack(spacing: 0) {
-            // Clean Mode Toggle
-            CleanModeToggle(isProspectingMode: $isProspectingMode)
+            // Apple-Style Mode Toggle
+            AppleModeToggle(isProspectingMode: $isProspectingMode)
             
             // Main Content
             if isProspectingMode {
@@ -41,56 +41,67 @@ struct ContentView: View {
     }
 }
 
-// MARK: - Clean Mode Toggle
-struct CleanModeToggle: View {
+// MARK: - Apple-Style Mode Toggle
+struct AppleModeToggle: View {
     @Binding var isProspectingMode: Bool
     
     var body: some View {
-        VStack(spacing: 16) {
-            // Simple App Title
-            HStack {
+        VStack(spacing: 0) {
+            // Header with proper Apple spacing
+            HStack(alignment: .center) {
                 Text("ResellAI")
-                    .font(.title)
-                    .fontWeight(.bold)
+                    .font(.system(size: 34, weight: .bold, design: .default))
                     .foregroundColor(.primary)
                 
                 Spacer()
                 
-                // API Status Indicator
-                Circle()
-                    .fill(isAPIConfigured ? .green : .red)
-                    .frame(width: 8, height: 8)
+                // Status indicator with haptic feedback
+                HStack(spacing: 8) {
+                    Circle()
+                        .fill(isAPIConfigured ? Color.green : Color.red)
+                        .frame(width: 8, height: 8)
+                    
+                    Text(isAPIConfigured ? "Ready" : "Setup Required")
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundColor(.secondary)
+                }
             }
+            .padding(.horizontal, 20)
+            .padding(.top, 8)
+            .padding(.bottom, 20)
             
-            // Clean Mode Selector
+            // Apple-style segmented control
             HStack(spacing: 0) {
-                ModeButton(
+                ModeSegment(
                     title: "Business",
-                    icon: "building.2",
+                    icon: "building.2.fill",
                     isSelected: !isProspectingMode
                 ) {
-                    withAnimation(.easeInOut(duration: 0.2)) {
+                    withAnimation(.interpolatingSpring(stiffness: 300, damping: 30)) {
                         isProspectingMode = false
                     }
                 }
                 
-                ModeButton(
+                ModeSegment(
                     title: "Prospect",
-                    icon: "magnifyingglass",
+                    icon: "scope",
                     isSelected: isProspectingMode
                 ) {
-                    withAnimation(.easeInOut(duration: 0.2)) {
+                    withAnimation(.interpolatingSpring(stiffness: 300, damping: 30)) {
                         isProspectingMode = true
                     }
                 }
             }
-            .background(Color.gray.opacity(0.1))
-            .cornerRadius(10)
+            .background(Color(.secondarySystemBackground))
+            .cornerRadius(12)
+            .padding(.horizontal, 20)
+            .padding(.bottom, 16)
         }
-        .padding(.horizontal)
-        .padding(.vertical, 12)
-        .background(Color(.systemBackground))
-        .shadow(color: .black.opacity(0.05), radius: 1, x: 0, y: 1)
+        .background(
+            Color(.systemBackground)
+                .ignoresSafeArea(edges: .top)
+        )
+        .shadow(color: Color.black.opacity(0.03), radius: 1, x: 0, y: 1)
     }
     
     private var isAPIConfigured: Bool {
@@ -98,7 +109,7 @@ struct CleanModeToggle: View {
     }
 }
 
-struct ModeButton: View {
+struct ModeSegment: View {
     let title: String
     let icon: String
     let isSelected: Bool
@@ -108,28 +119,39 @@ struct ModeButton: View {
         Button(action: action) {
             HStack(spacing: 6) {
                 Image(systemName: icon)
-                    .font(.caption)
+                    .font(.system(size: 14, weight: .medium))
                 Text(title)
-                    .font(.subheadline)
-                    .fontWeight(.medium)
+                    .font(.system(size: 16, weight: .semibold))
             }
-            .foregroundColor(isSelected ? .white : .secondary)
+            .foregroundColor(isSelected ? .white : .primary)
             .frame(maxWidth: .infinity)
-            .padding(.vertical, 8)
+            .frame(height: 36)
             .background(
-                isSelected ? Color.blue : Color.clear
+                RoundedRectangle(cornerRadius: 10)
+                    .fill(isSelected ? Color.accentColor : Color.clear)
+                    .animation(.interpolatingSpring(stiffness: 300, damping: 30), value: isSelected)
             )
-            .cornerRadius(8)
-            .animation(.easeInOut(duration: 0.2), value: isSelected)
+            .padding(.horizontal, 2)
+            .padding(.vertical, 2)
         }
+        .buttonStyle(ScaleButtonStyle())
     }
 }
 
-// MARK: - Clean Business Tab View
+// MARK: - Apple-Style Button Style
+struct ScaleButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .scaleEffect(configuration.isPressed ? 0.96 : 1.0)
+            .animation(.easeInOut(duration: 0.1), value: configuration.isPressed)
+    }
+}
+
+// MARK: - Apple-Style Tab View
 struct BusinessTabView: View {
     var body: some View {
         TabView {
-            CleanAnalysisView()
+            AppleAnalysisView()
                 .tabItem {
                     Image(systemName: "viewfinder")
                     Text("Analyze")
@@ -137,34 +159,34 @@ struct BusinessTabView: View {
             
             DashboardView()
                 .tabItem {
-                    Image(systemName: "chart.bar")
+                    Image(systemName: "chart.bar.fill")
                     Text("Dashboard")
                 }
             
             SmartInventoryListView()
                 .tabItem {
-                    Image(systemName: "list.bullet")
+                    Image(systemName: "list.bullet.rectangle")
                     Text("Inventory")
                 }
             
             InventoryOrganizationView()
                 .tabItem {
-                    Image(systemName: "archivebox")
+                    Image(systemName: "archivebox.fill")
                     Text("Storage")
                 }
             
             AppSettingsView()
                 .tabItem {
-                    Image(systemName: "gear")
+                    Image(systemName: "gearshape.fill")
                     Text("Settings")
                 }
         }
-        .accentColor(.blue)
+        .accentColor(.accentColor)
     }
 }
 
-// MARK: - Clean Analysis View
-struct CleanAnalysisView: View {
+// MARK: - Apple-Style Analysis View
+struct AppleAnalysisView: View {
     @EnvironmentObject var inventoryManager: InventoryManager
     @EnvironmentObject var aiService: AIService
     @EnvironmentObject var googleSheetsService: GoogleSheetsService
@@ -182,56 +204,41 @@ struct CleanAnalysisView: View {
     var body: some View {
         NavigationView {
             ScrollView {
-                LazyVStack(spacing: 20) {
-                    // Clean Header
+                LazyVStack(spacing: 24) {
+                    // Apple-style header
                     VStack(spacing: 12) {
                         Text("Item Analysis")
-                            .font(.largeTitle)
-                            .fontWeight(.bold)
+                            .font(.system(size: 34, weight: .bold))
+                            .frame(maxWidth: .infinity, alignment: .leading)
                         
                         if !isAPIConfigured {
-                            Text("Configure API keys for analysis")
-                                .font(.caption)
-                                .foregroundColor(.orange)
-                                .padding(.horizontal, 12)
-                                .padding(.vertical, 6)
-                                .background(Color.orange.opacity(0.1))
-                                .cornerRadius(6)
+                            NotificationBanner(
+                                message: "Configure API keys for analysis",
+                                style: .warning
+                            )
                         }
                         
-                        // Clean Progress Indicator
+                        // Progress indicator with Apple styling
                         if aiService.isAnalyzing {
-                            VStack(spacing: 8) {
-                                ProgressView(value: Double(aiService.currentStep), total: Double(aiService.totalSteps))
-                                    .progressViewStyle(LinearProgressViewStyle(tint: .blue))
-                                
-                                Text(aiService.analysisProgress)
-                                    .font(.subheadline)
-                                    .foregroundColor(.blue)
-                                
-                                Button("Cancel") {
-                                    resetAnalysis()
-                                }
-                                .font(.caption)
-                                .foregroundColor(.red)
-                            }
-                            .padding()
-                            .background(Color.blue.opacity(0.05))
-                            .cornerRadius(12)
+                            AnalysisProgressCard(
+                                progress: Double(aiService.currentStep) / Double(aiService.totalSteps),
+                                message: aiService.analysisProgress,
+                                onCancel: { resetAnalysis() }
+                            )
                         }
                     }
                     
-                    // Photo Section
+                    // Photo section
                     if !capturedImages.isEmpty {
-                        CleanPhotoGallery(images: $capturedImages)
+                        ApplePhotoGallery(images: $capturedImages)
                     } else {
-                        CleanPhotoPlaceholder {
+                        ApplePhotoPlaceholder {
                             showingCamera = true
                         }
                     }
                     
-                    // Action Buttons
-                    CleanActionButtons(
+                    // Action buttons with Apple styling
+                    AppleActionButtons(
                         hasPhotos: !capturedImages.isEmpty,
                         isAnalyzing: aiService.isAnalyzing,
                         isAPIConfigured: isAPIConfigured,
@@ -242,18 +249,20 @@ struct CleanAnalysisView: View {
                         onReset: { resetAnalysis() }
                     )
                     
-                    // Results
+                    // Results with Apple card styling
                     if let result = analysisResult {
-                        CleanAnalysisResult(analysis: result) {
+                        AppleAnalysisResult(analysis: result) {
                             showingItemForm = true
                         } onDirectList: {
                             showingDirectListing = true
                         }
                     }
                 }
-                .padding()
+                .padding(.horizontal, 20)
+                .padding(.bottom, 20)
             }
             .navigationBarHidden(true)
+            .background(Color(.systemGroupedBackground))
         }
         .sheet(isPresented: $showingCamera) {
             CameraView { photos in
@@ -291,9 +300,8 @@ struct CleanAnalysisView: View {
         !APIConfig.openAIKey.isEmpty
     }
     
-    // MARK: - Performance Optimized Methods
+    // Performance optimized methods
     private func appendImages(_ photos: [UIImage]) {
-        // Optimize images for performance
         let optimizedPhotos = photos.compactMap { image -> UIImage? in
             return optimizeImage(image)
         }
@@ -352,46 +360,138 @@ struct CleanAnalysisView: View {
     }
 }
 
-// MARK: - Clean Photo Gallery
-struct CleanPhotoGallery: View {
+// MARK: - Apple-Style Components
+
+struct NotificationBanner: View {
+    let message: String
+    let style: BannerStyle
+    
+    enum BannerStyle {
+        case info, warning, error
+        
+        var color: Color {
+            switch self {
+            case .info: return .blue
+            case .warning: return .orange
+            case .error: return .red
+            }
+        }
+        
+        var icon: String {
+            switch self {
+            case .info: return "info.circle.fill"
+            case .warning: return "exclamationmark.triangle.fill"
+            case .error: return "xmark.circle.fill"
+            }
+        }
+    }
+    
+    var body: some View {
+        HStack(spacing: 12) {
+            Image(systemName: style.icon)
+                .font(.system(size: 16, weight: .semibold))
+                .foregroundColor(style.color)
+            
+            Text(message)
+                .font(.system(size: 14, weight: .medium))
+                .foregroundColor(.primary)
+            
+            Spacer()
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(style.color.opacity(0.1))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(style.color.opacity(0.3), lineWidth: 1)
+        )
+    }
+}
+
+struct AnalysisProgressCard: View {
+    let progress: Double
+    let message: String
+    let onCancel: () -> Void
+    
+    var body: some View {
+        VStack(spacing: 16) {
+            HStack {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Analyzing...")
+                        .font(.system(size: 18, weight: .semibold))
+                    Text(message)
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(.secondary)
+                }
+                
+                Spacer()
+                
+                Button("Cancel", action: onCancel)
+                    .font(.system(size: 16, weight: .medium))
+                    .foregroundColor(.red)
+            }
+            
+            ProgressView(value: progress)
+                .progressViewStyle(LinearProgressViewStyle(tint: .accentColor))
+                .scaleEffect(y: 2)
+        }
+        .padding(20)
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(Color(.systemBackground))
+                .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 2)
+        )
+    }
+}
+
+// MARK: - Apple Photo Gallery
+struct ApplePhotoGallery: View {
     @Binding var images: [UIImage]
     @State private var selectedIndex = 0
     
     var body: some View {
-        VStack(spacing: 12) {
-            // Main Photo
+        VStack(spacing: 16) {
+            // Main photo with rounded corners
             TabView(selection: $selectedIndex) {
                 ForEach(0..<images.count, id: \.self) { index in
                     Image(uiImage: images[index])
                         .resizable()
                         .aspectRatio(contentMode: .fit)
-                        .frame(maxHeight: 300)
-                        .cornerRadius(12)
+                        .frame(maxHeight: 280)
+                        .cornerRadius(16)
+                        .clipped()
                         .tag(index)
                 }
             }
-            .tabViewStyle(PageTabViewStyle(indexDisplayMode: .always))
-            .frame(height: 320)
+            .tabViewStyle(PageTabViewStyle(indexDisplayMode: .automatic))
+            .frame(height: 300)
             
-            // Simple Controls
+            // Photo controls
             HStack {
-                Text("\(images.count) photos ready")
-                    .font(.subheadline)
+                Text("\(images.count) photo\(images.count == 1 ? "" : "s")")
+                    .font(.system(size: 16, weight: .medium))
                     .foregroundColor(.secondary)
                 
                 Spacer()
                 
-                Button("Delete") {
-                    deleteCurrentPhoto()
+                Button(action: deleteCurrentPhoto) {
+                    Label("Delete", systemImage: "trash")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(.red)
                 }
-                .font(.caption)
-                .foregroundColor(.red)
-                .padding(.horizontal, 8)
-                .padding(.vertical, 4)
-                .background(Color.red.opacity(0.1))
-                .cornerRadius(6)
+                .buttonStyle(ScaleButtonStyle())
             }
+            .padding(.horizontal, 4)
         }
+        .padding(20)
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(Color(.systemBackground))
+                .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 2)
+        )
     }
     
     private func deleteCurrentPhoto() {
@@ -407,40 +507,47 @@ struct CleanPhotoGallery: View {
     }
 }
 
-// MARK: - Clean Photo Placeholder
-struct CleanPhotoPlaceholder: View {
+// MARK: - Apple Photo Placeholder
+struct ApplePhotoPlaceholder: View {
     let onTakePhotos: () -> Void
     
     var body: some View {
         Button(action: onTakePhotos) {
             VStack(spacing: 20) {
-                Image(systemName: "camera")
-                    .font(.system(size: 50))
-                    .foregroundColor(.blue)
+                Image(systemName: "camera.fill")
+                    .font(.system(size: 48, weight: .light))
+                    .foregroundColor(.accentColor)
                 
                 VStack(spacing: 8) {
                     Text("Take Photos")
-                        .font(.title2)
-                        .fontWeight(.semibold)
+                        .font(.system(size: 22, weight: .semibold))
                     
-                    Text("Multiple photos for better analysis")
-                        .font(.subheadline)
+                    Text("Multiple angles improve analysis accuracy")
+                        .font(.system(size: 16, weight: .medium))
                         .foregroundColor(.secondary)
+                        .multilineTextAlignment(.center)
                 }
             }
             .frame(maxWidth: .infinity)
-            .frame(height: 200)
+            .frame(height: 220)
             .background(
-                RoundedRectangle(cornerRadius: 12)
-                    .stroke(Color.blue.opacity(0.3), style: StrokeStyle(lineWidth: 2, dash: [8, 4]))
+                RoundedRectangle(cornerRadius: 16)
+                    .strokeBorder(
+                        style: StrokeStyle(lineWidth: 2, dash: [8, 6])
+                    )
+                    .foregroundColor(.accentColor.opacity(0.3))
+            )
+            .background(
+                RoundedRectangle(cornerRadius: 16)
+                    .fill(Color.accentColor.opacity(0.03))
             )
         }
-        .buttonStyle(PlainButtonStyle())
+        .buttonStyle(ScaleButtonStyle())
     }
 }
 
-// MARK: - Clean Action Buttons
-struct CleanActionButtons: View {
+// MARK: - Apple Action Buttons
+struct AppleActionButtons: View {
     let hasPhotos: Bool
     let isAnalyzing: Bool
     let isAPIConfigured: Bool
@@ -451,49 +558,70 @@ struct CleanActionButtons: View {
     let onReset: () -> Void
     
     var body: some View {
-        VStack(spacing: 12) {
-            // Photo Actions
+        VStack(spacing: 16) {
+            // Photo capture buttons
             HStack(spacing: 12) {
-                ActionButton(icon: "camera", title: "Camera", color: .blue, action: onCamera)
-                ActionButton(icon: "photo", title: "Library", color: .green, action: onLibrary)
-                ActionButton(icon: "barcode", title: "Scan", color: .orange, action: onBarcode)
+                AppleActionButton(
+                    icon: "camera.fill",
+                    title: "Camera",
+                    color: .accentColor,
+                    action: onCamera
+                )
+                
+                AppleActionButton(
+                    icon: "photo.on.rectangle",
+                    title: "Photos",
+                    color: .green,
+                    action: onLibrary
+                )
+                
+                AppleActionButton(
+                    icon: "barcode.viewfinder",
+                    title: "Scan",
+                    color: .orange,
+                    action: onBarcode
+                )
             }
             
-            // Analyze Button
+            // Analysis button
             if hasPhotos {
                 Button(action: onAnalyze) {
-                    HStack {
+                    HStack(spacing: 8) {
                         if isAnalyzing {
                             ProgressView()
-                                .scaleEffect(0.8)
                                 .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                                .scaleEffect(0.8)
                             Text("Analyzing...")
                         } else {
-                            Image(systemName: "brain")
-                            Text("Analyze Items")
+                            Image(systemName: "brain.head.profile")
+                            Text("Analyze Item")
                         }
                     }
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(isAPIConfigured ? Color.blue : Color.gray)
+                    .font(.system(size: 18, weight: .semibold))
                     .foregroundColor(.white)
-                    .cornerRadius(12)
-                    .font(.headline)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 56)
+                    .background(
+                        RoundedRectangle(cornerRadius: 16)
+                            .fill(isAPIConfigured ? Color.accentColor : Color.gray)
+                    )
                 }
                 .disabled(isAnalyzing || !isAPIConfigured)
+                .buttonStyle(ScaleButtonStyle())
                 
-                // Reset Button
+                // Reset button
                 if !isAnalyzing {
-                    Button("Reset", action: onReset)
-                        .font(.subheadline)
+                    Button("Start Over", action: onReset)
+                        .font(.system(size: 16, weight: .medium))
                         .foregroundColor(.secondary)
+                        .buttonStyle(ScaleButtonStyle())
                 }
             }
         }
     }
 }
 
-struct ActionButton: View {
+struct AppleActionButton: View {
     let icon: String
     let title: String
     let color: Color
@@ -501,203 +629,228 @@ struct ActionButton: View {
     
     var body: some View {
         Button(action: action) {
-            VStack(spacing: 4) {
+            VStack(spacing: 8) {
                 Image(systemName: icon)
-                    .font(.title3)
+                    .font(.system(size: 24, weight: .medium))
                 Text(title)
-                    .font(.caption)
-                    .fontWeight(.medium)
+                    .font(.system(size: 14, weight: .semibold))
             }
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 12)
-            .background(color.opacity(0.1))
             .foregroundColor(color)
-            .cornerRadius(8)
+            .frame(maxWidth: .infinity)
+            .frame(height: 80)
+            .background(
+                RoundedRectangle(cornerRadius: 16)
+                    .fill(color.opacity(0.1))
+            )
         }
+        .buttonStyle(ScaleButtonStyle())
     }
 }
 
-// MARK: - Clean Analysis Result
-struct CleanAnalysisResult: View {
+// MARK: - Apple Analysis Result
+struct AppleAnalysisResult: View {
     let analysis: AnalysisResult
     let onAddToInventory: () -> Void
     let onDirectList: () -> Void
     
     var body: some View {
-        VStack(spacing: 16) {
-            // Result Header
-            VStack(spacing: 8) {
-                HStack {
-                    VStack(alignment: .leading, spacing: 4) {
+        VStack(spacing: 20) {
+            // Header section
+            VStack(spacing: 16) {
+                HStack(alignment: .top) {
+                    VStack(alignment: .leading, spacing: 6) {
                         Text(analysis.itemName)
-                            .font(.title2)
-                            .fontWeight(.bold)
+                            .font(.system(size: 22, weight: .bold))
+                            .lineLimit(2)
                         
                         if !analysis.brand.isEmpty {
                             Text(analysis.brand)
-                                .font(.subheadline)
-                                .foregroundColor(.blue)
+                                .font(.system(size: 16, weight: .semibold))
+                                .foregroundColor(.accentColor)
                         }
+                        
+                        Text("\(String(format: "%.0f", analysis.confidence.overall * 100))% confident")
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundColor(.secondary)
                     }
                     
                     Spacer()
                     
                     VStack(alignment: .trailing, spacing: 4) {
                         Text("$\(String(format: "%.0f", analysis.realisticPrice))")
-                            .font(.title2)
-                            .fontWeight(.bold)
+                            .font(.system(size: 28, weight: .bold))
                             .foregroundColor(.green)
                         
-                        Text("\(String(format: "%.0f", analysis.confidence.overall * 100))% confident")
-                            .font(.caption)
+                        Text("Market Price")
+                            .font(.system(size: 12, weight: .medium))
                             .foregroundColor(.secondary)
                     }
                 }
                 
-                // Quick Stats
-                HStack {
-                    StatChip(label: "Condition", value: analysis.actualCondition, color: .blue)
-                    StatChip(label: "Sales", value: "\(analysis.soldListings.count)", color: .purple)
-                    StatChip(label: "Market", value: analysis.demandLevel, color: .orange)
+                // Quick stats with Apple styling
+                HStack(spacing: 12) {
+                    AppleStatChip(label: "Condition", value: analysis.actualCondition, color: .blue)
+                    AppleStatChip(label: "Sales", value: "\(analysis.soldListings.count)", color: .purple)
+                    AppleStatChip(label: "Demand", value: analysis.demandLevel, color: .orange)
                 }
             }
-            .padding()
-            .background(Color.gray.opacity(0.05))
-            .cornerRadius(12)
             
-            // Pricing Strategy
-            CleanPricingStrategy(analysis: analysis)
+            // Pricing strategy
+            ApplePricingStrategy(analysis: analysis)
             
-            // Action Buttons
-            VStack(spacing: 8) {
+            // Action buttons
+            VStack(spacing: 12) {
                 Button(action: onAddToInventory) {
-                    HStack {
-                        Image(systemName: "plus")
+                    HStack(spacing: 8) {
+                        Image(systemName: "plus.circle.fill")
                         Text("Add to Inventory")
                     }
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(Color.blue)
+                    .font(.system(size: 18, weight: .semibold))
                     .foregroundColor(.white)
-                    .cornerRadius(10)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 56)
+                    .background(
+                        RoundedRectangle(cornerRadius: 16)
+                            .fill(Color.accentColor)
+                    )
                 }
+                .buttonStyle(ScaleButtonStyle())
                 
                 Button(action: onDirectList) {
-                    HStack {
-                        Image(systemName: "square.and.arrow.up")
-                        Text("Create Listing")
+                    HStack(spacing: 8) {
+                        Image(systemName: "square.and.arrow.up.fill")
+                        Text("Create eBay Listing")
                     }
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(Color.green)
+                    .font(.system(size: 18, weight: .semibold))
                     .foregroundColor(.white)
-                    .cornerRadius(10)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 56)
+                    .background(
+                        RoundedRectangle(cornerRadius: 16)
+                            .fill(Color.green)
+                    )
                 }
+                .buttonStyle(ScaleButtonStyle())
             }
         }
-        .padding()
-        .background(Color.white)
-        .cornerRadius(16)
-        .shadow(color: .black.opacity(0.05), radius: 4, x: 0, y: 2)
+        .padding(24)
+        .background(
+            RoundedRectangle(cornerRadius: 20)
+                .fill(Color(.systemBackground))
+                .shadow(color: .black.opacity(0.08), radius: 12, x: 0, y: 4)
+        )
     }
 }
 
-struct StatChip: View {
+struct AppleStatChip: View {
     let label: String
     let value: String
     let color: Color
     
     var body: some View {
-        VStack(spacing: 2) {
+        VStack(spacing: 4) {
             Text(value)
-                .font(.caption)
-                .fontWeight(.semibold)
+                .font(.system(size: 16, weight: .bold))
                 .foregroundColor(color)
             Text(label)
-                .font(.caption2)
+                .font(.system(size: 12, weight: .medium))
                 .foregroundColor(.secondary)
         }
         .frame(maxWidth: .infinity)
-        .padding(.vertical, 6)
-        .background(color.opacity(0.1))
-        .cornerRadius(6)
-    }
-}
-
-// MARK: - Clean Pricing Strategy
-struct CleanPricingStrategy: View {
-    let analysis: AnalysisResult
-    
-    var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Pricing Strategy")
-                .font(.headline)
-                .fontWeight(.semibold)
-            
-            HStack(spacing: 12) {
-                PriceCard(
-                    title: "Quick Sale",
-                    price: analysis.quickSalePrice,
-                    color: .orange
-                )
-                
-                PriceCard(
-                    title: "Recommended",
-                    price: analysis.realisticPrice,
-                    color: .blue,
-                    isRecommended: true
-                )
-                
-                PriceCard(
-                    title: "Max Profit",
-                    price: analysis.maxProfitPrice,
-                    color: .green
-                )
-            }
-        }
-        .padding()
-        .background(Color.gray.opacity(0.05))
-        .cornerRadius(12)
-    }
-}
-
-struct PriceCard: View {
-    let title: String
-    let price: Double
-    let color: Color
-    let isRecommended: Bool
-    
-    init(title: String, price: Double, color: Color, isRecommended: Bool = false) {
-        self.title = title
-        self.price = price
-        self.color = color
-        self.isRecommended = isRecommended
-    }
-    
-    var body: some View {
-        VStack(spacing: 4) {
-            Text(title)
-                .font(.caption)
-                .fontWeight(.medium)
-                .foregroundColor(isRecommended ? .white : color)
-            
-            Text("$\(String(format: "%.0f", price))")
-                .font(.subheadline)
-                .fontWeight(.bold)
-                .foregroundColor(isRecommended ? .white : color)
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 8)
-        .background(isRecommended ? color : color.opacity(0.1))
-        .cornerRadius(8)
-        .overlay(
-            RoundedRectangle(cornerRadius: 8)
-                .stroke(color, lineWidth: isRecommended ? 0 : 1)
+        .padding(.vertical, 12)
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(color.opacity(0.1))
         )
     }
 }
 
-// MARK: - Clean Prospecting View
+// MARK: - Apple Pricing Strategy
+struct ApplePricingStrategy: View {
+    let analysis: AnalysisResult
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text("Pricing Strategy")
+                .font(.system(size: 18, weight: .semibold))
+            
+            HStack(spacing: 12) {
+                ApplePriceCard(
+                    title: "Quick Sale",
+                    price: analysis.quickSalePrice,
+                    subtitle: "Fast turnover",
+                    color: .orange
+                )
+                
+                ApplePriceCard(
+                    title: "Recommended",
+                    price: analysis.realisticPrice,
+                    subtitle: "Best value",
+                    color: .accentColor,
+                    isHighlighted: true
+                )
+                
+                ApplePriceCard(
+                    title: "Premium",
+                    price: analysis.maxProfitPrice,
+                    subtitle: "Max profit",
+                    color: .green
+                )
+            }
+            
+            if !analysis.soldListings.isEmpty {
+                Text("Based on \(analysis.soldListings.count) recent sales")
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundColor(.secondary)
+            }
+        }
+        .padding(20)
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(Color.accentColor.opacity(0.05))
+        )
+    }
+}
+
+struct ApplePriceCard: View {
+    let title: String
+    let price: Double
+    let subtitle: String
+    let color: Color
+    let isHighlighted: Bool
+    
+    init(title: String, price: Double, subtitle: String, color: Color, isHighlighted: Bool = false) {
+        self.title = title
+        self.price = price
+        self.subtitle = subtitle
+        self.color = color
+        self.isHighlighted = isHighlighted
+    }
+    
+    var body: some View {
+        VStack(spacing: 6) {
+            Text(title)
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundColor(isHighlighted ? .white : color)
+            
+            Text("$\(String(format: "%.0f", price))")
+                .font(.system(size: 18, weight: .bold))
+                .foregroundColor(isHighlighted ? .white : color)
+            
+            Text(subtitle)
+                .font(.system(size: 12, weight: .medium))
+                .foregroundColor(isHighlighted ? .white.opacity(0.8) : .secondary)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 16)
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(isHighlighted ? color : color.opacity(0.1))
+        )
+    }
+}
+
+// MARK: - Apple Prospecting View
 struct ProspectingView: View {
     @EnvironmentObject var inventoryManager: InventoryManager
     @EnvironmentObject var aiService: AIService
@@ -712,69 +865,74 @@ struct ProspectingView: View {
     var body: some View {
         NavigationView {
             ScrollView {
-                LazyVStack(spacing: 20) {
-                    // Simple Header
+                LazyVStack(spacing: 24) {
+                    // Header
                     VStack(spacing: 12) {
                         Text("Prospecting")
-                            .font(.largeTitle)
-                            .fontWeight(.bold)
+                            .font(.system(size: 34, weight: .bold))
+                            .frame(maxWidth: .infinity, alignment: .leading)
                         
-                        Text("Get max buy prices instantly")
-                            .font(.subheadline)
+                        Text("Get instant max buy prices")
+                            .font(.system(size: 18, weight: .medium))
                             .foregroundColor(.secondary)
+                            .frame(maxWidth: .infinity, alignment: .leading)
                         
                         if aiService.isAnalyzing {
-                            ProgressView(value: Double(aiService.currentStep), total: Double(aiService.totalSteps))
-                                .progressViewStyle(LinearProgressViewStyle(tint: .purple))
-                            
-                            Text(aiService.analysisProgress)
-                                .font(.subheadline)
-                                .foregroundColor(.purple)
+                            AnalysisProgressCard(
+                                progress: Double(aiService.currentStep) / Double(aiService.totalSteps),
+                                message: aiService.analysisProgress,
+                                onCancel: { /* Cancel logic */ }
+                            )
                         }
                     }
                     
-                    // Photo Interface
+                    // Photo interface
                     if !capturedImages.isEmpty {
-                        CleanPhotoGallery(images: $capturedImages)
+                        ApplePhotoGallery(images: $capturedImages)
                     } else {
                         ProspectPhotoPlaceholder {
                             showingCamera = true
                         }
                     }
                     
-                    // Prospect Actions
-                    VStack(spacing: 12) {
+                    // Actions
+                    VStack(spacing: 16) {
                         HStack(spacing: 12) {
-                            ActionButton(icon: "camera", title: "Camera", color: .purple, action: { showingCamera = true })
-                            ActionButton(icon: "photo", title: "Library", color: .green, action: { showingPhotoLibrary = true })
-                            ActionButton(icon: "barcode", title: "Scan", color: .orange, action: { showingBarcodeLookup = true })
+                            AppleActionButton(icon: "camera.fill", title: "Camera", color: .purple, action: { showingCamera = true })
+                            AppleActionButton(icon: "photo.on.rectangle", title: "Photos", color: .green, action: { showingPhotoLibrary = true })
+                            AppleActionButton(icon: "barcode.viewfinder", title: "Scan", color: .orange, action: { showingBarcodeLookup = true })
                         }
                         
                         if !capturedImages.isEmpty {
                             Button(action: analyzeForProspecting) {
-                                HStack {
-                                    Image(systemName: "magnifyingglass")
+                                HStack(spacing: 8) {
+                                    Image(systemName: "scope")
                                     Text("Get Max Buy Price")
                                 }
-                                .frame(maxWidth: .infinity)
-                                .padding()
-                                .background(Color.purple)
+                                .font(.system(size: 18, weight: .semibold))
                                 .foregroundColor(.white)
-                                .cornerRadius(12)
-                                .font(.headline)
+                                .frame(maxWidth: .infinity)
+                                .frame(height: 56)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 16)
+                                        .fill(Color.purple)
+                                )
                             }
                             .disabled(aiService.isAnalyzing || APIConfig.openAIKey.isEmpty)
+                            .buttonStyle(ScaleButtonStyle())
                         }
                     }
                     
                     // Results
                     if let analysis = prospectAnalysis {
-                        CleanProspectResult(analysis: analysis)
+                        AppleProspectResult(analysis: analysis)
                     }
                 }
-                .padding()
+                .padding(.horizontal, 20)
+                .padding(.bottom, 20)
             }
             .navigationBarHidden(true)
+            .background(Color(.systemGroupedBackground))
         }
         .sheet(isPresented: $showingCamera) {
             CameraView { photos in
@@ -844,147 +1002,249 @@ struct ProspectPhotoPlaceholder: View {
     var body: some View {
         Button(action: onTakePhotos) {
             VStack(spacing: 20) {
-                Image(systemName: "magnifyingglass")
-                    .font(.system(size: 50))
+                Image(systemName: "scope")
+                    .font(.system(size: 48, weight: .light))
                     .foregroundColor(.purple)
                 
                 VStack(spacing: 8) {
                     Text("Prospect Items")
-                        .font(.title2)
-                        .fontWeight(.semibold)
+                        .font(.system(size: 22, weight: .semibold))
                     
                     Text("Get instant max buy prices")
-                        .font(.subheadline)
+                        .font(.system(size: 16, weight: .medium))
                         .foregroundColor(.secondary)
                 }
             }
             .frame(maxWidth: .infinity)
-            .frame(height: 200)
+            .frame(height: 220)
             .background(
-                RoundedRectangle(cornerRadius: 12)
-                    .stroke(Color.purple.opacity(0.3), style: StrokeStyle(lineWidth: 2, dash: [8, 4]))
+                RoundedRectangle(cornerRadius: 16)
+                    .strokeBorder(
+                        style: StrokeStyle(lineWidth: 2, dash: [8, 6])
+                    )
+                    .foregroundColor(.purple.opacity(0.3))
+            )
+            .background(
+                RoundedRectangle(cornerRadius: 16)
+                    .fill(Color.purple.opacity(0.03))
             )
         }
-        .buttonStyle(PlainButtonStyle())
+        .buttonStyle(ScaleButtonStyle())
     }
 }
 
-// MARK: - Clean Prospect Result
-struct CleanProspectResult: View {
+// MARK: - Apple Prospect Result
+struct AppleProspectResult: View {
     let analysis: ProspectAnalysis
     
     var body: some View {
-        VStack(spacing: 16) {
-            // Header
-            VStack(spacing: 8) {
-                HStack {
-                    VStack(alignment: .leading, spacing: 4) {
+        VStack(spacing: 20) {
+            // Header with recommendation
+            VStack(spacing: 16) {
+                HStack(alignment: .top) {
+                    VStack(alignment: .leading, spacing: 6) {
                         Text(analysis.itemName)
-                            .font(.title2)
-                            .fontWeight(.bold)
+                            .font(.system(size: 22, weight: .bold))
+                            .lineLimit(2)
                         
                         if !analysis.brand.isEmpty {
                             Text(analysis.brand)
-                                .font(.subheadline)
-                                .foregroundColor(.blue)
+                                .font(.system(size: 16, weight: .semibold))
+                                .foregroundColor(.accentColor)
                         }
                     }
                     
                     Spacer()
                     
-                    VStack(alignment: .trailing, spacing: 4) {
+                    VStack(spacing: 8) {
                         Text(analysis.recommendation.emoji)
-                            .font(.title)
+                            .font(.system(size: 32))
                         Text(analysis.recommendation.title)
-                            .font(.caption)
-                            .fontWeight(.semibold)
+                            .font(.system(size: 14, weight: .bold))
                             .foregroundColor(analysis.recommendation.color)
                     }
                 }
             }
             
-            // Max Buy Price Strategy
-            VStack(alignment: .leading, spacing: 12) {
-                Text("Pricing Strategy")
-                    .font(.headline)
-                    .fontWeight(.semibold)
-                
-                HStack(spacing: 12) {
-                    PriceCard(
-                        title: "Max Pay",
-                        price: analysis.maxBuyPrice,
-                        color: .red,
-                        isRecommended: true
-                    )
-                    
-                    PriceCard(
-                        title: "Target",
-                        price: analysis.targetBuyPrice,
-                        color: .orange
-                    )
-                    
-                    PriceCard(
-                        title: "Sell For",
-                        price: analysis.estimatedSellPrice,
-                        color: .green
-                    )
-                }
-                
-                // Profit Display
-                if analysis.potentialProfit > 0 {
-                    HStack {
-                        Text("Potential Profit:")
-                        Spacer()
-                        Text("$\(String(format: "%.2f", analysis.potentialProfit))")
-                            .fontWeight(.bold)
-                            .foregroundColor(.green)
-                        Text("(\(String(format: "%.0f", analysis.expectedROI))% ROI)")
-                            .foregroundColor(.secondary)
-                    }
-                    .padding(.top, 8)
-                }
-            }
-            .padding()
-            .background(Color.gray.opacity(0.05))
-            .cornerRadius(12)
+            // Buy pricing strategy
+            AppleBuyPricingStrategy(analysis: analysis)
             
-            // Market Intelligence
+            // Market data if available
             if !analysis.recentSales.isEmpty {
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Recent Sales")
-                        .font(.headline)
-                        .fontWeight(.semibold)
-                    
-                    ForEach(analysis.recentSales.prefix(3), id: \.title) { sale in
-                        HStack {
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text(sale.title)
-                                    .font(.caption)
-                                    .lineLimit(1)
-                                Text(sale.condition)
-                                    .font(.caption2)
-                                    .foregroundColor(.secondary)
-                            }
-                            
-                            Spacer()
-                            
-                            Text("$\(String(format: "%.0f", sale.price))")
-                                .font(.caption)
-                                .fontWeight(.semibold)
-                                .foregroundColor(.green)
-                        }
-                        .padding(.vertical, 4)
-                    }
-                }
-                .padding()
-                .background(Color.blue.opacity(0.05))
-                .cornerRadius(12)
+                AppleRecentSales(sales: Array(analysis.recentSales.prefix(3)))
             }
         }
-        .padding()
-        .background(Color.white)
-        .cornerRadius(16)
-        .shadow(color: .black.opacity(0.05), radius: 4, x: 0, y: 2)
+        .padding(24)
+        .background(
+            RoundedRectangle(cornerRadius: 20)
+                .fill(Color(.systemBackground))
+                .shadow(color: .black.opacity(0.08), radius: 12, x: 0, y: 4)
+        )
+    }
+}
+
+struct AppleBuyPricingStrategy: View {
+    let analysis: ProspectAnalysis
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text("Buy Price Strategy")
+                .font(.system(size: 18, weight: .semibold))
+            
+            HStack(spacing: 12) {
+                AppleBuyPriceCard(
+                    title: "Max Pay",
+                    price: analysis.maxBuyPrice,
+                    subtitle: "Don't exceed",
+                    color: .red,
+                    isHighlighted: true
+                )
+                
+                AppleBuyPriceCard(
+                    title: "Target",
+                    price: analysis.targetBuyPrice,
+                    subtitle: "Good deal",
+                    color: .orange
+                )
+                
+                AppleBuyPriceCard(
+                    title: "Sell For",
+                    price: analysis.estimatedSellPrice,
+                    subtitle: "Market price",
+                    color: .green
+                )
+            }
+            
+            // Profit summary
+            if analysis.potentialProfit > 0 {
+                HStack {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Potential Profit")
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundColor(.secondary)
+                        Text("$\(String(format: "%.2f", analysis.potentialProfit))")
+                            .font(.system(size: 18, weight: .bold))
+                            .foregroundColor(.green)
+                    }
+                    
+                    Spacer()
+                    
+                    VStack(alignment: .trailing, spacing: 4) {
+                        Text("Expected ROI")
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundColor(.secondary)
+                        Text("\(String(format: "%.0f", analysis.expectedROI))%")
+                            .font(.system(size: 18, weight: .bold))
+                            .foregroundColor(getROIColor(analysis.expectedROI))
+                    }
+                }
+                .padding(.top, 8)
+            }
+        }
+        .padding(20)
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(Color.purple.opacity(0.05))
+        )
+    }
+    
+    private func getROIColor(_ roi: Double) -> Color {
+        switch roi {
+        case 100...: return .green
+        case 50..<100: return .orange
+        default: return .red
+        }
+    }
+}
+
+struct AppleBuyPriceCard: View {
+    let title: String
+    let price: Double
+    let subtitle: String
+    let color: Color
+    let isHighlighted: Bool
+    
+    init(title: String, price: Double, subtitle: String, color: Color, isHighlighted: Bool = false) {
+        self.title = title
+        self.price = price
+        self.subtitle = subtitle
+        self.color = color
+        self.isHighlighted = isHighlighted
+    }
+    
+    var body: some View {
+        VStack(spacing: 6) {
+            Text(title)
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundColor(isHighlighted ? .white : color)
+            
+            Text("$\(String(format: "%.2f", price))")
+                .font(.system(size: 16, weight: .bold))
+                .foregroundColor(isHighlighted ? .white : color)
+            
+            Text(subtitle)
+                .font(.system(size: 12, weight: .medium))
+                .foregroundColor(isHighlighted ? .white.opacity(0.8) : .secondary)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 14)
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(isHighlighted ? color : color.opacity(0.1))
+        )
+    }
+}
+
+struct AppleRecentSales: View {
+    let sales: [RecentSale]
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Recent Sales")
+                .font(.system(size: 18, weight: .semibold))
+            
+            VStack(spacing: 8) {
+                ForEach(sales, id: \.title) { sale in
+                    HStack {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(sale.title)
+                                .font(.system(size: 14, weight: .medium))
+                                .lineLimit(1)
+                            
+                            if !sale.condition.isEmpty {
+                                Text(sale.condition)
+                                    .font(.system(size: 12, weight: .medium))
+                                    .foregroundColor(.secondary)
+                            }
+                        }
+                        
+                        Spacer()
+                        
+                        VStack(alignment: .trailing, spacing: 2) {
+                            Text("$\(String(format: "%.0f", sale.price))")
+                                .font(.system(size: 14, weight: .bold))
+                                .foregroundColor(.green)
+                            
+                            Text(formatSaleDate(sale.date))
+                                .font(.system(size: 12, weight: .medium))
+                                .foregroundColor(.secondary)
+                        }
+                    }
+                    .padding(.vertical, 4)
+                }
+            }
+        }
+        .padding(20)
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(Color.blue.opacity(0.05))
+        )
+    }
+    
+    private func formatSaleDate(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .short
+        return formatter.string(from: date)
     }
 }
 

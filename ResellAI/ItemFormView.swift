@@ -1,7 +1,7 @@
 import SwiftUI
 import Foundation
 
-// MARK: - Clean Item Form View
+// MARK: - Apple-Style Item Form View
 struct ItemFormView: View {
     let analysis: AnalysisResult
     let onSave: (InventoryItem) -> Void
@@ -34,144 +34,98 @@ struct ItemFormView: View {
     
     var body: some View {
         NavigationView {
-            Form {
-                // Photos Section
-                if !analysis.images.isEmpty {
-                    Section {
-                        ScrollView(.horizontal, showsIndicators: false) {
-                            HStack(spacing: 8) {
-                                ForEach(0..<analysis.images.count, id: \.self) { index in
-                                    Image(uiImage: analysis.images[index])
-                                        .resizable()
-                                        .aspectRatio(contentMode: .fill)
-                                        .frame(width: 60, height: 60)
-                                        .cornerRadius(8)
-                                        .clipped()
-                                }
+            ScrollView {
+                VStack(spacing: 24) {
+                    // Apple-style header
+                    VStack(spacing: 8) {
+                        Text("Add to Inventory")
+                            .font(.system(size: 34, weight: .bold))
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                        
+                        Text("Complete item details")
+                            .font(.system(size: 17, weight: .medium))
+                            .foregroundColor(.secondary)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                    
+                    // Photos section
+                    if !analysis.images.isEmpty {
+                        ApplePhotosPreview(images: analysis.images)
+                    }
+                    
+                    // Form sections
+                    VStack(spacing: 16) {
+                        AppleFormSection(title: "Product Details") {
+                            VStack(spacing: 16) {
+                                AppleTextField(title: "Item Name", text: $name)
+                                AppleTextField(title: "Brand", text: $brand)
+                                AppleTextField(title: "Size", text: $size)
+                                AppleTextField(title: "Color/Style", text: $colorway)
+                                
+                                AppleConditionPicker(selection: $condition)
                             }
-                            .padding(.horizontal, 4)
-                        }
-                    } header: {
-                        Text("Photos")
-                    }
-                }
-                
-                // Product Details
-                Section("Product Details") {
-                    TextField("Item Name", text: $name)
-                    TextField("Brand", text: $brand)
-                    TextField("Size", text: $size)
-                    TextField("Color/Style", text: $colorway)
-                    
-                    Picker("Condition", selection: $condition) {
-                        ForEach(EbayCondition.allCases, id: \.self) { condition in
-                            Text(condition.rawValue).tag(condition.rawValue)
-                        }
-                    }
-                }
-                
-                // Pricing
-                Section("Pricing") {
-                    HStack {
-                        Text("Purchase Price")
-                        Spacer()
-                        Text("$")
-                        TextField("0.00", value: $purchasePrice, format: .number.precision(.fractionLength(2)))
-                            .keyboardType(.decimalPad)
-                            .multilineTextAlignment(.trailing)
-                            .frame(width: 80)
-                    }
-                    
-                    HStack {
-                        Text("Suggested Price")
-                        Spacer()
-                        Text("$")
-                        TextField("0.00", value: $suggestedPrice, format: .number.precision(.fractionLength(2)))
-                            .keyboardType(.decimalPad)
-                            .multilineTextAlignment(.trailing)
-                            .frame(width: 80)
-                    }
-                    
-                    // Profit Display
-                    if purchasePrice > 0 && suggestedPrice > 0 {
-                        HStack {
-                            Text("Est. Profit")
-                            Spacer()
-                            Text("$\(String(format: "%.2f", estimatedProfit))")
-                                .fontWeight(.semibold)
-                                .foregroundColor(estimatedProfit > 0 ? .green : .red)
                         }
                         
-                        HStack {
-                            Text("Est. ROI")
-                            Spacer()
-                            Text("\(String(format: "%.0f", estimatedROI))%")
-                                .fontWeight(.semibold)
-                                .foregroundColor(getROIColor(estimatedROI))
+                        AppleFormSection(title: "Pricing") {
+                            VStack(spacing: 16) {
+                                ApplePriceField(title: "Purchase Price", value: $purchasePrice)
+                                ApplePriceField(title: "Suggested Price", value: $suggestedPrice)
+                                
+                                if purchasePrice > 0 && suggestedPrice > 0 {
+                                    AppleProfitDisplay(
+                                        profit: estimatedProfit,
+                                        roi: estimatedROI
+                                    )
+                                }
+                            }
+                        }
+                        
+                        AppleFormSection(title: "Source & Storage") {
+                            VStack(spacing: 16) {
+                                AppleSourcePicker(selection: $source, sources: sources)
+                                AppleTextField(title: "Storage Location", text: $storageLocation)
+                            }
+                        }
+                        
+                        AppleFormSection(title: "Notes") {
+                            AppleTextEditor(text: $notes, placeholder: "Additional notes...")
+                        }
+                        
+                        AppleFormSection(title: "AI Analysis") {
+                            AppleAnalysisSummary(analysis: analysis)
                         }
                     }
-                }
-                
-                // Source & Storage
-                Section("Source & Storage") {
-                    Picker("Source", selection: $source) {
-                        ForEach(sources, id: \.self) { source in
-                            Text(source).tag(source)
-                        }
-                    }
                     
-                    TextField("Storage Location", text: $storageLocation)
-                        .textInputAutocapitalization(.words)
-                }
-                
-                // Notes
-                Section("Notes") {
-                    TextField("Additional Notes", text: $notes, axis: .vertical)
-                        .lineLimit(2...4)
-                }
-                
-                // AI Analysis Summary
-                Section("AI Analysis") {
-                    HStack {
-                        Text("Confidence")
-                        Spacer()
-                        Text("\(String(format: "%.0f", analysis.confidence.overall * 100))%")
-                            .fontWeight(.semibold)
-                            .foregroundColor(getConfidenceColor(analysis.confidence.overall))
+                    // Save button
+                    Button(action: saveItem) {
+                        Text("Add to Inventory")
+                            .font(.system(size: 18, weight: .semibold))
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 56)
+                            .background(
+                                RoundedRectangle(cornerRadius: 16)
+                                    .fill(name.isEmpty || purchasePrice <= 0 ? Color.gray : Color.blue)
+                            )
                     }
+                    .disabled(name.isEmpty || purchasePrice <= 0)
+                    .buttonStyle(ScaleButtonStyle())
                     
-                    HStack {
-                        Text("Market Data")
-                        Spacer()
-                        Text("\(analysis.soldListings.count) sales")
-                            .foregroundColor(.blue)
-                    }
-                    
-                    HStack {
-                        Text("Category")
-                        Spacer()
-                        Text(analysis.category)
-                            .foregroundColor(.secondary)
-                    }
+                    Spacer(minLength: 40)
                 }
+                .padding(.horizontal, 20)
+                .padding(.bottom, 20)
             }
-            .navigationTitle("Add to Inventory")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button("Cancel") {
                         presentationMode.wrappedValue.dismiss()
                     }
-                }
-                
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Save") {
-                        saveItem()
-                    }
-                    .fontWeight(.semibold)
-                    .disabled(name.isEmpty || purchasePrice <= 0)
+                    .font(.system(size: 17, weight: .medium))
                 }
             }
+            .background(Color(.systemGroupedBackground))
         }
         .onAppear {
             loadFromAnalysis()
@@ -220,6 +174,235 @@ struct ItemFormView: View {
         
         onSave(newItem)
     }
+}
+
+// MARK: - Apple Form Components
+
+struct ApplePhotosPreview: View {
+    let images: [UIImage]
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text("Photos")
+                .font(.system(size: 20, weight: .semibold))
+            
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 12) {
+                    ForEach(0..<images.count, id: \.self) { index in
+                        Image(uiImage: images[index])
+                            .resizable()
+                            .aspectRatio(contentMode: .fill)
+                            .frame(width: 80, height: 80)
+                            .cornerRadius(12)
+                            .clipped()
+                    }
+                }
+                .padding(.horizontal, 4)
+            }
+        }
+        .padding(20)
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(Color(.systemBackground))
+                .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 2)
+        )
+    }
+}
+
+struct AppleFormSection<Content: View>: View {
+    let title: String
+    let content: Content
+    
+    init(title: String, @ViewBuilder content: () -> Content) {
+        self.title = title
+        self.content = content()
+    }
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text(title)
+                .font(.system(size: 20, weight: .semibold))
+            
+            content
+        }
+        .padding(20)
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(Color(.systemBackground))
+                .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 2)
+        )
+    }
+}
+
+struct AppleTextField: View {
+    let title: String
+    @Binding var text: String
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(title)
+                .font(.system(size: 16, weight: .semibold))
+                .foregroundColor(.primary)
+            
+            TextField("Enter \(title.lowercased())", text: $text)
+                .font(.system(size: 17, weight: .medium))
+                .padding(.horizontal, 16)
+                .padding(.vertical, 12)
+                .background(
+                    RoundedRectangle(cornerRadius: 10)
+                        .fill(Color(.secondarySystemBackground))
+                )
+        }
+    }
+}
+
+struct ApplePriceField: View {
+    let title: String
+    @Binding var value: Double
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(title)
+                .font(.system(size: 16, weight: .semibold))
+                .foregroundColor(.primary)
+            
+            HStack {
+                Text("$")
+                    .font(.system(size: 17, weight: .medium))
+                    .foregroundColor(.secondary)
+                
+                TextField("0.00", value: $value, format: .number.precision(.fractionLength(2)))
+                    .keyboardType(.decimalPad)
+                    .font(.system(size: 17, weight: .medium))
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 12)
+            .background(
+                RoundedRectangle(cornerRadius: 10)
+                    .fill(Color(.secondarySystemBackground))
+            )
+        }
+    }
+}
+
+struct AppleConditionPicker: View {
+    @Binding var selection: String
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Condition")
+                .font(.system(size: 16, weight: .semibold))
+                .foregroundColor(.primary)
+            
+            Picker("Condition", selection: $selection) {
+                ForEach(EbayCondition.allCases, id: \.self) { condition in
+                    Text(condition.rawValue).tag(condition.rawValue)
+                }
+            }
+            .pickerStyle(MenuPickerStyle())
+            .padding(.horizontal, 16)
+            .padding(.vertical, 12)
+            .background(
+                RoundedRectangle(cornerRadius: 10)
+                    .fill(Color(.secondarySystemBackground))
+            )
+        }
+    }
+}
+
+struct AppleSourcePicker: View {
+    @Binding var selection: String
+    let sources: [String]
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Source")
+                .font(.system(size: 16, weight: .semibold))
+                .foregroundColor(.primary)
+            
+            Picker("Source", selection: $selection) {
+                ForEach(sources, id: \.self) { source in
+                    Text(source).tag(source)
+                }
+            }
+            .pickerStyle(MenuPickerStyle())
+            .padding(.horizontal, 16)
+            .padding(.vertical, 12)
+            .background(
+                RoundedRectangle(cornerRadius: 10)
+                    .fill(Color(.secondarySystemBackground))
+            )
+        }
+    }
+}
+
+struct AppleTextEditor: View {
+    @Binding var text: String
+    let placeholder: String
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Notes")
+                .font(.system(size: 16, weight: .semibold))
+                .foregroundColor(.primary)
+            
+            ZStack(alignment: .topLeading) {
+                if text.isEmpty {
+                    Text(placeholder)
+                        .font(.system(size: 17, weight: .medium))
+                        .foregroundColor(.secondary)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 12)
+                }
+                
+                TextEditor(text: $text)
+                    .font(.system(size: 17, weight: .medium))
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 8)
+            }
+            .frame(minHeight: 80)
+            .background(
+                RoundedRectangle(cornerRadius: 10)
+                    .fill(Color(.secondarySystemBackground))
+            )
+        }
+    }
+}
+
+struct AppleProfitDisplay: View {
+    let profit: Double
+    let roi: Double
+    
+    var body: some View {
+        VStack(spacing: 12) {
+            HStack {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Est. Profit")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(.secondary)
+                    Text("$\(String(format: "%.2f", profit))")
+                        .font(.system(size: 18, weight: .bold))
+                        .foregroundColor(profit > 0 ? .green : .red)
+                }
+                
+                Spacer()
+                
+                VStack(alignment: .trailing, spacing: 4) {
+                    Text("Est. ROI")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(.secondary)
+                    Text("\(String(format: "%.0f", roi))%")
+                        .font(.system(size: 18, weight: .bold))
+                        .foregroundColor(getROIColor(roi))
+                }
+            }
+        }
+        .padding(16)
+        .background(
+            RoundedRectangle(cornerRadius: 10)
+                .fill(Color(.tertiarySystemBackground))
+        )
+    }
     
     private func getROIColor(_ roi: Double) -> Color {
         switch roi {
@@ -227,6 +410,63 @@ struct ItemFormView: View {
         case 50..<100: return .orange
         default: return .red
         }
+    }
+}
+
+struct AppleAnalysisSummary: View {
+    let analysis: AnalysisResult
+    
+    var body: some View {
+        VStack(spacing: 12) {
+            HStack {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Confidence")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(.secondary)
+                    Text("\(String(format: "%.0f", analysis.confidence.overall * 100))%")
+                        .font(.system(size: 16, weight: .bold))
+                        .foregroundColor(getConfidenceColor(analysis.confidence.overall))
+                }
+                
+                Spacer()
+                
+                VStack(alignment: .trailing, spacing: 4) {
+                    Text("Market Data")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(.secondary)
+                    Text("\(analysis.soldListings.count) sales")
+                        .font(.system(size: 16, weight: .bold))
+                        .foregroundColor(.blue)
+                }
+            }
+            
+            HStack {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Category")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(.secondary)
+                    Text(analysis.category)
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundColor(.primary)
+                }
+                
+                Spacer()
+                
+                VStack(alignment: .trailing, spacing: 4) {
+                    Text("Market Price")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(.secondary)
+                    Text("$\(String(format: "%.0f", analysis.realisticPrice))")
+                        .font(.system(size: 16, weight: .bold))
+                        .foregroundColor(.green)
+                }
+            }
+        }
+        .padding(16)
+        .background(
+            RoundedRectangle(cornerRadius: 10)
+                .fill(Color.blue.opacity(0.05))
+        )
     }
     
     private func getConfidenceColor(_ confidence: Double) -> Color {
@@ -239,7 +479,7 @@ struct ItemFormView: View {
     }
 }
 
-// MARK: - Clean Direct eBay Listing View
+// MARK: - Apple-Style Direct eBay Listing View
 struct DirectEbayListingView: View {
     let analysis: AnalysisResult
     @EnvironmentObject var ebayListingService: EbayListingService
@@ -253,53 +493,60 @@ struct DirectEbayListingView: View {
     var body: some View {
         NavigationView {
             ScrollView {
-                VStack(spacing: 20) {
-                    // Header
+                VStack(spacing: 24) {
+                    // Apple-style header
                     VStack(spacing: 8) {
                         Text("Create eBay Listing")
-                            .font(.largeTitle)
-                            .fontWeight(.bold)
+                            .font(.system(size: 34, weight: .bold))
+                            .frame(maxWidth: .infinity, alignment: .leading)
                         
                         Text("Professional listing generation")
-                            .font(.subheadline)
+                            .font(.system(size: 17, weight: .medium))
                             .foregroundColor(.secondary)
+                            .frame(maxWidth: .infinity, alignment: .leading)
                     }
                     
-                    // Analysis Summary
-                    CleanAnalysisSummary(analysis: analysis)
+                    // Analysis summary
+                    AppleAnalysisSummaryCard(analysis: analysis)
                     
-                    // Generated Listing
+                    // Generated listing
                     if generatedListing.isEmpty {
                         Button(action: generateListing) {
                             HStack(spacing: 8) {
                                 if isGenerating {
                                     ProgressView()
-                                        .scaleEffect(0.8)
                                         .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                                        .scaleEffect(0.8)
                                     Text("Generating...")
                                 } else {
-                                    Image(systemName: "doc.text")
+                                    Image(systemName: "doc.text.fill")
                                     Text("Generate Professional Listing")
                                 }
                             }
-                            .frame(maxWidth: .infinity)
-                            .padding()
-                            .background(Color.green)
+                            .font(.system(size: 18, weight: .semibold))
                             .foregroundColor(.white)
-                            .cornerRadius(12)
-                            .font(.headline)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 56)
+                            .background(
+                                RoundedRectangle(cornerRadius: 16)
+                                    .fill(Color.green)
+                            )
                         }
                         .disabled(isGenerating)
+                        .buttonStyle(ScaleButtonStyle())
                     } else {
-                        CleanGeneratedListing(
+                        AppleGeneratedListingCard(
                             listing: generatedListing,
                             listingURL: listingURL,
                             onShare: { showingShareSheet = true },
                             onCopy: copyToClipboard
                         )
                     }
+                    
+                    Spacer(minLength: 40)
                 }
-                .padding()
+                .padding(.horizontal, 20)
+                .padding(.bottom, 20)
             }
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -307,8 +554,10 @@ struct DirectEbayListingView: View {
                     Button("Done") {
                         presentationMode.wrappedValue.dismiss()
                     }
+                    .font(.system(size: 17, weight: .medium))
                 }
             }
+            .background(Color(.systemGroupedBackground))
         }
         .sheet(isPresented: $showingShareSheet) {
             ShareSheet(items: [generatedListing])
@@ -368,30 +617,31 @@ struct DirectEbayListingView: View {
     }
 }
 
-// MARK: - Clean Analysis Summary
-struct CleanAnalysisSummary: View {
+// MARK: - Apple Analysis Summary Card
+struct AppleAnalysisSummaryCard: View {
     let analysis: AnalysisResult
     
     var body: some View {
-        VStack(spacing: 12) {
+        VStack(spacing: 16) {
             if let firstImage = analysis.images.first {
                 Image(uiImage: firstImage)
                     .resizable()
                     .aspectRatio(contentMode: .fit)
-                    .frame(maxHeight: 150)
+                    .frame(maxHeight: 160)
                     .cornerRadius(12)
+                    .clipped()
             }
             
-            VStack(alignment: .leading, spacing: 8) {
-                HStack {
-                    VStack(alignment: .leading, spacing: 4) {
+            VStack(alignment: .leading, spacing: 12) {
+                HStack(alignment: .top) {
+                    VStack(alignment: .leading, spacing: 6) {
                         Text(analysis.itemName)
-                            .font(.headline)
-                            .fontWeight(.bold)
+                            .font(.system(size: 20, weight: .bold))
+                            .lineLimit(2)
                         
                         if !analysis.brand.isEmpty {
                             Text(analysis.brand)
-                                .font(.subheadline)
+                                .font(.system(size: 16, weight: .semibold))
                                 .foregroundColor(.blue)
                         }
                     }
@@ -400,95 +650,116 @@ struct CleanAnalysisSummary: View {
                     
                     VStack(alignment: .trailing, spacing: 4) {
                         Text("$\(String(format: "%.0f", analysis.realisticPrice))")
-                            .font(.title2)
-                            .fontWeight(.bold)
+                            .font(.system(size: 24, weight: .bold))
                             .foregroundColor(.green)
                         
                         Text("Market Price")
-                            .font(.caption)
+                            .font(.system(size: 12, weight: .medium))
                             .foregroundColor(.secondary)
                     }
                 }
                 
-                HStack {
-                    Text("Condition: \(analysis.actualCondition)")
-                        .font(.subheadline)
-                        .foregroundColor(.blue)
-                    
-                    Spacer()
+                HStack(spacing: 12) {
+                    AppleStatChip(label: "Condition", value: analysis.actualCondition, color: .blue)
+                    AppleStatChip(label: "Sales", value: "\(analysis.soldListings.count)", color: .purple)
                     
                     Text("\(String(format: "%.0f", analysis.confidence.overall * 100))% confident")
-                        .font(.caption)
+                        .font(.system(size: 12, weight: .medium))
                         .foregroundColor(.secondary)
                 }
                 
                 if !analysis.soldListings.isEmpty {
                     Text("Based on \(analysis.soldListings.count) recent sales")
-                        .font(.caption)
+                        .font(.system(size: 14, weight: .medium))
                         .foregroundColor(.green)
                 }
             }
         }
-        .padding()
-        .background(Color.gray.opacity(0.05))
-        .cornerRadius(12)
+        .padding(20)
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(Color(.systemBackground))
+                .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 2)
+        )
     }
 }
 
-// MARK: - Clean Generated Listing
-struct CleanGeneratedListing: View {
+// MARK: - Apple Generated Listing Card
+struct AppleGeneratedListingCard: View {
     let listing: String
     let listingURL: String?
     let onShare: () -> Void
     let onCopy: () -> Void
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 15) {
+        VStack(alignment: .leading, spacing: 20) {
             Text("Professional eBay Listing")
-                .font(.headline)
-                .fontWeight(.semibold)
+                .font(.system(size: 20, weight: .semibold))
             
             ScrollView {
                 Text(listing)
-                    .font(.body)
-                    .padding()
-                    .background(Color.gray.opacity(0.1))
-                    .cornerRadius(12)
+                    .font(.system(size: 16, weight: .medium))
+                    .padding(16)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(Color(.secondarySystemBackground))
+                    )
             }
             .frame(maxHeight: 300)
             
-            HStack(spacing: 12) {
-                Button("Share") {
-                    onShare()
-                }
-                .frame(maxWidth: .infinity)
-                .padding()
-                .background(Color.blue)
-                .foregroundColor(.white)
-                .cornerRadius(10)
-                
-                Button("Copy") {
-                    onCopy()
-                }
-                .frame(maxWidth: .infinity)
-                .padding()
-                .background(Color.green)
-                .foregroundColor(.white)
-                .cornerRadius(10)
-            }
-            
-            if let url = listingURL {
-                Button("View on eBay") {
-                    if let ebayURL = URL(string: url) {
-                        UIApplication.shared.open(ebayURL)
+            VStack(spacing: 12) {
+                HStack(spacing: 12) {
+                    Button("Share") {
+                        onShare()
                     }
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 48)
+                    .background(
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(Color.blue)
+                    )
+                    .buttonStyle(ScaleButtonStyle())
+                    
+                    Button("Copy") {
+                        onCopy()
+                    }
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 48)
+                    .background(
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(Color.green)
+                    )
+                    .buttonStyle(ScaleButtonStyle())
                 }
-                .frame(maxWidth: .infinity)
-                .padding()
-                .background(Color.orange)
-                .foregroundColor(.white)
-                .cornerRadius(10)
+                
+                if let url = listingURL {
+                    Button("View on eBay") {
+                        if let ebayURL = URL(string: url) {
+                            UIApplication.shared.open(ebayURL)
+                        }
+                    }
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 48)
+                    .background(
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(Color.orange)
+                    )
+                    .buttonStyle(ScaleButtonStyle())
+                }
             }
         }
+        .padding(20)
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(Color(.systemBackground))
+                .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 2)
+        )
     }
 }

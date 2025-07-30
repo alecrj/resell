@@ -3,7 +3,7 @@ import Vision
 import AVFoundation
 import MessageUI
 
-// MARK: - Clean Dashboard View
+// MARK: - Apple-Style Dashboard View
 struct DashboardView: View {
     @EnvironmentObject var inventoryManager: InventoryManager
     @State private var showingPortfolioTracking = false
@@ -13,37 +13,40 @@ struct DashboardView: View {
     var body: some View {
         NavigationView {
             ScrollView {
-                LazyVStack(spacing: 20) {
-                    // Clean Header
+                LazyVStack(spacing: 24) {
+                    // Apple-style header
                     VStack(spacing: 8) {
-                        Text("Business Dashboard")
-                            .font(.largeTitle)
-                            .fontWeight(.bold)
+                        Text("Dashboard")
+                            .font(.system(size: 34, weight: .bold))
+                            .frame(maxWidth: .infinity, alignment: .leading)
                         
                         Text("Your reselling business overview")
-                            .font(.subheadline)
+                            .font(.system(size: 17, weight: .medium))
                             .foregroundColor(.secondary)
+                            .frame(maxWidth: .infinity, alignment: .leading)
                     }
                     
-                    // Key Metrics
-                    CleanMetricsGrid(inventoryManager: inventoryManager)
+                    // Key metrics with Apple card styling
+                    AppleMetricsGrid(inventoryManager: inventoryManager)
                     
-                    // Quick Actions
-                    CleanQuickActions(
+                    // Quick actions with refined styling
+                    AppleQuickActions(
                         onPortfolio: { showingPortfolioTracking = true },
                         onIntelligence: { showingBusinessIntelligence = true },
                         onOptimizer: { showingProfitOptimizer = true }
                     )
                     
-                    // Performance Summary
-                    CleanPerformanceSummary(inventoryManager: inventoryManager)
+                    // Performance summary
+                    ApplePerformanceSummary(inventoryManager: inventoryManager)
                     
-                    // Recent Activity
-                    CleanRecentActivity(inventoryManager: inventoryManager)
+                    // Recent activity
+                    AppleRecentActivity(inventoryManager: inventoryManager)
                 }
-                .padding()
+                .padding(.horizontal, 20)
+                .padding(.bottom, 20)
             }
             .navigationBarHidden(true)
+            .background(Color(.systemGroupedBackground))
         }
         .sheet(isPresented: $showingPortfolioTracking) {
             PortfolioTrackingView()
@@ -60,38 +63,38 @@ struct DashboardView: View {
     }
 }
 
-// MARK: - Clean Metrics Grid
-struct CleanMetricsGrid: View {
+// MARK: - Apple Metrics Grid
+struct AppleMetricsGrid: View {
     let inventoryManager: InventoryManager
     
     var body: some View {
         LazyVGrid(columns: [
             GridItem(.flexible()),
             GridItem(.flexible())
-        ], spacing: 12) {
+        ], spacing: 16) {
             
-            MetricCard(
+            AppleMetricCard(
                 title: "Total Value",
                 value: "$\(String(format: "%.0f", inventoryManager.totalEstimatedValue))",
                 color: .blue,
-                icon: "dollarsign.circle"
+                icon: "dollarsign.circle.fill"
             )
             
-            MetricCard(
+            AppleMetricCard(
                 title: "Total Profit",
                 value: "$\(String(format: "%.0f", inventoryManager.totalProfit))",
                 color: .green,
                 icon: "chart.line.uptrend.xyaxis"
             )
             
-            MetricCard(
+            AppleMetricCard(
                 title: "Items",
                 value: "\(inventoryManager.items.count)",
                 color: .purple,
-                icon: "cube.box"
+                icon: "cube.box.fill"
             )
             
-            MetricCard(
+            AppleMetricCard(
                 title: "Avg ROI",
                 value: "\(String(format: "%.0f", inventoryManager.averageROI))%",
                 color: .orange,
@@ -101,88 +104,95 @@ struct CleanMetricsGrid: View {
     }
 }
 
-struct MetricCard: View {
+struct AppleMetricCard: View {
     let title: String
     let value: String
     let color: Color
     let icon: String
     
     var body: some View {
-        VStack(spacing: 8) {
-            Image(systemName: icon)
-                .font(.title2)
-                .foregroundColor(color)
+        VStack(spacing: 12) {
+            HStack {
+                Image(systemName: icon)
+                    .font(.system(size: 20, weight: .semibold))
+                    .foregroundColor(color)
+                
+                Spacer()
+            }
             
-            Text(value)
-                .font(.title2)
-                .fontWeight(.bold)
-                .foregroundColor(color)
-            
-            Text(title)
-                .font(.caption)
-                .foregroundColor(.secondary)
-                .multilineTextAlignment(.center)
+            VStack(alignment: .leading, spacing: 4) {
+                Text(value)
+                    .font(.system(size: 24, weight: .bold))
+                    .foregroundColor(color)
+                
+                Text(title)
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundColor(.secondary)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .frame(maxWidth: .infinity)
-        .frame(minHeight: 100)
-        .padding()
-        .background(color.opacity(0.1))
-        .cornerRadius(12)
+        .padding(20)
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(Color(.systemBackground))
+                .shadow(color: color.opacity(0.1), radius: 8, x: 0, y: 2)
+        )
     }
 }
 
-// MARK: - Clean Quick Actions
-struct CleanQuickActions: View {
+// MARK: - Apple Quick Actions
+struct AppleQuickActions: View {
     let onPortfolio: () -> Void
     let onIntelligence: () -> Void
     let onOptimizer: () -> Void
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 16) {
             Text("Quick Actions")
-                .font(.headline)
-                .fontWeight(.semibold)
+                .font(.system(size: 22, weight: .bold))
             
-            HStack(spacing: 12) {
-                ActionCard(
-                    title: "Portfolio",
-                    subtitle: "Track performance",
-                    color: .blue,
-                    icon: "chart.bar",
-                    action: onPortfolio
-                )
+            VStack(spacing: 12) {
+                HStack(spacing: 12) {
+                    AppleActionCard(
+                        title: "Portfolio",
+                        subtitle: "Track performance",
+                        color: .blue,
+                        icon: "chart.bar.fill",
+                        action: onPortfolio
+                    )
+                    
+                    AppleActionCard(
+                        title: "Intelligence",
+                        subtitle: "Market insights",
+                        color: .purple,
+                        icon: "brain.head.profile",
+                        action: onIntelligence
+                    )
+                }
                 
-                ActionCard(
-                    title: "Intelligence",
-                    subtitle: "Market insights",
-                    color: .purple,
-                    icon: "brain",
-                    action: onIntelligence
-                )
-            }
-            
-            HStack(spacing: 12) {
-                ActionCard(
-                    title: "Optimizer",
-                    subtitle: "Maximize profit",
-                    color: .green,
-                    icon: "wand.and.stars",
-                    action: onOptimizer
-                )
-                
-                ActionCard(
-                    title: "Market Ops",
-                    subtitle: "Coming soon",
-                    color: .gray,
-                    icon: "target",
-                    action: {}
-                )
+                HStack(spacing: 12) {
+                    AppleActionCard(
+                        title: "Optimizer",
+                        subtitle: "Maximize profit",
+                        color: .green,
+                        icon: "wand.and.stars",
+                        action: onOptimizer
+                    )
+                    
+                    AppleActionCard(
+                        title: "Market Ops",
+                        subtitle: "Coming soon",
+                        color: .gray,
+                        icon: "target",
+                        action: {}
+                    )
+                }
             }
         }
     }
 }
 
-struct ActionCard: View {
+struct AppleActionCard: View {
     let title: String
     let subtitle: String
     let color: Color
@@ -191,58 +201,60 @@ struct ActionCard: View {
     
     var body: some View {
         Button(action: action) {
-            VStack(alignment: .leading, spacing: 6) {
+            VStack(alignment: .leading, spacing: 16) {
                 HStack {
                     Image(systemName: icon)
-                        .font(.title3)
+                        .font(.system(size: 22, weight: .semibold))
                         .foregroundColor(color)
                     Spacer()
                 }
                 
-                Text(title)
-                    .font(.subheadline)
-                    .fontWeight(.semibold)
-                    .foregroundColor(.primary)
-                
-                Text(subtitle)
-                    .font(.caption)
-                    .foregroundColor(.secondary)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(title)
+                        .font(.system(size: 17, weight: .semibold))
+                        .foregroundColor(.primary)
+                    
+                    Text(subtitle)
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(.secondary)
+                }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding()
-            .background(color.opacity(0.1))
-            .cornerRadius(12)
+            .padding(20)
+            .background(
+                RoundedRectangle(cornerRadius: 16)
+                    .fill(color.opacity(0.08))
+            )
         }
-        .buttonStyle(PlainButtonStyle())
+        .buttonStyle(ScaleButtonStyle())
     }
 }
 
-// MARK: - Clean Performance Summary
-struct CleanPerformanceSummary: View {
+// MARK: - Apple Performance Summary
+struct ApplePerformanceSummary: View {
     let inventoryManager: InventoryManager
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 16) {
             Text("Performance Summary")
-                .font(.headline)
-                .fontWeight(.semibold)
+                .font(.system(size: 22, weight: .bold))
             
-            VStack(spacing: 8) {
-                PerformanceRow(
+            VStack(spacing: 12) {
+                ApplePerformanceRow(
                     title: "Items Listed",
                     value: "\(inventoryManager.listedItems)",
                     trend: "+12%",
                     isPositive: true
                 )
                 
-                PerformanceRow(
+                ApplePerformanceRow(
                     title: "Items Sold",
                     value: "\(inventoryManager.soldItems)",
                     trend: "+8%",
                     isPositive: true
                 )
                 
-                PerformanceRow(
+                ApplePerformanceRow(
                     title: "Success Rate",
                     value: "\(getSuccessRate())%",
                     trend: "+5%",
@@ -250,9 +262,12 @@ struct CleanPerformanceSummary: View {
                 )
             }
         }
-        .padding()
-        .background(Color.blue.opacity(0.05))
-        .cornerRadius(12)
+        .padding(20)
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(Color(.systemBackground))
+                .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 2)
+        )
     }
     
     private func getSuccessRate() -> Int {
@@ -262,7 +277,7 @@ struct CleanPerformanceSummary: View {
     }
 }
 
-struct PerformanceRow: View {
+struct ApplePerformanceRow: View {
     let title: String
     let value: String
     let trend: String
@@ -271,95 +286,122 @@ struct PerformanceRow: View {
     var body: some View {
         HStack {
             Text(title)
-                .font(.subheadline)
+                .font(.system(size: 16, weight: .medium))
                 .foregroundColor(.primary)
             
             Spacer()
             
-            Text(value)
-                .font(.subheadline)
-                .fontWeight(.semibold)
-            
-            Text(trend)
-                .font(.caption)
-                .fontWeight(.medium)
-                .foregroundColor(isPositive ? .green : .red)
-                .padding(.horizontal, 6)
-                .padding(.vertical, 2)
-                .background(isPositive ? Color.green.opacity(0.1) : Color.red.opacity(0.1))
-                .cornerRadius(4)
+            HStack(spacing: 12) {
+                Text(value)
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundColor(.primary)
+                
+                Text(trend)
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundColor(isPositive ? .green : .red)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(
+                        RoundedRectangle(cornerRadius: 8)
+                            .fill(isPositive ? Color.green.opacity(0.1) : Color.red.opacity(0.1))
+                    )
+            }
         }
+        .padding(.vertical, 4)
     }
 }
 
-// MARK: - Clean Recent Activity
-struct CleanRecentActivity: View {
+// MARK: - Apple Recent Activity
+struct AppleRecentActivity: View {
     let inventoryManager: InventoryManager
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 16) {
             Text("Recent Activity")
-                .font(.headline)
-                .fontWeight(.semibold)
-            
-            ForEach(inventoryManager.recentItems.prefix(5)) { item in
-                CleanActivityRow(item: item)
-            }
+                .font(.system(size: 22, weight: .bold))
             
             if inventoryManager.items.isEmpty {
-                Text("No items yet")
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
-                    .frame(maxWidth: .infinity)
-                    .padding()
+                VStack(spacing: 12) {
+                    Image(systemName: "tray")
+                        .font(.system(size: 32, weight: .light))
+                        .foregroundColor(.secondary)
+                    
+                    Text("No items yet")
+                        .font(.system(size: 17, weight: .medium))
+                        .foregroundColor(.secondary)
+                    
+                    Text("Start by analyzing your first item")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(.secondary)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 40)
+                .background(
+                    RoundedRectangle(cornerRadius: 16)
+                        .fill(Color(.systemBackground))
+                )
+            } else {
+                VStack(spacing: 12) {
+                    ForEach(inventoryManager.recentItems.prefix(5)) { item in
+                        AppleActivityRow(item: item)
+                    }
+                }
+                .padding(20)
+                .background(
+                    RoundedRectangle(cornerRadius: 16)
+                        .fill(Color(.systemBackground))
+                        .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 2)
+                )
             }
         }
     }
 }
 
-struct CleanActivityRow: View {
+struct AppleActivityRow: View {
     let item: InventoryItem
     
     var body: some View {
-        HStack {
-            // Item Image
+        HStack(spacing: 16) {
+            // Item Image with refined styling
             if let imageData = item.imageData, let uiImage = UIImage(data: imageData) {
                 Image(uiImage: uiImage)
                     .resizable()
                     .aspectRatio(contentMode: .fill)
-                    .frame(width: 50, height: 50)
-                    .cornerRadius(8)
+                    .frame(width: 56, height: 56)
+                    .cornerRadius(12)
+                    .clipped()
             } else {
-                RoundedRectangle(cornerRadius: 8)
-                    .fill(Color.gray.opacity(0.2))
-                    .frame(width: 50, height: 50)
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(Color(.systemGray5))
+                    .frame(width: 56, height: 56)
                     .overlay(
                         Image(systemName: "photo")
-                            .foregroundColor(.gray)
+                            .font(.system(size: 20, weight: .medium))
+                            .foregroundColor(.secondary)
                     )
             }
             
             // Item Details
-            VStack(alignment: .leading, spacing: 2) {
+            VStack(alignment: .leading, spacing: 4) {
                 Text(item.name)
-                    .font(.subheadline)
-                    .fontWeight(.medium)
+                    .font(.system(size: 16, weight: .semibold))
                     .lineLimit(1)
                 
-                HStack {
+                HStack(spacing: 8) {
                     Text(item.source)
-                        .font(.caption)
+                        .font(.system(size: 14, weight: .medium))
                         .foregroundColor(.secondary)
                     
                     if item.estimatedROI > 100 {
                         Text("High ROI")
-                            .font(.caption2)
-                            .fontWeight(.medium)
+                            .font(.system(size: 12, weight: .bold))
                             .foregroundColor(.green)
-                            .padding(.horizontal, 4)
-                            .padding(.vertical, 1)
-                            .background(Color.green.opacity(0.1))
-                            .cornerRadius(3)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
+                            .background(
+                                RoundedRectangle(cornerRadius: 6)
+                                    .fill(Color.green.opacity(0.1))
+                            )
                     }
                 }
             }
@@ -367,83 +409,81 @@ struct CleanActivityRow: View {
             Spacer()
             
             // Price and Status
-            VStack(alignment: .trailing, spacing: 2) {
+            VStack(alignment: .trailing, spacing: 4) {
                 Text(item.status.rawValue)
-                    .font(.caption2)
-                    .fontWeight(.medium)
+                    .font(.system(size: 12, weight: .bold))
                     .foregroundColor(item.status.color)
-                    .padding(.horizontal, 6)
-                    .padding(.vertical, 2)
-                    .background(item.status.color.opacity(0.1))
-                    .cornerRadius(4)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(
+                        RoundedRectangle(cornerRadius: 8)
+                            .fill(item.status.color.opacity(0.1))
+                    )
                 
                 if item.estimatedProfit > 0 {
                     Text("$\(String(format: "%.0f", item.estimatedProfit))")
-                        .font(.caption)
-                        .fontWeight(.semibold)
+                        .font(.system(size: 14, weight: .bold))
                         .foregroundColor(.green)
                 }
             }
         }
-        .padding(.vertical, 4)
+        .padding(.vertical, 8)
     }
 }
 
-// MARK: - Future Feature Views (Simplified)
+// MARK: - Future Feature Views with Apple Styling
 struct PortfolioTrackingView: View {
     @EnvironmentObject var inventoryManager: InventoryManager
     @Environment(\.presentationMode) var presentationMode
     
     var body: some View {
         NavigationView {
-            VStack(spacing: 30) {
-                Image(systemName: "chart.bar.xaxis")
-                    .font(.system(size: 60))
-                    .foregroundColor(.blue)
-                
-                VStack(spacing: 12) {
-                    Text("Portfolio Tracking")
-                        .font(.title)
-                        .fontWeight(.bold)
+            ScrollView {
+                VStack(spacing: 32) {
+                    // Header icon
+                    Image(systemName: "chart.bar.xaxis")
+                        .font(.system(size: 64, weight: .ultraLight))
+                        .foregroundColor(.blue)
                     
-                    Text("Advanced portfolio analytics coming soon")
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
-                        .multilineTextAlignment(.center)
+                    VStack(spacing: 16) {
+                        Text("Portfolio Tracking")
+                            .font(.system(size: 28, weight: .bold))
+                        
+                        Text("Advanced portfolio analytics coming soon")
+                            .font(.system(size: 17, weight: .medium))
+                            .foregroundColor(.secondary)
+                            .multilineTextAlignment(.center)
+                    }
+                    
+                    // Preview Stats
+                    VStack(spacing: 16) {
+                        ApplePreviewStat(
+                            title: "Total Items",
+                            value: "\(inventoryManager.items.count)"
+                        )
+                        
+                        ApplePreviewStat(
+                            title: "Total Value",
+                            value: "$\(String(format: "%.0f", inventoryManager.totalEstimatedValue))"
+                        )
+                        
+                        ApplePreviewStat(
+                            title: "Average ROI",
+                            value: "\(String(format: "%.0f", inventoryManager.averageROI))%"
+                        )
+                    }
+                    .padding(24)
+                    .background(
+                        RoundedRectangle(cornerRadius: 16)
+                            .fill(Color(.systemBackground))
+                            .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 2)
+                    )
+                    
+                    Spacer(minLength: 40)
                 }
-                
-                // Preview Stats
-                VStack(spacing: 8) {
-                    HStack {
-                        Text("Total Items:")
-                        Spacer()
-                        Text("\(inventoryManager.items.count)")
-                            .fontWeight(.semibold)
-                    }
-                    
-                    HStack {
-                        Text("Total Value:")
-                        Spacer()
-                        Text("$\(String(format: "%.0f", inventoryManager.totalEstimatedValue))")
-                            .fontWeight(.semibold)
-                            .foregroundColor(.green)
-                    }
-                    
-                    HStack {
-                        Text("Average ROI:")
-                        Spacer()
-                        Text("\(String(format: "%.0f", inventoryManager.averageROI))%")
-                            .fontWeight(.semibold)
-                            .foregroundColor(.blue)
-                    }
-                }
-                .padding()
-                .background(Color.gray.opacity(0.1))
-                .cornerRadius(12)
-                
-                Spacer()
+                .padding(.horizontal, 20)
+                .padding(.top, 40)
             }
-            .padding()
             .navigationTitle("Portfolio")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -451,8 +491,10 @@ struct PortfolioTrackingView: View {
                     Button("Done") {
                         presentationMode.wrappedValue.dismiss()
                     }
+                    .font(.system(size: 17, weight: .medium))
                 }
             }
+            .background(Color(.systemGroupedBackground))
         }
     }
 }
@@ -463,35 +505,40 @@ struct BusinessIntelligenceView: View {
     
     var body: some View {
         NavigationView {
-            VStack(spacing: 30) {
-                Image(systemName: "brain")
-                    .font(.system(size: 60))
-                    .foregroundColor(.purple)
-                
-                VStack(spacing: 12) {
-                    Text("Business Intelligence")
-                        .font(.title)
-                        .fontWeight(.bold)
+            ScrollView {
+                VStack(spacing: 32) {
+                    Image(systemName: "brain.head.profile")
+                        .font(.system(size: 64, weight: .ultraLight))
+                        .foregroundColor(.purple)
                     
-                    Text("AI-powered insights coming soon")
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
-                        .multilineTextAlignment(.center)
+                    VStack(spacing: 16) {
+                        Text("Business Intelligence")
+                            .font(.system(size: 28, weight: .bold))
+                        
+                        Text("AI-powered insights coming soon")
+                            .font(.system(size: 17, weight: .medium))
+                            .foregroundColor(.secondary)
+                            .multilineTextAlignment(.center)
+                    }
+                    
+                    // Preview Insights
+                    VStack(spacing: 16) {
+                        AppleInsightRow(title: "Best Category", value: getBestCategory())
+                        AppleInsightRow(title: "Top Source", value: getTopSource())
+                        AppleInsightRow(title: "Success Rate", value: "\(getSuccessRate())%")
+                    }
+                    .padding(24)
+                    .background(
+                        RoundedRectangle(cornerRadius: 16)
+                            .fill(Color(.systemBackground))
+                            .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 2)
+                    )
+                    
+                    Spacer(minLength: 40)
                 }
-                
-                // Preview Insights
-                VStack(spacing: 12) {
-                    InsightRow(title: "Best Category", value: getBestCategory())
-                    InsightRow(title: "Top Source", value: getTopSource())
-                    InsightRow(title: "Success Rate", value: "\(getSuccessRate())%")
-                }
-                .padding()
-                .background(Color.gray.opacity(0.1))
-                .cornerRadius(12)
-                
-                Spacer()
+                .padding(.horizontal, 20)
+                .padding(.top, 40)
             }
-            .padding()
             .navigationTitle("Intelligence")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -499,8 +546,10 @@ struct BusinessIntelligenceView: View {
                     Button("Done") {
                         presentationMode.wrappedValue.dismiss()
                     }
+                    .font(.system(size: 17, weight: .medium))
                 }
             }
+            .background(Color(.systemGroupedBackground))
         }
     }
     
@@ -524,78 +573,60 @@ struct BusinessIntelligenceView: View {
     }
 }
 
-struct InsightRow: View {
-    let title: String
-    let value: String
-    
-    var body: some View {
-        HStack {
-            Text(title)
-                .font(.subheadline)
-            Spacer()
-            Text(value)
-                .font(.subheadline)
-                .fontWeight(.semibold)
-                .foregroundColor(.blue)
-        }
-    }
-}
-
 struct ProfitOptimizerView: View {
     @EnvironmentObject var inventoryManager: InventoryManager
     @Environment(\.presentationMode) var presentationMode
     
     var body: some View {
         NavigationView {
-            VStack(spacing: 30) {
-                Image(systemName: "wand.and.stars")
-                    .font(.system(size: 60))
-                    .foregroundColor(.green)
-                
-                VStack(spacing: 12) {
-                    Text("Profit Optimizer")
-                        .font(.title)
-                        .fontWeight(.bold)
+            ScrollView {
+                VStack(spacing: 32) {
+                    Image(systemName: "wand.and.stars")
+                        .font(.system(size: 64, weight: .ultraLight))
+                        .foregroundColor(.green)
                     
-                    Text("Maximize your profit potential")
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
-                        .multilineTextAlignment(.center)
+                    VStack(spacing: 16) {
+                        Text("Profit Optimizer")
+                            .font(.system(size: 28, weight: .bold))
+                        
+                        Text("Maximize your profit potential")
+                            .font(.system(size: 17, weight: .medium))
+                            .foregroundColor(.secondary)
+                            .multilineTextAlignment(.center)
+                    }
+                    
+                    // Current Profit Summary
+                    VStack(spacing: 16) {
+                        AppleProfitStat(
+                            title: "Current Profit",
+                            value: "$\(String(format: "%.0f", inventoryManager.totalProfit))",
+                            color: .green
+                        )
+                        
+                        AppleProfitStat(
+                            title: "Potential Profit",
+                            value: "$\(String(format: "%.0f", inventoryManager.totalEstimatedValue * 0.3))",
+                            color: .blue
+                        )
+                        
+                        AppleProfitStat(
+                            title: "Optimization Score",
+                            value: "85%",
+                            color: .orange
+                        )
+                    }
+                    .padding(24)
+                    .background(
+                        RoundedRectangle(cornerRadius: 16)
+                            .fill(Color(.systemBackground))
+                            .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 2)
+                    )
+                    
+                    Spacer(minLength: 40)
                 }
-                
-                // Current Profit Summary
-                VStack(spacing: 12) {
-                    HStack {
-                        Text("Current Profit:")
-                        Spacer()
-                        Text("$\(String(format: "%.0f", inventoryManager.totalProfit))")
-                            .fontWeight(.bold)
-                            .foregroundColor(.green)
-                    }
-                    
-                    HStack {
-                        Text("Potential Profit:")
-                        Spacer()
-                        Text("$\(String(format: "%.0f", inventoryManager.totalEstimatedValue * 0.3))")
-                            .fontWeight(.bold)
-                            .foregroundColor(.blue)
-                    }
-                    
-                    HStack {
-                        Text("Optimization Score:")
-                        Spacer()
-                        Text("85%")
-                            .fontWeight(.bold)
-                            .foregroundColor(.orange)
-                    }
-                }
-                .padding()
-                .background(Color.gray.opacity(0.1))
-                .cornerRadius(12)
-                
-                Spacer()
+                .padding(.horizontal, 20)
+                .padding(.top, 40)
             }
-            .padding()
             .navigationTitle("Optimizer")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -603,8 +634,73 @@ struct ProfitOptimizerView: View {
                     Button("Done") {
                         presentationMode.wrappedValue.dismiss()
                     }
+                    .font(.system(size: 17, weight: .medium))
                 }
             }
+            .background(Color(.systemGroupedBackground))
         }
+    }
+}
+
+// MARK: - Apple-Style Supporting Components
+
+struct ApplePreviewStat: View {
+    let title: String
+    let value: String
+    
+    var body: some View {
+        HStack {
+            Text(title)
+                .font(.system(size: 16, weight: .medium))
+                .foregroundColor(.primary)
+            
+            Spacer()
+            
+            Text(value)
+                .font(.system(size: 16, weight: .semibold))
+                .foregroundColor(.secondary)
+        }
+        .padding(.vertical, 4)
+    }
+}
+
+struct AppleInsightRow: View {
+    let title: String
+    let value: String
+    
+    var body: some View {
+        HStack {
+            Text(title)
+                .font(.system(size: 16, weight: .medium))
+                .foregroundColor(.primary)
+            
+            Spacer()
+            
+            Text(value)
+                .font(.system(size: 16, weight: .semibold))
+                .foregroundColor(.blue)
+        }
+        .padding(.vertical, 4)
+    }
+}
+
+struct AppleProfitStat: View {
+    let title: String
+    let value: String
+    let color: Color
+    
+    var body: some View {
+        HStack {
+            Text(title)
+                .font(.system(size: 16, weight: .medium))
+                .foregroundColor(.primary)
+            
+            Spacer()
+            
+            Text(value)
+                .font(.system(size: 18, weight: .bold))
+                .foregroundColor(color)
+        }
+        .padding(.vertical, 8)
     }
 }

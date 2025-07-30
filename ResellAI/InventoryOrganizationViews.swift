@@ -1,9 +1,9 @@
 import SwiftUI
 import PhotosUI
 
-// MARK: - Clean Inventory Organization Views
+// MARK: - Apple-Style Inventory Organization Views
 
-// MARK: - Main Clean Inventory Organization View
+// MARK: - Main Apple Inventory Organization View
 struct InventoryOrganizationView: View {
     @EnvironmentObject var inventoryManager: InventoryManager
     @State private var selectedCategory: String?
@@ -12,33 +12,36 @@ struct InventoryOrganizationView: View {
     var body: some View {
         NavigationView {
             ScrollView {
-                LazyVStack(spacing: 20) {
-                    // Clean Header
+                LazyVStack(spacing: 24) {
+                    // Apple-style header
                     VStack(spacing: 8) {
-                        Text("Storage Organization")
-                            .font(.largeTitle)
-                            .fontWeight(.bold)
+                        Text("Storage")
+                            .font(.system(size: 34, weight: .bold))
+                            .frame(maxWidth: .infinity, alignment: .leading)
                         
-                        Text("Smart inventory management")
-                            .font(.subheadline)
+                        Text("Smart inventory organization")
+                            .font(.system(size: 17, weight: .medium))
                             .foregroundColor(.secondary)
+                            .frame(maxWidth: .infinity, alignment: .leading)
                     }
                     
-                    // Quick Storage Stats
-                    CleanStorageStats(inventoryManager: inventoryManager)
+                    // Quick storage stats
+                    AppleStorageStats(inventoryManager: inventoryManager)
                     
-                    // Category Grid
-                    CleanCategoryGrid(
+                    // Category grid
+                    AppleCategoryGrid(
                         inventoryManager: inventoryManager,
                         onCategorySelected: { selectedCategory = $0 }
                     )
                     
-                    // Storage Actions
-                    CleanStorageActions(onStorageGuide: { showingStorageGuide = true })
+                    // Storage actions
+                    AppleStorageActions(onStorageGuide: { showingStorageGuide = true })
                 }
-                .padding()
+                .padding(.horizontal, 20)
+                .padding(.bottom, 20)
             }
             .navigationBarHidden(true)
+            .background(Color(.systemGroupedBackground))
         }
         .sheet(isPresented: $showingStorageGuide) {
             StorageGuideView()
@@ -62,25 +65,25 @@ struct CategorySelection: Identifiable {
     let letter: String
 }
 
-// MARK: - Clean Storage Stats
-struct CleanStorageStats: View {
+// MARK: - Apple Storage Stats
+struct AppleStorageStats: View {
     let inventoryManager: InventoryManager
     
     var body: some View {
-        HStack {
-            StorageStat(
+        HStack(spacing: 16) {
+            AppleStorageStat(
                 title: "Total Items",
                 value: "\(inventoryManager.items.count)",
                 color: .blue
             )
             
-            StorageStat(
+            AppleStorageStat(
                 title: "Categories",
                 value: "\(inventoryManager.getInventoryOverview().count)",
                 color: .green
             )
             
-            StorageStat(
+            AppleStorageStat(
                 title: "Packaged",
                 value: "\(inventoryManager.getPackagedItems().count)",
                 color: .orange
@@ -89,47 +92,47 @@ struct CleanStorageStats: View {
     }
 }
 
-struct StorageStat: View {
+struct AppleStorageStat: View {
     let title: String
     let value: String
     let color: Color
     
     var body: some View {
-        VStack(spacing: 4) {
+        VStack(spacing: 8) {
             Text(value)
-                .font(.title2)
-                .fontWeight(.bold)
+                .font(.system(size: 22, weight: .bold))
                 .foregroundColor(color)
             
             Text(title)
-                .font(.caption)
+                .font(.system(size: 14, weight: .medium))
                 .foregroundColor(.secondary)
                 .multilineTextAlignment(.center)
         }
         .frame(maxWidth: .infinity)
-        .padding()
-        .background(color.opacity(0.1))
-        .cornerRadius(12)
+        .padding(.vertical, 16)
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(color.opacity(0.1))
+        )
     }
 }
 
-// MARK: - Clean Category Grid
-struct CleanCategoryGrid: View {
+// MARK: - Apple Category Grid
+struct AppleCategoryGrid: View {
     let inventoryManager: InventoryManager
     let onCategorySelected: (String) -> Void
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 16) {
             Text("Categories")
-                .font(.headline)
-                .fontWeight(.semibold)
+                .font(.system(size: 22, weight: .bold))
             
             LazyVGrid(columns: [
                 GridItem(.flexible()),
                 GridItem(.flexible())
-            ], spacing: 12) {
+            ], spacing: 16) {
                 ForEach(inventoryManager.getInventoryOverview(), id: \.letter) { overview in
-                    CleanCategoryCard(
+                    AppleCategoryCard(
                         letter: overview.letter,
                         category: overview.category,
                         itemCount: overview.count,
@@ -143,8 +146,8 @@ struct CleanCategoryGrid: View {
     }
 }
 
-// MARK: - Clean Category Card
-struct CleanCategoryCard: View {
+// MARK: - Apple Category Card
+struct AppleCategoryCard: View {
     let letter: String
     let category: String
     let itemCount: Int
@@ -153,67 +156,65 @@ struct CleanCategoryCard: View {
     
     var body: some View {
         Button(action: onTap) {
-            VStack(spacing: 10) {
-                // Category Letter
+            VStack(spacing: 16) {
+                // Category Letter with refined styling
                 ZStack {
                     Circle()
                         .fill(getColorForLetter(letter))
-                        .frame(width: 40, height: 40)
+                        .frame(width: 48, height: 48)
                     
                     Text(letter)
-                        .font(.title2)
-                        .fontWeight(.bold)
+                        .font(.system(size: 20, weight: .bold))
                         .foregroundColor(.white)
                 }
                 
-                VStack(spacing: 4) {
+                VStack(spacing: 8) {
                     Text(category)
-                        .font(.subheadline)
-                        .fontWeight(.semibold)
+                        .font(.system(size: 16, weight: .semibold))
                         .foregroundColor(.primary)
                         .multilineTextAlignment(.center)
                         .lineLimit(2)
                     
-                    Text("\(itemCount) items")
-                        .font(.caption)
+                    Text("\(itemCount) item\(itemCount == 1 ? "" : "s")")
+                        .font(.system(size: 14, weight: .medium))
                         .foregroundColor(.secondary)
-                }
-                
-                // Item Preview
-                if !items.isEmpty {
-                    HStack(spacing: 3) {
-                        ForEach(items.prefix(3), id: \.id) { item in
-                            if let imageData = item.imageData, let uiImage = UIImage(data: imageData) {
-                                Image(uiImage: uiImage)
-                                    .resizable()
-                                    .aspectRatio(contentMode: .fill)
-                                    .frame(width: 16, height: 16)
-                                    .cornerRadius(3)
-                            } else {
-                                RoundedRectangle(cornerRadius: 3)
-                                    .fill(Color.gray.opacity(0.3))
-                                    .frame(width: 16, height: 16)
+                    
+                    // Item preview with Apple styling
+                    if !items.isEmpty {
+                        HStack(spacing: 4) {
+                            ForEach(items.prefix(3), id: \.id) { item in
+                                if let imageData = item.imageData, let uiImage = UIImage(data: imageData) {
+                                    Image(uiImage: uiImage)
+                                        .resizable()
+                                        .aspectRatio(contentMode: .fill)
+                                        .frame(width: 20, height: 20)
+                                        .cornerRadius(4)
+                                        .clipped()
+                                } else {
+                                    RoundedRectangle(cornerRadius: 4)
+                                        .fill(Color(.systemGray4))
+                                        .frame(width: 20, height: 20)
+                                }
                             }
-                        }
-                        
-                        if items.count > 3 {
-                            Text("+\(items.count - 3)")
-                                .font(.caption2)
-                                .foregroundColor(.secondary)
+                            
+                            if items.count > 3 {
+                                Text("+\(items.count - 3)")
+                                    .font(.system(size: 11, weight: .semibold))
+                                    .foregroundColor(.secondary)
+                            }
                         }
                     }
                 }
             }
             .frame(maxWidth: .infinity)
-            .padding()
-            .background(Color.gray.opacity(0.05))
-            .cornerRadius(12)
-            .overlay(
-                RoundedRectangle(cornerRadius: 12)
-                    .stroke(getColorForLetter(letter).opacity(0.3), lineWidth: 1)
+            .padding(20)
+            .background(
+                RoundedRectangle(cornerRadius: 16)
+                    .fill(Color(.systemBackground))
+                    .shadow(color: getColorForLetter(letter).opacity(0.1), radius: 8, x: 0, y: 2)
             )
         }
-        .buttonStyle(PlainButtonStyle())
+        .buttonStyle(ScaleButtonStyle())
     }
     
     private func getColorForLetter(_ letter: String) -> Color {
@@ -236,30 +237,29 @@ struct CleanCategoryCard: View {
     }
 }
 
-// MARK: - Clean Storage Actions
-struct CleanStorageActions: View {
+// MARK: - Apple Storage Actions
+struct AppleStorageActions: View {
     let onStorageGuide: () -> Void
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 16) {
             Text("Storage Management")
-                .font(.headline)
-                .fontWeight(.semibold)
+                .font(.system(size: 22, weight: .bold))
             
-            HStack(spacing: 12) {
-                StorageActionButton(
+            HStack(spacing: 16) {
+                AppleStorageActionButton(
                     title: "Storage Guide",
-                    subtitle: "How to organize",
+                    subtitle: "Organization tips",
                     color: .green,
-                    icon: "book",
+                    icon: "book.fill",
                     action: onStorageGuide
                 )
                 
-                StorageActionButton(
-                    title: "Coming Soon",
-                    subtitle: "More features",
+                AppleStorageActionButton(
+                    title: "More Features",
+                    subtitle: "Coming soon",
                     color: .gray,
-                    icon: "plus",
+                    icon: "plus.circle.fill",
                     action: {}
                 )
             }
@@ -267,7 +267,7 @@ struct CleanStorageActions: View {
     }
 }
 
-struct StorageActionButton: View {
+struct AppleStorageActionButton: View {
     let title: String
     let subtitle: String
     let color: Color
@@ -276,29 +276,32 @@ struct StorageActionButton: View {
     
     var body: some View {
         Button(action: action) {
-            VStack(alignment: .leading, spacing: 6) {
+            VStack(alignment: .leading, spacing: 16) {
                 HStack {
                     Image(systemName: icon)
-                        .font(.title3)
+                        .font(.system(size: 22, weight: .semibold))
                         .foregroundColor(color)
                     Spacer()
                 }
                 
-                Text(title)
-                    .font(.subheadline)
-                    .fontWeight(.semibold)
-                    .foregroundColor(.primary)
-                
-                Text(subtitle)
-                    .font(.caption)
-                    .foregroundColor(.secondary)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(title)
+                        .font(.system(size: 17, weight: .semibold))
+                        .foregroundColor(.primary)
+                    
+                    Text(subtitle)
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(.secondary)
+                }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding()
-            .background(color.opacity(0.1))
-            .cornerRadius(12)
+            .padding(20)
+            .background(
+                RoundedRectangle(cornerRadius: 16)
+                    .fill(color.opacity(0.08))
+            )
         }
-        .buttonStyle(PlainButtonStyle())
+        .buttonStyle(ScaleButtonStyle())
     }
 }
 
@@ -320,43 +323,66 @@ struct CategoryDetailView: View {
     
     var body: some View {
         NavigationView {
-            VStack {
-                // Category Header
-                VStack(spacing: 12) {
-                    ZStack {
-                        Circle()
-                            .fill(getColorForLetter(categoryLetter))
-                            .frame(width: 60, height: 60)
+            ScrollView {
+                VStack(spacing: 24) {
+                    // Category header with Apple styling
+                    VStack(spacing: 16) {
+                        ZStack {
+                            Circle()
+                                .fill(getColorForLetter(categoryLetter))
+                                .frame(width: 80, height: 80)
+                            
+                            Text(categoryLetter)
+                                .font(.system(size: 32, weight: .bold))
+                                .foregroundColor(.white)
+                        }
                         
-                        Text(categoryLetter)
-                            .font(.title)
-                            .fontWeight(.bold)
-                            .foregroundColor(.white)
-                    }
-                    
-                    Text(categoryInfo?.rawValue ?? "Unknown Category")
-                        .font(.title2)
-                        .fontWeight(.bold)
-                    
-                    Text("\(categoryItems.count) items")
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
-                }
-                .padding()
-                
-                // Storage Tips
-                if let category = categoryInfo {
-                    CleanStorageTipsCard(category: category)
-                }
-                
-                // Items List
-                List {
-                    ForEach(categoryItems) { item in
-                        CleanCategoryItemRow(item: item) { updatedItem in
-                            inventoryManager.updateItem(updatedItem)
+                        VStack(spacing: 8) {
+                            Text(categoryInfo?.rawValue ?? "Unknown Category")
+                                .font(.system(size: 28, weight: .bold))
+                            
+                            Text("\(categoryItems.count) item\(categoryItems.count == 1 ? "" : "s")")
+                                .font(.system(size: 17, weight: .medium))
+                                .foregroundColor(.secondary)
                         }
                     }
+                    .padding(.top, 20)
+                    
+                    // Storage tips
+                    if let category = categoryInfo {
+                        AppleStorageTipsCard(category: category)
+                    }
+                    
+                    // Items list
+                    if !categoryItems.isEmpty {
+                        VStack(alignment: .leading, spacing: 16) {
+                            Text("Items")
+                                .font(.system(size: 22, weight: .bold))
+                                .padding(.horizontal, 20)
+                            
+                            VStack(spacing: 12) {
+                                ForEach(categoryItems) { item in
+                                    AppleCategoryItemRow(item: item) { updatedItem in
+                                        inventoryManager.updateItem(updatedItem)
+                                    }
+                                }
+                            }
+                            .padding(.horizontal, 20)
+                        }
+                    } else {
+                        VStack(spacing: 16) {
+                            Image(systemName: "tray")
+                                .font(.system(size: 48, weight: .light))
+                                .foregroundColor(.secondary)
+                            
+                            Text("No items in this category")
+                                .font(.system(size: 17, weight: .medium))
+                                .foregroundColor(.secondary)
+                        }
+                        .padding(.vertical, 40)
+                    }
                 }
+                .padding(.bottom, 20)
             }
             .navigationTitle("Category \(categoryLetter)")
             .navigationBarTitleDisplayMode(.inline)
@@ -365,8 +391,10 @@ struct CategoryDetailView: View {
                     Button("Done") {
                         presentationMode.wrappedValue.dismiss()
                     }
+                    .font(.system(size: 17, weight: .medium))
                 }
             }
+            .background(Color(.systemGroupedBackground))
         }
     }
     
@@ -390,142 +418,170 @@ struct CategoryDetailView: View {
     }
 }
 
-// MARK: - Clean Storage Tips Card
-struct CleanStorageTipsCard: View {
+// MARK: - Apple Storage Tips Card
+struct AppleStorageTipsCard: View {
     let category: InventoryCategory
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 16) {
             Text("Storage Tips")
-                .font(.headline)
-                .fontWeight(.semibold)
+                .font(.system(size: 20, weight: .semibold))
             
-            ForEach(category.storageTips.prefix(3), id: \.self) { tip in
-                HStack(alignment: .top) {
-                    Text("•")
-                        .foregroundColor(.blue)
-                        .fontWeight(.bold)
-                    Text(tip)
-                        .font(.subheadline)
-                        .foregroundColor(.primary)
+            VStack(alignment: .leading, spacing: 12) {
+                ForEach(category.storageTips.prefix(3), id: \.self) { tip in
+                    HStack(alignment: .top, spacing: 12) {
+                        Circle()
+                            .fill(Color.blue)
+                            .frame(width: 6, height: 6)
+                            .padding(.top, 6)
+                        
+                        Text(tip)
+                            .font(.system(size: 16, weight: .medium))
+                            .foregroundColor(.primary)
+                    }
                 }
             }
         }
-        .padding()
-        .background(Color.blue.opacity(0.1))
-        .cornerRadius(12)
-        .padding(.horizontal)
+        .padding(20)
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(Color.blue.opacity(0.05))
+        )
+        .padding(.horizontal, 20)
     }
 }
 
-// MARK: - Clean Category Item Row
-struct CleanCategoryItemRow: View {
+// MARK: - Apple Category Item Row
+struct AppleCategoryItemRow: View {
     let item: InventoryItem
     let onUpdate: (InventoryItem) -> Void
     @State private var showingDetail = false
     
     var body: some View {
-        HStack {
-            // Item Image
-            if let imageData = item.imageData, let uiImage = UIImage(data: imageData) {
-                Image(uiImage: uiImage)
-                    .resizable()
-                    .aspectRatio(contentMode: .fill)
-                    .frame(width: 50, height: 50)
-                    .cornerRadius(8)
-            } else {
-                RoundedRectangle(cornerRadius: 8)
-                    .fill(Color.gray.opacity(0.2))
-                    .frame(width: 50, height: 50)
-                    .overlay(
-                        Image(systemName: "photo")
-                            .foregroundColor(.gray)
-                    )
-            }
-            
-            // Item Info
-            VStack(alignment: .leading, spacing: 4) {
-                Text(item.inventoryCode)
-                    .font(.caption)
-                    .fontWeight(.bold)
-                    .foregroundColor(.blue)
+        Button(action: { showingDetail = true }) {
+            HStack(spacing: 16) {
+                // Item Image
+                if let imageData = item.imageData, let uiImage = UIImage(data: imageData) {
+                    Image(uiImage: uiImage)
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                        .frame(width: 56, height: 56)
+                        .cornerRadius(12)
+                        .clipped()
+                } else {
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(Color(.systemGray5))
+                        .frame(width: 56, height: 56)
+                        .overlay(
+                            Image(systemName: "photo")
+                                .font(.system(size: 20, weight: .medium))
+                                .foregroundColor(.secondary)
+                        )
+                }
                 
-                Text(item.name)
-                    .font(.subheadline)
-                    .fontWeight(.medium)
-                    .lineLimit(1)
-                
-                HStack {
-                    Text(item.condition)
-                        .font(.caption2)
-                        .padding(.horizontal, 4)
-                        .padding(.vertical, 2)
-                        .background(Color.blue.opacity(0.1))
-                        .cornerRadius(3)
+                // Item Info
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(item.inventoryCode.isEmpty ? "No Code" : item.inventoryCode)
+                        .font(.system(size: 14, weight: .bold))
+                        .foregroundColor(item.inventoryCode.isEmpty ? .red : .blue)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(
+                            RoundedRectangle(cornerRadius: 6)
+                                .fill(item.inventoryCode.isEmpty ? Color.red.opacity(0.1) : Color.blue.opacity(0.1))
+                        )
                     
-                    if item.isPackaged {
-                        Text("Packaged")
-                            .font(.caption2)
-                            .foregroundColor(.green)
-                    }
+                    Text(item.name)
+                        .font(.system(size: 16, weight: .semibold))
+                        .lineLimit(1)
+                        .foregroundColor(.primary)
                     
-                    if !item.storageLocation.isEmpty {
-                        Text(item.storageLocation)
-                            .font(.caption2)
-                            .foregroundColor(.secondary)
+                    HStack(spacing: 12) {
+                        Text(item.condition)
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundColor(.blue)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
+                            .background(
+                                RoundedRectangle(cornerRadius: 4)
+                                    .fill(Color.blue.opacity(0.1))
+                            )
+                        
+                        if item.isPackaged {
+                            Text("Packaged")
+                                .font(.system(size: 12, weight: .medium))
+                                .foregroundColor(.green)
+                        }
+                        
+                        if !item.storageLocation.isEmpty {
+                            Text(item.storageLocation)
+                                .font(.system(size: 12, weight: .medium))
+                                .foregroundColor(.secondary)
+                        }
                     }
                 }
-            }
-            
-            Spacer()
-            
-            // Price and Status
-            VStack(alignment: .trailing, spacing: 4) {
-                Text("$\(String(format: "%.0f", item.suggestedPrice))")
-                    .font(.subheadline)
-                    .fontWeight(.bold)
-                    .foregroundColor(.green)
                 
-                Text(item.status.rawValue)
-                    .font(.caption2)
-                    .padding(.horizontal, 6)
-                    .padding(.vertical, 2)
-                    .background(item.status.color.opacity(0.1))
-                    .foregroundColor(item.status.color)
-                    .cornerRadius(6)
+                Spacer()
+                
+                // Price and Status
+                VStack(alignment: .trailing, spacing: 6) {
+                    Text("$\(String(format: "%.0f", item.suggestedPrice))")
+                        .font(.system(size: 16, weight: .bold))
+                        .foregroundColor(.green)
+                    
+                    Text(item.status.rawValue)
+                        .font(.system(size: 12, weight: .bold))
+                        .foregroundColor(item.status.color)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(
+                            RoundedRectangle(cornerRadius: 8)
+                                .fill(item.status.color.opacity(0.1))
+                        )
+                }
             }
+            .padding(16)
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(Color(.systemBackground))
+                    .shadow(color: .black.opacity(0.05), radius: 4, x: 0, y: 1)
+            )
         }
-        .contentShape(Rectangle())
-        .onTapGesture {
-            showingDetail = true
-        }
+        .buttonStyle(ScaleButtonStyle())
         .sheet(isPresented: $showingDetail) {
             ItemDetailView(item: item, onUpdate: onUpdate)
         }
     }
 }
 
-// MARK: - Clean Storage Guide View
+// MARK: - Apple Storage Guide View
 struct StorageGuideView: View {
     @Environment(\.presentationMode) var presentationMode
     
     var body: some View {
         NavigationView {
             ScrollView {
-                VStack(alignment: .leading, spacing: 20) {
-                    Text("Storage Guide")
-                        .font(.largeTitle)
-                        .fontWeight(.bold)
+                VStack(spacing: 24) {
+                    // Header
+                    VStack(spacing: 8) {
+                        Text("Storage Guide")
+                            .font(.system(size: 34, weight: .bold))
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                        
+                        Text("Organize your inventory for maximum efficiency")
+                            .font(.system(size: 17, weight: .medium))
+                            .foregroundColor(.secondary)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }
                     
-                    Text("Organize your inventory for maximum efficiency")
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
-                    
-                    ForEach(InventoryCategory.allCases.prefix(6), id: \.self) { category in
-                        CleanCategoryStorageGuide(category: category)
+                    VStack(spacing: 16) {
+                        ForEach(InventoryCategory.allCases.prefix(8), id: \.self) { category in
+                            AppleCategoryStorageGuide(category: category)
+                        }
                     }
                 }
-                .padding()
+                .padding(.horizontal, 20)
+                .padding(.bottom, 20)
             }
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -533,48 +589,56 @@ struct StorageGuideView: View {
                     Button("Done") {
                         presentationMode.wrappedValue.dismiss()
                     }
+                    .font(.system(size: 17, weight: .medium))
                 }
             }
+            .background(Color(.systemGroupedBackground))
         }
     }
 }
 
-// MARK: - Clean Category Storage Guide
-struct CleanCategoryStorageGuide: View {
+// MARK: - Apple Category Storage Guide
+struct AppleCategoryStorageGuide: View {
     let category: InventoryCategory
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack {
+        VStack(alignment: .leading, spacing: 16) {
+            HStack(spacing: 16) {
                 ZStack {
                     Circle()
                         .fill(getColorForCategory(category))
-                        .frame(width: 30, height: 30)
+                        .frame(width: 40, height: 40)
                     
                     Text(category.inventoryLetter)
-                        .font(.subheadline)
-                        .fontWeight(.bold)
+                        .font(.system(size: 16, weight: .bold))
                         .foregroundColor(.white)
                 }
                 
                 Text(category.rawValue)
-                    .font(.headline)
-                    .fontWeight(.semibold)
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundColor(.primary)
             }
             
-            ForEach(category.storageTips.prefix(3), id: \.self) { tip in
-                HStack(alignment: .top) {
-                    Text("•")
-                        .foregroundColor(getColorForCategory(category))
-                        .fontWeight(.bold)
-                    Text(tip)
-                        .font(.subheadline)
+            VStack(alignment: .leading, spacing: 8) {
+                ForEach(category.storageTips.prefix(3), id: \.self) { tip in
+                    HStack(alignment: .top, spacing: 12) {
+                        Circle()
+                            .fill(getColorForCategory(category))
+                            .frame(width: 4, height: 4)
+                            .padding(.top, 8)
+                        
+                        Text(tip)
+                            .font(.system(size: 15, weight: .medium))
+                            .foregroundColor(.primary)
+                    }
                 }
             }
         }
-        .padding()
-        .background(getColorForCategory(category).opacity(0.1))
-        .cornerRadius(12)
+        .padding(20)
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(getColorForCategory(category).opacity(0.05))
+        )
     }
     
     private func getColorForCategory(_ category: InventoryCategory) -> Color {
@@ -597,7 +661,7 @@ struct CleanCategoryStorageGuide: View {
     }
 }
 
-// MARK: - Clean Smart Inventory List View
+// MARK: - Apple Smart Inventory List View
 struct SmartInventoryListView: View {
     @EnvironmentObject var inventoryManager: InventoryManager
     @EnvironmentObject var googleSheetsService: GoogleSheetsService
@@ -631,90 +695,67 @@ struct SmartInventoryListView: View {
     
     var body: some View {
         NavigationView {
-            VStack {
-                // Clean Search Bar
-                HStack {
-                    CleanSearchBar(text: $searchText)
+            ScrollView {
+                LazyVStack(spacing: 24) {
+                    // Apple-style header
+                    VStack(spacing: 16) {
+                        Text("Inventory")
+                            .font(.system(size: 34, weight: .bold))
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                        
+                        // Search bar with Apple styling
+                        HStack(spacing: 12) {
+                            AppleSearchBar(text: $searchText)
+                            
+                            Button(action: { showingBarcodeLookup = true }) {
+                                Image(systemName: "barcode.viewfinder")
+                                    .font(.system(size: 20, weight: .medium))
+                                    .foregroundColor(.blue)
+                                    .frame(width: 44, height: 44)
+                                    .background(
+                                        RoundedRectangle(cornerRadius: 12)
+                                            .fill(Color.blue.opacity(0.1))
+                                    )
+                            }
+                            .buttonStyle(ScaleButtonStyle())
+                        }
+                    }
                     
-                    Button(action: {
-                        showingBarcodeLookup = true
-                    }) {
-                        Image(systemName: "barcode.viewfinder")
-                            .font(.title2)
-                            .foregroundColor(.blue)
+                    // Filter bar
+                    if filteredItems.count != inventoryManager.items.count || filterStatus != nil {
+                        AppleFilterBar(
+                            currentFilter: filterStatus,
+                            itemCount: filteredItems.count,
+                            totalCount: inventoryManager.items.count,
+                            onClearFilter: { filterStatus = nil }
+                        )
                     }
-                }
-                .padding(.horizontal)
-                
-                // Filter Bar
-                if filteredItems.count != inventoryManager.items.count || filterStatus != nil {
-                    HStack {
-                        if let status = filterStatus {
-                            Text("Filter: \(status.rawValue)")
-                                .font(.caption)
-                                .foregroundColor(.blue)
-                        }
-                        
-                        Text("\(filteredItems.count) of \(inventoryManager.items.count)")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                        
-                        Spacer()
-                        
-                        if filterStatus != nil {
-                            Button("Clear") {
-                                filterStatus = nil
-                            }
-                            .font(.caption)
-                            .foregroundColor(.red)
-                        }
-                    }
-                    .padding(.horizontal)
-                    .padding(.vertical, 4)
-                    .background(Color.gray.opacity(0.1))
-                }
-                
-                // Items List
-                List {
-                    ForEach(filteredItems) { item in
-                        CleanInventoryItemRow(item: item) { updatedItem in
-                            inventoryManager.updateItem(updatedItem)
-                            googleSheetsService.updateItem(updatedItem)
-                        } onAutoList: { item in
-                            selectedItem = item
-                            showingAutoListing = true
-                        } onEdit: { item in
-                            itemToEdit = item
-                            showingItemEditor = true
-                        }
-                    }
-                    .onDelete(perform: deleteItems)
-                }
-            }
-            .navigationTitle("Inventory (\(filteredItems.count))")
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Menu {
-                        Button("All Items") {
-                            filterStatus = nil
-                        }
-                        ForEach(ItemStatus.allCases, id: \.self) { status in
-                            Button(status.rawValue) {
-                                filterStatus = status
+                    
+                    // Items list
+                    if filteredItems.isEmpty {
+                        AppleEmptyState()
+                    } else {
+                        VStack(spacing: 12) {
+                            ForEach(filteredItems) { item in
+                                AppleInventoryItemRow(item: item) { updatedItem in
+                                    inventoryManager.updateItem(updatedItem)
+                                    googleSheetsService.updateItem(updatedItem)
+                                } onAutoList: { item in
+                                    selectedItem = item
+                                    showingAutoListing = true
+                                } onEdit: { item in
+                                    itemToEdit = item
+                                    showingItemEditor = true
+                                }
                             }
                         }
-                        Divider()
-                        Button("Export CSV") {
-                            exportToCSV()
-                        }
-                        Button("Sync Sheets") {
-                            googleSheetsService.syncAllItems(inventoryManager.items)
-                        }
-                    } label: {
-                        Image(systemName: "line.horizontal.3.decrease.circle")
                     }
                 }
+                .padding(.horizontal, 20)
+                .padding(.bottom, 20)
             }
+            .navigationBarHidden(true)
+            .background(Color(.systemGroupedBackground))
         }
         .sheet(isPresented: $showingBarcodeLookup) {
             BarcodeScannerView(scannedCode: $scannedBarcode)
@@ -742,15 +783,6 @@ struct SmartInventoryListView: View {
         }
     }
     
-    private func deleteItems(offsets: IndexSet) {
-        inventoryManager.deleteItems(at: offsets, from: filteredItems)
-    }
-    
-    private func exportToCSV() {
-        let csv = inventoryManager.exportCSV()
-        print("CSV Export generated")
-    }
-    
     private func lookupItemByBarcode(barcode: String) {
         if let item = inventoryManager.findItem(byInventoryCode: barcode) {
             selectedItem = item
@@ -759,26 +791,88 @@ struct SmartInventoryListView: View {
     }
 }
 
-// MARK: - Clean Search Bar
-struct CleanSearchBar: View {
+// MARK: - Apple Search Bar
+struct AppleSearchBar: View {
     @Binding var text: String
     
     var body: some View {
-        HStack {
+        HStack(spacing: 12) {
             Image(systemName: "magnifyingglass")
+                .font(.system(size: 16, weight: .medium))
                 .foregroundColor(.secondary)
             
             TextField("Search items...", text: $text)
+                .font(.system(size: 17, weight: .medium))
         }
-        .padding(.horizontal, 10)
-        .padding(.vertical, 8)
-        .background(Color.gray.opacity(0.1))
-        .cornerRadius(8)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(Color(.secondarySystemBackground))
+        )
     }
 }
 
-// MARK: - Clean Inventory Item Row
-struct CleanInventoryItemRow: View {
+// MARK: - Apple Filter Bar
+struct AppleFilterBar: View {
+    let currentFilter: ItemStatus?
+    let itemCount: Int
+    let totalCount: Int
+    let onClearFilter: () -> Void
+    
+    var body: some View {
+        HStack {
+            if let status = currentFilter {
+                Text("Filter: \(status.rawValue)")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundColor(.blue)
+            }
+            
+            Text("\(itemCount) of \(totalCount)")
+                .font(.system(size: 14, weight: .medium))
+                .foregroundColor(.secondary)
+            
+            Spacer()
+            
+            if currentFilter != nil {
+                Button("Clear", action: onClearFilter)
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundColor(.red)
+                    .buttonStyle(ScaleButtonStyle())
+            }
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 8)
+        .background(
+            RoundedRectangle(cornerRadius: 10)
+                .fill(Color(.secondarySystemBackground))
+        )
+    }
+}
+
+// MARK: - Apple Empty State
+struct AppleEmptyState: View {
+    var body: some View {
+        VStack(spacing: 20) {
+            Image(systemName: "tray")
+                .font(.system(size: 64, weight: .ultraLight))
+                .foregroundColor(.secondary)
+            
+            VStack(spacing: 8) {
+                Text("No Items Found")
+                    .font(.system(size: 24, weight: .bold))
+                
+                Text("Try adjusting your search or filters")
+                    .font(.system(size: 17, weight: .medium))
+                    .foregroundColor(.secondary)
+            }
+        }
+        .padding(.vertical, 60)
+    }
+}
+
+// MARK: - Apple Inventory Item Row
+struct AppleInventoryItemRow: View {
     let item: InventoryItem
     let onUpdate: (InventoryItem) -> Void
     let onAutoList: (InventoryItem) -> Void
@@ -786,122 +880,139 @@ struct CleanInventoryItemRow: View {
     @State private var showingDetail = false
     
     var body: some View {
-        HStack {
-            // Item Image
-            if let imageData = item.imageData, let uiImage = UIImage(data: imageData) {
-                Image(uiImage: uiImage)
-                    .resizable()
-                    .aspectRatio(contentMode: .fill)
-                    .frame(width: 60, height: 60)
-                    .cornerRadius(8)
-            } else {
-                RoundedRectangle(cornerRadius: 8)
-                    .fill(Color.gray.opacity(0.2))
-                    .frame(width: 60, height: 60)
-                    .overlay(
-                        Image(systemName: "photo")
-                            .foregroundColor(.gray)
-                    )
+        Button(action: { showingDetail = true }) {
+            HStack(spacing: 16) {
+                // Item Image
+                if let imageData = item.imageData, let uiImage = UIImage(data: imageData) {
+                    Image(uiImage: uiImage)
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                        .frame(width: 64, height: 64)
+                        .cornerRadius(12)
+                        .clipped()
+                } else {
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(Color(.systemGray5))
+                        .frame(width: 64, height: 64)
+                        .overlay(
+                            Image(systemName: "photo")
+                                .font(.system(size: 24, weight: .medium))
+                                .foregroundColor(.secondary)
+                        )
+                }
+                
+                // Item Details
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack {
+                        Text(item.inventoryCode.isEmpty ? "No Code" : item.inventoryCode)
+                            .font(.system(size: 12, weight: .bold))
+                            .foregroundColor(item.inventoryCode.isEmpty ? .red : .blue)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 4)
+                            .background(
+                                RoundedRectangle(cornerRadius: 6)
+                                    .fill(item.inventoryCode.isEmpty ? Color.red.opacity(0.1) : Color.blue.opacity(0.1))
+                            )
+                        
+                        Spacer()
+                        
+                        Text("#\(item.itemNumber)")
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundColor(.secondary)
+                    }
+                    
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(item.name)
+                            .font(.system(size: 16, weight: .semibold))
+                            .lineLimit(2)
+                            .foregroundColor(.primary)
+                        
+                        if !item.brand.isEmpty {
+                            Text(item.brand)
+                                .font(.system(size: 14, weight: .medium))
+                                .foregroundColor(.blue)
+                        }
+                    }
+                    
+                    HStack(spacing: 8) {
+                        Text("\(item.source) • $\(String(format: "%.0f", item.purchasePrice))")
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundColor(.secondary)
+                        
+                        if !item.storageLocation.isEmpty {
+                            Text(item.storageLocation)
+                                .font(.system(size: 12, weight: .medium))
+                                .foregroundColor(.green)
+                                .padding(.horizontal, 6)
+                                .padding(.vertical, 2)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 4)
+                                        .fill(Color.green.opacity(0.1))
+                                )
+                        }
+                    }
+                }
+                
+                Spacer()
+                
+                // Price and Actions
+                VStack(alignment: .trailing, spacing: 8) {
+                    Text(item.status.rawValue)
+                        .font(.system(size: 12, weight: .bold))
+                        .foregroundColor(item.status.color)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(
+                            RoundedRectangle(cornerRadius: 8)
+                                .fill(item.status.color.opacity(0.1))
+                        )
+                    
+                    Text("$\(String(format: "%.0f", item.suggestedPrice))")
+                        .font(.system(size: 18, weight: .bold))
+                        .foregroundColor(.green)
+                    
+                    HStack(spacing: 8) {
+                        Button(action: { onEdit(item) }) {
+                            Image(systemName: "pencil")
+                                .font(.system(size: 14, weight: .medium))
+                                .foregroundColor(.orange)
+                                .frame(width: 32, height: 32)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 8)
+                                        .fill(Color.orange.opacity(0.1))
+                                )
+                        }
+                        .buttonStyle(ScaleButtonStyle())
+                        
+                        Button(action: { onAutoList(item) }) {
+                            Image(systemName: "square.and.arrow.up")
+                                .font(.system(size: 14, weight: .medium))
+                                .foregroundColor(.blue)
+                                .frame(width: 32, height: 32)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 8)
+                                        .fill(Color.blue.opacity(0.1))
+                                )
+                        }
+                        .buttonStyle(ScaleButtonStyle())
+                    }
+                }
             }
-            
-            // Item Details
-            VStack(alignment: .leading, spacing: 4) {
-                HStack {
-                    Text(item.inventoryCode.isEmpty ? "No Code" : item.inventoryCode)
-                        .font(.caption)
-                        .fontWeight(.bold)
-                        .foregroundColor(item.inventoryCode.isEmpty ? .red : .blue)
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 2)
-                        .background(item.inventoryCode.isEmpty ? Color.red.opacity(0.1) : Color.blue.opacity(0.1))
-                        .cornerRadius(4)
-                    
-                    Spacer()
-                    
-                    Text("#\(item.itemNumber)")
-                        .font(.caption2)
-                        .foregroundColor(.secondary)
-                }
-                
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(item.name)
-                        .font(.subheadline)
-                        .fontWeight(.medium)
-                        .lineLimit(2)
-                    
-                    if !item.brand.isEmpty {
-                        Text(item.brand)
-                            .font(.caption)
-                            .foregroundColor(.blue)
-                    }
-                }
-                
-                HStack {
-                    Text("\(item.source) • $\(String(format: "%.0f", item.purchasePrice))")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                    
-                    if !item.storageLocation.isEmpty {
-                        Text(item.storageLocation)
-                            .font(.caption)
-                            .foregroundColor(.green)
-                    }
-                }
-            }
-            
-            Spacer()
-            
-            // Price and Actions
-            VStack(alignment: .trailing, spacing: 6) {
-                Text(item.status.rawValue)
-                    .font(.caption2)
-                    .padding(.horizontal, 6)
-                    .padding(.vertical, 2)
-                    .background(item.status.color.opacity(0.1))
-                    .foregroundColor(item.status.color)
-                    .cornerRadius(8)
-                
-                Text("$\(String(format: "%.0f", item.suggestedPrice))")
-                    .font(.subheadline)
-                    .fontWeight(.bold)
-                    .foregroundColor(.green)
-                
-                HStack(spacing: 6) {
-                    Button(action: {
-                        onEdit(item)
-                    }) {
-                        Image(systemName: "pencil")
-                            .font(.caption)
-                            .foregroundColor(.orange)
-                            .padding(4)
-                            .background(Color.orange.opacity(0.1))
-                            .cornerRadius(4)
-                    }
-                    
-                    Button(action: {
-                        onAutoList(item)
-                    }) {
-                        Image(systemName: "square.and.arrow.up")
-                            .font(.caption)
-                            .foregroundColor(.blue)
-                            .padding(4)
-                            .background(Color.blue.opacity(0.1))
-                            .cornerRadius(4)
-                    }
-                }
-            }
+            .padding(20)
+            .background(
+                RoundedRectangle(cornerRadius: 16)
+                    .fill(Color(.systemBackground))
+                    .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 2)
+            )
         }
-        .contentShape(Rectangle())
-        .onTapGesture {
-            showingDetail = true
-        }
+        .buttonStyle(ScaleButtonStyle())
         .sheet(isPresented: $showingDetail) {
             ItemDetailView(item: item, onUpdate: onUpdate)
         }
     }
 }
 
-// MARK: - Item Detail View (Simplified)
+// MARK: - Item Detail View
 struct ItemDetailView: View {
     @State var item: InventoryItem
     let onUpdate: (InventoryItem) -> Void
@@ -910,97 +1021,117 @@ struct ItemDetailView: View {
     
     var body: some View {
         NavigationView {
-            VStack(spacing: 20) {
-                // Item Preview
-                if let imageData = item.imageData, let uiImage = UIImage(data: imageData) {
-                    Image(uiImage: uiImage)
-                        .resizable()
-                        .aspectRatio(contentMode: .fit)
-                        .frame(maxHeight: 200)
-                        .cornerRadius(12)
-                }
-                
-                // Item Info
-                VStack(alignment: .leading, spacing: 12) {
-                    HStack {
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text(item.inventoryCode)
-                                .font(.caption)
-                                .fontWeight(.bold)
-                                .foregroundColor(.blue)
-                                .padding(.horizontal, 8)
-                                .padding(.vertical, 4)
-                                .background(Color.blue.opacity(0.1))
-                                .cornerRadius(6)
-                            
-                            Text(item.name)
-                                .font(.title2)
-                                .fontWeight(.bold)
-                            
-                            if !item.brand.isEmpty {
-                                Text(item.brand)
-                                    .font(.headline)
+            ScrollView {
+                VStack(spacing: 24) {
+                    // Item preview
+                    if let imageData = item.imageData, let uiImage = UIImage(data: imageData) {
+                        Image(uiImage: uiImage)
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .frame(maxHeight: 240)
+                            .cornerRadius(16)
+                            .clipped()
+                    }
+                    
+                    // Item info
+                    VStack(alignment: .leading, spacing: 16) {
+                        HStack(alignment: .top) {
+                            VStack(alignment: .leading, spacing: 8) {
+                                Text(item.inventoryCode)
+                                    .font(.system(size: 14, weight: .bold))
                                     .foregroundColor(.blue)
+                                    .padding(.horizontal, 12)
+                                    .padding(.vertical, 6)
+                                    .background(
+                                        RoundedRectangle(cornerRadius: 8)
+                                            .fill(Color.blue.opacity(0.1))
+                                    )
+                                
+                                Text(item.name)
+                                    .font(.system(size: 24, weight: .bold))
+                                
+                                if !item.brand.isEmpty {
+                                    Text(item.brand)
+                                        .font(.system(size: 18, weight: .semibold))
+                                        .foregroundColor(.blue)
+                                }
+                            }
+                            
+                            Spacer()
+                            
+                            VStack(alignment: .trailing, spacing: 6) {
+                                Text("$\(String(format: "%.0f", item.suggestedPrice))")
+                                    .font(.system(size: 28, weight: .bold))
+                                    .foregroundColor(.green)
+                                
+                                Text(item.status.rawValue)
+                                    .font(.system(size: 14, weight: .bold))
+                                    .foregroundColor(item.status.color)
+                                    .padding(.horizontal, 12)
+                                    .padding(.vertical, 6)
+                                    .background(
+                                        RoundedRectangle(cornerRadius: 10)
+                                            .fill(item.status.color.opacity(0.1))
+                                    )
                             }
                         }
-                        
-                        Spacer()
-                        
-                        VStack(alignment: .trailing, spacing: 4) {
-                            Text("$\(String(format: "%.0f", item.suggestedPrice))")
-                                .font(.title2)
-                                .fontWeight(.bold)
-                                .foregroundColor(.green)
-                            
-                            Text(item.status.rawValue)
-                                .font(.caption)
-                                .padding(.horizontal, 8)
-                                .padding(.vertical, 4)
-                                .background(item.status.color.opacity(0.1))
-                                .foregroundColor(item.status.color)
-                                .cornerRadius(8)
-                        }
                     }
-                }
-                .padding()
-                .background(Color.gray.opacity(0.05))
-                .cornerRadius(12)
-                
-                // Actions
-                VStack(spacing: 12) {
-                    Button("Edit Item") {
-                        showingEditor = true
-                    }
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(Color.orange)
-                    .foregroundColor(.white)
-                    .cornerRadius(12)
+                    .padding(24)
+                    .background(
+                        RoundedRectangle(cornerRadius: 16)
+                            .fill(Color(.systemBackground))
+                            .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 2)
+                    )
                     
-                    HStack(spacing: 12) {
-                        Button(item.isPackaged ? "Packaged" : "Mark Packaged") {
-                            markAsPackaged()
+                    // Actions
+                    VStack(spacing: 12) {
+                        Button("Edit Item") {
+                            showingEditor = true
                         }
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(item.isPackaged ? Color.green : Color.blue)
+                        .font(.system(size: 18, weight: .semibold))
                         .foregroundColor(.white)
-                        .cornerRadius(10)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 56)
+                        .background(
+                            RoundedRectangle(cornerRadius: 16)
+                                .fill(Color.orange)
+                        )
+                        .buttonStyle(ScaleButtonStyle())
                         
-                        Button("Update Status") {
-                            updateStatus()
+                        HStack(spacing: 12) {
+                            Button(item.isPackaged ? "Packaged ✓" : "Mark Packaged") {
+                                markAsPackaged()
+                            }
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 48)
+                            .background(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .fill(item.isPackaged ? Color.green : Color.blue)
+                            )
+                            .buttonStyle(ScaleButtonStyle())
+                            
+                            Button("Update Status") {
+                                updateStatus()
+                            }
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 48)
+                            .background(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .fill(Color.purple)
+                            )
+                            .buttonStyle(ScaleButtonStyle())
                         }
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(Color.purple)
-                        .foregroundColor(.white)
-                        .cornerRadius(10)
                     }
+                    
+                    Spacer(minLength: 40)
                 }
-                
-                Spacer()
+                .padding(.horizontal, 20)
+                .padding(.top, 20)
             }
-            .padding()
             .navigationTitle("Item Details")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -1008,8 +1139,10 @@ struct ItemDetailView: View {
                     Button("Done") {
                         presentationMode.wrappedValue.dismiss()
                     }
+                    .font(.system(size: 17, weight: .medium))
                 }
             }
+            .background(Color(.systemGroupedBackground))
         }
         .sheet(isPresented: $showingEditor) {
             InventoryItemEditorView(item: item, onSave: onUpdate)
@@ -1036,7 +1169,7 @@ struct ItemDetailView: View {
     }
 }
 
-// MARK: - Inventory Item Editor (Simplified)
+// MARK: - Inventory Item Editor
 struct InventoryItemEditorView: View {
     @State var item: InventoryItem
     let onSave: (InventoryItem) -> Void
@@ -1092,13 +1225,14 @@ struct InventoryItemEditorView: View {
                     Button("Cancel") {
                         presentationMode.wrappedValue.dismiss()
                     }
+                    .font(.system(size: 17, weight: .medium))
                 }
                 
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Save") {
                         onSave(item)
                     }
-                    .fontWeight(.semibold)
+                    .font(.system(size: 17, weight: .semibold))
                 }
             }
         }

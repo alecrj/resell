@@ -3,7 +3,7 @@ import UIKit
 import AVFoundation
 import PhotosUI
 
-// MARK: - Optimized Camera Components
+// MARK: - Apple-Style Camera Components
 
 // MARK: - Clean Camera View
 struct CameraView: UIViewControllerRepresentable {
@@ -46,7 +46,7 @@ class CameraViewController: UIViewController {
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        setupCleanInterface()
+        setupAppleInterface()
         checkCameraPermission()
     }
     
@@ -86,30 +86,30 @@ class CameraViewController: UIViewController {
         present(alert, animated: true)
     }
     
-    private func setupCleanInterface() {
+    private func setupAppleInterface() {
         view.backgroundColor = .systemBackground
         
-        // Clean title
+        // Large title with Apple styling
         titleLabel = UILabel()
         titleLabel.text = "Take Photos (\(capturedPhotos.count)/\(maxPhotos))"
-        titleLabel.font = .systemFont(ofSize: 28, weight: .bold)
-        titleLabel.textAlignment = .center
+        titleLabel.font = UIFont.systemFont(ofSize: 34, weight: .bold)
+        titleLabel.textAlignment = .left
         titleLabel.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(titleLabel)
         
-        // Simple instruction
+        // Subtitle with Apple spacing
         let instructionLabel = UILabel()
-        instructionLabel.text = "Multiple angles for better analysis"
-        instructionLabel.font = .systemFont(ofSize: 16)
-        instructionLabel.textAlignment = .center
+        instructionLabel.text = "Multiple angles improve analysis accuracy"
+        instructionLabel.font = UIFont.systemFont(ofSize: 17, weight: .medium)
+        instructionLabel.textAlignment = .left
         instructionLabel.textColor = .secondaryLabel
         instructionLabel.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(instructionLabel)
         
-        // Clean camera button
+        // Apple-style primary button
         let cameraButton = UIButton(type: .system)
         cameraButton.setTitle("Take Photo", for: .normal)
-        cameraButton.titleLabel?.font = .systemFont(ofSize: 20, weight: .semibold)
+        cameraButton.titleLabel?.font = UIFont.systemFont(ofSize: 18, weight: .semibold)
         cameraButton.backgroundColor = .systemBlue
         cameraButton.setTitleColor(.white, for: .normal)
         cameraButton.layer.cornerRadius = 16
@@ -117,27 +117,28 @@ class CameraViewController: UIViewController {
         cameraButton.addTarget(self, action: #selector(takePhoto), for: .touchUpInside)
         view.addSubview(cameraButton)
         
-        // Done button
+        // Secondary button
         let doneButton = UIButton(type: .system)
         doneButton.setTitle("Done", for: .normal)
-        doneButton.titleLabel?.font = .systemFont(ofSize: 18, weight: .medium)
+        doneButton.titleLabel?.font = UIFont.systemFont(ofSize: 17, weight: .semibold)
         doneButton.setTitleColor(.systemBlue, for: .normal)
         doneButton.translatesAutoresizingMaskIntoConstraints = false
         doneButton.addTarget(self, action: #selector(finishCapture), for: .touchUpInside)
         view.addSubview(doneButton)
         
-        // Cancel button
+        // Cancel button with Apple positioning
         let cancelButton = UIButton(type: .system)
         cancelButton.setTitle("Cancel", for: .normal)
-        cancelButton.titleLabel?.font = .systemFont(ofSize: 16)
-        cancelButton.setTitleColor(.secondaryLabel, for: .normal)
+        cancelButton.titleLabel?.font = UIFont.systemFont(ofSize: 17, weight: .medium)
+        cancelButton.setTitleColor(.label, for: .normal)
         cancelButton.translatesAutoresizingMaskIntoConstraints = false
         cancelButton.addTarget(self, action: #selector(cancelCapture), for: .touchUpInside)
         view.addSubview(cancelButton)
         
-        // Layout
+        // Apple-style layout constraints
         NSLayoutConstraint.activate([
-            titleLabel.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 40),
+            // Header section
+            titleLabel.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 20),
             titleLabel.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 20),
             titleLabel.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20),
             
@@ -145,16 +146,20 @@ class CameraViewController: UIViewController {
             instructionLabel.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 20),
             instructionLabel.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20),
             
+            // Primary action centered
             cameraButton.centerXAnchor.constraint(equalTo: view.centerXAnchor),
             cameraButton.centerYAnchor.constraint(equalTo: view.centerYAnchor),
-            cameraButton.widthAnchor.constraint(equalToConstant: 200),
-            cameraButton.heightAnchor.constraint(equalToConstant: 60),
+            cameraButton.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 20),
+            cameraButton.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20),
+            cameraButton.heightAnchor.constraint(equalToConstant: 56),
             
+            // Secondary actions
             doneButton.topAnchor.constraint(equalTo: cameraButton.bottomAnchor, constant: 20),
             doneButton.centerXAnchor.constraint(equalTo: view.centerXAnchor),
             
-            cancelButton.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 16),
-            cancelButton.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 20)
+            // Cancel in navigation area
+            cancelButton.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 8),
+            cancelButton.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 16)
         ])
     }
     
@@ -193,7 +198,7 @@ class CameraViewController: UIViewController {
     }
     
     private func showMaxPhotosAlert() {
-        showAlert(title: "Max Photos", message: "You can take up to \(maxPhotos) photos.")
+        showAlert(title: "Photo Limit", message: "You can take up to \(maxPhotos) photos.")
     }
     
     private func showCameraUnavailableAlert() {
@@ -214,7 +219,6 @@ class CameraViewController: UIViewController {
 extension CameraViewController: UIImagePickerControllerDelegate, UINavigationControllerDelegate {
     func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey : Any]) {
         if let image = info[.originalImage] as? UIImage {
-            // Optimize image immediately
             if let optimizedImage = optimizeImage(image) {
                 capturedPhotos.append(optimizedImage)
                 updateTitle()
@@ -227,21 +231,17 @@ extension CameraViewController: UIImagePickerControllerDelegate, UINavigationCon
         picker.dismiss(animated: true)
     }
     
-    // Performance optimization for images
     private func optimizeImage(_ image: UIImage) -> UIImage? {
         let maxSize: CGFloat = 1024
         let size = image.size
         
-        // Already optimized
         if size.width <= maxSize && size.height <= maxSize {
             return image
         }
         
-        // Calculate new size
         let ratio = min(maxSize / size.width, maxSize / size.height)
         let newSize = CGSize(width: size.width * ratio, height: size.height * ratio)
         
-        // Resize with high quality
         UIGraphicsBeginImageContextWithOptions(newSize, false, 1.0)
         image.draw(in: CGRect(origin: .zero, size: newSize))
         let optimizedImage = UIGraphicsGetImageFromCurrentImageContext()
@@ -251,7 +251,7 @@ extension CameraViewController: UIImagePickerControllerDelegate, UINavigationCon
     }
 }
 
-// MARK: - Optimized Photo Library Picker
+// MARK: - Apple-Style Photo Library Picker
 struct PhotoLibraryPicker: UIViewControllerRepresentable {
     let onPhotosSelected: ([UIImage]) -> Void
     
@@ -292,7 +292,6 @@ struct PhotoLibraryPicker: UIViewControllerRepresentable {
                     defer { group.leave() }
                     
                     if let image = image as? UIImage {
-                        // Optimize immediately
                         if let optimized = self.optimizeImage(image) {
                             images.append(optimized)
                         }
@@ -326,7 +325,7 @@ struct PhotoLibraryPicker: UIViewControllerRepresentable {
     }
 }
 
-// MARK: - Clean Barcode Scanner
+// MARK: - Apple-Style Barcode Scanner
 struct BarcodeScannerView: UIViewControllerRepresentable {
     @Binding var scannedCode: String?
     @Environment(\.presentationMode) var presentationMode
@@ -436,21 +435,27 @@ class ScannerViewController: UIViewController, AVCaptureMetadataOutputObjectsDel
         previewLayer.videoGravity = .resizeAspectFill
         view.layer.addSublayer(previewLayer)
         
-        addCleanOverlay()
+        addAppleOverlay()
         
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
             self?.captureSession.startRunning()
         }
     }
     
-    private func addCleanOverlay() {
-        // Clean overlay
+    private func addAppleOverlay() {
+        // Apple-style overlay
         let overlayView = UIView(frame: view.bounds)
-        overlayView.backgroundColor = UIColor.black.withAlphaComponent(0.5)
+        overlayView.backgroundColor = UIColor.black.withAlphaComponent(0.6)
         
-        // Scan area
-        let scanRect = CGRect(x: 50, y: 200, width: view.bounds.width - 100, height: 150)
-        let scanRectPath = UIBezierPath(rect: scanRect)
+        // Scan area with Apple styling
+        let scanRect = CGRect(
+            x: view.bounds.width * 0.1,
+            y: view.bounds.height * 0.35,
+            width: view.bounds.width * 0.8,
+            height: 120
+        )
+        
+        let scanRectPath = UIBezierPath(roundedRect: scanRect, cornerRadius: 16)
         let overlayPath = UIBezierPath(rect: overlayView.bounds)
         overlayPath.append(scanRectPath.reversing())
         
@@ -459,21 +464,28 @@ class ScannerViewController: UIViewController, AVCaptureMetadataOutputObjectsDel
         overlayLayer.fillRule = .evenOdd
         overlayView.layer.addSublayer(overlayLayer)
         
-        // Simple instruction
+        // Apple-style instruction
         let instructionLabel = UILabel()
-        instructionLabel.text = "Scan barcode"
+        instructionLabel.text = "Scan Barcode"
         instructionLabel.textColor = .white
-        instructionLabel.font = UIFont.systemFont(ofSize: 18, weight: .semibold)
+        instructionLabel.font = UIFont.systemFont(ofSize: 24, weight: .semibold)
         instructionLabel.textAlignment = .center
-        instructionLabel.frame = CGRect(x: 20, y: scanRect.maxY + 30, width: view.bounds.width - 40, height: 30)
+        instructionLabel.frame = CGRect(
+            x: 20,
+            y: scanRect.maxY + 40,
+            width: view.bounds.width - 40,
+            height: 40
+        )
         overlayView.addSubview(instructionLabel)
         
-        // Cancel button
+        // Apple-style cancel button
         let cancelButton = UIButton(type: .system)
         cancelButton.setTitle("Cancel", for: .normal)
         cancelButton.setTitleColor(.white, for: .normal)
-        cancelButton.titleLabel?.font = UIFont.systemFont(ofSize: 16, weight: .medium)
-        cancelButton.frame = CGRect(x: 20, y: 50, width: 80, height: 40)
+        cancelButton.titleLabel?.font = UIFont.systemFont(ofSize: 17, weight: .medium)
+        cancelButton.backgroundColor = UIColor.white.withAlphaComponent(0.1)
+        cancelButton.layer.cornerRadius = 8
+        cancelButton.frame = CGRect(x: 20, y: 60, width: 80, height: 36)
         cancelButton.addTarget(self, action: #selector(cancelScanning), for: .touchUpInside)
         overlayView.addSubview(cancelButton)
         
@@ -528,7 +540,7 @@ class ScannerViewController: UIViewController, AVCaptureMetadataOutputObjectsDel
     }
 }
 
-// MARK: - Clean Auto Listing View
+// MARK: - Apple-Style Auto Listing View
 struct AutoListingView: View {
     let item: InventoryItem
     @State private var generatedListing = ""
@@ -540,81 +552,56 @@ struct AutoListingView: View {
     var body: some View {
         NavigationView {
             ScrollView {
-                VStack(spacing: 20) {
-                    Text("Auto Listing")
-                        .font(.largeTitle)
-                        .fontWeight(.bold)
+                VStack(spacing: 24) {
+                    // Apple-style header
+                    VStack(spacing: 8) {
+                        Text("Auto Listing")
+                            .font(.system(size: 34, weight: .bold))
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                        
+                        Text("Generate professional eBay listings")
+                            .font(.system(size: 17, weight: .medium))
+                            .foregroundColor(.secondary)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }
                     
-                    CleanItemPreview(item: item)
+                    AppleItemPreview(item: item)
                     
                     if generatedListing.isEmpty {
                         Button(action: generateListing) {
-                            HStack {
+                            HStack(spacing: 8) {
                                 if isGenerating {
                                     ProgressView()
-                                        .scaleEffect(0.8)
                                         .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                                        .scaleEffect(0.8)
                                     Text("Generating...")
                                 } else {
-                                    Image(systemName: "doc.text")
+                                    Image(systemName: "doc.text.fill")
                                     Text("Generate Listing")
                                 }
                             }
-                            .frame(maxWidth: .infinity)
-                            .padding()
-                            .background(Color.blue)
+                            .font(.system(size: 18, weight: .semibold))
                             .foregroundColor(.white)
-                            .cornerRadius(12)
-                            .font(.headline)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 56)
+                            .background(
+                                RoundedRectangle(cornerRadius: 16)
+                                    .fill(Color.blue)
+                            )
                         }
                         .disabled(isGenerating)
+                        .buttonStyle(ScaleButtonStyle())
                     } else {
-                        VStack(alignment: .leading, spacing: 15) {
-                            Text("Generated Listing")
-                                .font(.headline)
-                                .fontWeight(.semibold)
-                            
-                            ScrollView {
-                                Text(generatedListing)
-                                    .font(.body)
-                                    .padding()
-                                    .background(Color.gray.opacity(0.1))
-                                    .cornerRadius(12)
-                            }
-                            .frame(maxHeight: 300)
-                            
-                            HStack(spacing: 12) {
-                                Button("Edit") {
-                                    showingEditSheet = true
-                                }
-                                .frame(maxWidth: .infinity)
-                                .padding()
-                                .background(Color.orange)
-                                .foregroundColor(.white)
-                                .cornerRadius(10)
-                                
-                                Button("Share") {
-                                    showingShareSheet = true
-                                }
-                                .frame(maxWidth: .infinity)
-                                .padding()
-                                .background(Color.green)
-                                .foregroundColor(.white)
-                                .cornerRadius(10)
-                            }
-                            
-                            Button("Copy") {
-                                copyToClipboard()
-                            }
-                            .frame(maxWidth: .infinity)
-                            .padding()
-                            .background(Color.blue.opacity(0.1))
-                            .foregroundColor(.blue)
-                            .cornerRadius(10)
-                        }
+                        AppleGeneratedListing(
+                            listing: generatedListing,
+                            onEdit: { showingEditSheet = true },
+                            onShare: { showingShareSheet = true },
+                            onCopy: { copyToClipboard() }
+                        )
                     }
                 }
-                .padding()
+                .padding(.horizontal, 20)
+                .padding(.bottom, 20)
             }
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -622,8 +609,10 @@ struct AutoListingView: View {
                     Button("Done") {
                         presentationMode.wrappedValue.dismiss()
                     }
+                    .font(.system(size: 17, weight: .medium))
                 }
             }
+            .background(Color(.systemGroupedBackground))
         }
         .sheet(isPresented: $showingShareSheet) {
             ShareSheet(items: [generatedListing])
@@ -670,30 +659,31 @@ struct AutoListingView: View {
     }
 }
 
-// MARK: - Clean Item Preview
-struct CleanItemPreview: View {
+// MARK: - Apple Item Preview
+struct AppleItemPreview: View {
     let item: InventoryItem
     
     var body: some View {
-        VStack(spacing: 12) {
+        VStack(spacing: 16) {
             if let imageData = item.imageData, let uiImage = UIImage(data: imageData) {
                 Image(uiImage: uiImage)
                     .resizable()
                     .aspectRatio(contentMode: .fit)
                     .frame(maxHeight: 200)
-                    .cornerRadius(12)
+                    .cornerRadius(16)
+                    .clipped()
             }
             
-            VStack(alignment: .leading, spacing: 8) {
-                HStack {
-                    VStack(alignment: .leading, spacing: 4) {
+            VStack(alignment: .leading, spacing: 12) {
+                HStack(alignment: .top) {
+                    VStack(alignment: .leading, spacing: 6) {
                         Text(item.name)
-                            .font(.headline)
-                            .fontWeight(.bold)
+                            .font(.system(size: 20, weight: .bold))
+                            .lineLimit(2)
                         
                         if !item.brand.isEmpty {
                             Text(item.brand)
-                                .font(.subheadline)
+                                .font(.system(size: 16, weight: .semibold))
                                 .foregroundColor(.blue)
                         }
                     }
@@ -701,55 +691,146 @@ struct CleanItemPreview: View {
                     Spacer()
                     
                     Text(item.inventoryCode)
-                        .font(.caption)
-                        .fontWeight(.semibold)
+                        .font(.system(size: 14, weight: .bold))
                         .foregroundColor(.blue)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 4)
-                        .background(Color.blue.opacity(0.1))
-                        .cornerRadius(6)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 6)
+                        .background(
+                            RoundedRectangle(cornerRadius: 8)
+                                .fill(Color.blue.opacity(0.1))
+                        )
                 }
                 
-                HStack {
-                    DetailChip(title: "Price", value: "$\(String(format: "%.0f", item.suggestedPrice))", color: .green)
-                    DetailChip(title: "Condition", value: item.condition, color: .blue)
+                HStack(spacing: 12) {
+                    AppleDetailChip(title: "Price", value: "$\(String(format: "%.0f", item.suggestedPrice))", color: .green)
+                    AppleDetailChip(title: "Condition", value: item.condition, color: .blue)
                     
                     if !item.size.isEmpty {
-                        DetailChip(title: "Size", value: item.size, color: .purple)
+                        AppleDetailChip(title: "Size", value: item.size, color: .purple)
                     }
                 }
             }
         }
-        .padding()
-        .background(Color.gray.opacity(0.05))
-        .cornerRadius(12)
+        .padding(20)
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(Color(.systemBackground))
+                .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 2)
+        )
     }
 }
 
-struct DetailChip: View {
+struct AppleDetailChip: View {
     let title: String
     let value: String
     let color: Color
     
     var body: some View {
-        VStack(spacing: 2) {
+        VStack(spacing: 4) {
             Text(title)
-                .font(.caption2)
+                .font(.system(size: 12, weight: .medium))
                 .foregroundColor(.secondary)
             
             Text(value)
-                .font(.caption)
-                .fontWeight(.semibold)
+                .font(.system(size: 14, weight: .semibold))
                 .foregroundColor(color)
         }
         .frame(maxWidth: .infinity)
-        .padding(.vertical, 6)
-        .background(color.opacity(0.1))
-        .cornerRadius(6)
+        .padding(.vertical, 8)
+        .background(
+            RoundedRectangle(cornerRadius: 8)
+                .fill(color.opacity(0.1))
+        )
     }
 }
 
-// MARK: - Clean Listing Edit View
+// MARK: - Apple Generated Listing
+struct AppleGeneratedListing: View {
+    let listing: String
+    let onEdit: () -> Void
+    let onShare: () -> Void
+    let onCopy: () -> Void
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 20) {
+            Text("Generated Listing")
+                .font(.system(size: 22, weight: .bold))
+            
+            ScrollView {
+                Text(listing)
+                    .font(.system(size: 16, weight: .medium))
+                    .foregroundColor(.primary)
+                    .padding(20)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(Color(.secondarySystemBackground))
+                    )
+            }
+            .frame(maxHeight: 300)
+            
+            VStack(spacing: 12) {
+                HStack(spacing: 12) {
+                    Button(action: onEdit) {
+                        HStack(spacing: 6) {
+                            Image(systemName: "pencil")
+                            Text("Edit")
+                        }
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundColor(.orange)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 48)
+                        .background(
+                            RoundedRectangle(cornerRadius: 12)
+                                .fill(Color.orange.opacity(0.1))
+                        )
+                    }
+                    .buttonStyle(ScaleButtonStyle())
+                    
+                    Button(action: onShare) {
+                        HStack(spacing: 6) {
+                            Image(systemName: "square.and.arrow.up")
+                            Text("Share")
+                        }
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundColor(.green)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 48)
+                        .background(
+                            RoundedRectangle(cornerRadius: 12)
+                                .fill(Color.green.opacity(0.1))
+                        )
+                    }
+                    .buttonStyle(ScaleButtonStyle())
+                }
+                
+                Button(action: onCopy) {
+                    HStack(spacing: 6) {
+                        Image(systemName: "doc.on.doc")
+                        Text("Copy to Clipboard")
+                    }
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundColor(.blue)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 48)
+                    .background(
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(Color.blue.opacity(0.1))
+                    )
+                }
+                .buttonStyle(ScaleButtonStyle())
+            }
+        }
+        .padding(20)
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(Color(.systemBackground))
+                .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 2)
+        )
+    }
+}
+
+// MARK: - Apple Listing Edit View
 struct ListingEditView: View {
     @Binding var listing: String
     @Environment(\.presentationMode) var presentationMode
@@ -757,42 +838,61 @@ struct ListingEditView: View {
     
     var body: some View {
         NavigationView {
-            VStack {
-                Text("Edit Listing")
-                    .font(.title2)
-                    .fontWeight(.bold)
-                    .padding()
+            VStack(spacing: 20) {
+                VStack(spacing: 8) {
+                    Text("Edit Listing")
+                        .font(.system(size: 28, weight: .bold))
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    
+                    Text("Make any changes to your listing")
+                        .font(.system(size: 17, weight: .medium))
+                        .foregroundColor(.secondary)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
                 
                 TextEditor(text: $editedListing)
-                    .padding()
-                    .background(Color.gray.opacity(0.1))
-                    .cornerRadius(12)
-                    .padding()
+                    .font(.system(size: 16, weight: .medium))
+                    .padding(16)
+                    .background(
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(Color(.secondarySystemBackground))
+                    )
                 
-                Button("Save Changes") {
-                    listing = editedListing
-                    presentationMode.wrappedValue.dismiss()
+                Button(action: saveChanges) {
+                    Text("Save Changes")
+                        .font(.system(size: 18, weight: .semibold))
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 56)
+                        .background(
+                            RoundedRectangle(cornerRadius: 16)
+                                .fill(Color.blue)
+                        )
                 }
-                .frame(maxWidth: .infinity)
-                .padding()
-                .background(Color.blue)
-                .foregroundColor(.white)
-                .cornerRadius(12)
-                .font(.headline)
-                .padding()
+                .buttonStyle(ScaleButtonStyle())
+                
+                Spacer()
             }
+            .padding(.horizontal, 20)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button("Cancel") {
                         presentationMode.wrappedValue.dismiss()
                     }
+                    .font(.system(size: 17, weight: .medium))
                 }
             }
+            .background(Color(.systemGroupedBackground))
         }
         .onAppear {
             editedListing = listing
         }
+    }
+    
+    private func saveChanges() {
+        listing = editedListing
+        presentationMode.wrappedValue.dismiss()
     }
 }
 
