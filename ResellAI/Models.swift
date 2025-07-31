@@ -1,4 +1,4 @@
-// MARK: - Updated Models.swift with eBay Condition Standards
+// MARK: - Fixed Models.swift with Data Corruption Handling
 import SwiftUI
 import Foundation
 
@@ -141,6 +141,7 @@ struct InventoryItem: Identifiable, Codable {
     }
 }
 
+// MARK: - FIXED ItemStatus with Data Corruption Handling
 enum ItemStatus: String, CaseIterable, Codable {
     case sourced = "Sourced"
     case analyzed = "Analyzed"
@@ -163,9 +164,38 @@ enum ItemStatus: String, CaseIterable, Codable {
         case .donated: return .gray
         }
     }
+    
+    // MARK: - Handle corrupted data during decoding
+    init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        let statusString = try container.decode(String.self)
+        
+        // Handle corrupted legacy values
+        switch statusString {
+        case "🧠 AI Analyzed", "AI Analyzed":
+            self = .analyzed
+        case "📸 Photographed":
+            self = .photographed
+        case "📋 To List":
+            self = .toList
+        case "🏪 Listed":
+            self = .listed
+        case "💰 Sold":
+            self = .sold
+        default:
+            // Try to initialize normally first
+            if let status = ItemStatus(rawValue: statusString) {
+                self = status
+            } else {
+                // If we can't match it, default to sourced and log
+                print("⚠️ Unknown status '\(statusString)' defaulting to 'Sourced'")
+                self = .sourced
+            }
+        }
+    }
 }
 
-// MARK: - NEW: eBay Condition Standards
+// MARK: - eBay Condition Standards
 enum EbayCondition: String, CaseIterable, Codable {
     case newWithTags = "New with tags"
     case newWithoutTags = "New without tags"
@@ -230,7 +260,7 @@ enum EbayCondition: String, CaseIterable, Codable {
     }
 }
 
-// MARK: - NEW: eBay Market Data Structures
+// MARK: - eBay Market Data Structures
 struct EbayPriceRange: Codable {
     let newWithTags: Double?
     let newWithoutTags: Double?
@@ -258,7 +288,7 @@ struct EbayPriceRange: Codable {
     }
 }
 
-// MARK: - SINGLE Definition of EbaySoldListing (was duplicated)
+// MARK: - eBay Sold Listing
 struct EbaySoldListing: Codable {
     let title: String
     let price: Double
@@ -270,7 +300,7 @@ struct EbaySoldListing: Codable {
     let watchers: Int?
 }
 
-// MARK: - NEW: Recent Sale Structure (MISSING TYPE)
+// MARK: - Recent Sale Structure
 struct RecentSale: Codable {
     let title: String
     let price: Double
@@ -289,7 +319,7 @@ struct RecentSale: Codable {
     }
 }
 
-// MARK: - NEW: Inventory Category (MISSING TYPE)
+// MARK: - Inventory Category
 enum InventoryCategory: String, CaseIterable {
     case tshirts = "T-Shirts & Tops"
     case jackets = "Jackets & Outerwear"
@@ -359,7 +389,7 @@ enum InventoryCategory: String, CaseIterable {
     }
 }
 
-// MARK: - NEW: Google Lens-Style Identification Result
+// MARK: - Product Identification Result
 struct PrecisionIdentificationResult {
     let exactModelName: String       // "Nike Air Force 1 Low '07"
     let brand: String               // "Nike"
@@ -432,7 +462,7 @@ enum ProductCategory: String, CaseIterable {
     }
 }
 
-// MARK: - NEW: Market Analysis Result with Real eBay Data
+// MARK: - Market Analysis Result
 struct MarketAnalysisResult {
     let identifiedProduct: PrecisionIdentificationResult
     let marketData: EbayMarketData
@@ -555,7 +585,7 @@ enum DataQuality {
     case insufficient // 0 recent sales
 }
 
-// MARK: - Updated Analysis Result for eBay Standards
+// MARK: - Analysis Result
 struct AnalysisResult {
     let identificationResult: PrecisionIdentificationResult
     let marketAnalysis: MarketAnalysisResult
@@ -627,7 +657,7 @@ struct AnalysisResult {
     }
 }
 
-// MARK: - Keep existing fee structures
+// MARK: - Fee structures
 struct FeesBreakdown {
     let ebayFee: Double
     let paypalFee: Double
@@ -654,7 +684,7 @@ struct PriceRange {
     }
 }
 
-// MARK: - Updated Prospecting for eBay Standards
+// MARK: - Prospecting Analysis
 struct ProspectAnalysis {
     let identificationResult: PrecisionIdentificationResult
     let marketAnalysis: MarketAnalysisResult
@@ -684,7 +714,6 @@ struct ProspectAnalysis {
         }
     }
     
-    // NEW: Missing properties for prospecting
     var recentSales: [RecentSale] {
         return marketAnalysis.marketData.soldListings.map { listing in
             RecentSale(
@@ -783,7 +812,7 @@ struct InventoryStatistics {
     }
 }
 
-// MARK: - Product Data Structure (SINGLE DEFINITION)
+// MARK: - Product Data Structure
 struct RealProductData {
     let name: String
     let brand: String

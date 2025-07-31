@@ -2,19 +2,19 @@
 //  InventoryManager.swift
 //  ResellAI
 //
-//  Fixed Smart Inventory Management System with Proper Category Sorting
+//  Fixed Inventory Manager with Data Corruption Handling
 //
 
 import SwiftUI
 import Foundation
 
-// MARK: - Fixed Smart Inventory Manager
+// MARK: - Fixed Inventory Manager with Data Corruption Handling
 class InventoryManager: ObservableObject {
     @Published var items: [InventoryItem] = []
     
     private let userDefaults = UserDefaults.standard
     private let itemsKey = "SavedInventoryItems"
-    private let migrationKey = "DataMigrationV3_Completed"
+    private let migrationKey = "DataMigrationV4_Completed" // Bumped version
     private let categoryCountersKey = "CategoryCounters"
     
     // Smart inventory tracking
@@ -26,9 +26,31 @@ class InventoryManager: ObservableObject {
         loadItems()
     }
     
-    // MARK: - FIXED Smart Inventory Code Generation
+    // MARK: - FIXED Data Migration with Better Error Handling
+    private func performDataMigrationIfNeeded() {
+        // Always clear corrupted data and start fresh if migration not completed
+        if !userDefaults.bool(forKey: migrationKey) {
+            print("🔄 Performing data migration V4 - clearing corrupted data...")
+            
+            // Clear all old data that might be corrupted
+            userDefaults.removeObject(forKey: itemsKey)
+            userDefaults.removeObject(forKey: categoryCountersKey)
+            
+            // Clear any other legacy keys
+            userDefaults.removeObject(forKey: "DataMigrationV3_Completed")
+            userDefaults.removeObject(forKey: "DataMigrationV2_Completed")
+            userDefaults.removeObject(forKey: "DataMigrationV1_Completed")
+            
+            // Mark migration as completed
+            userDefaults.set(true, forKey: migrationKey)
+            
+            print("✅ Data migration V4 completed - fresh start!")
+        } else {
+            print("✅ Data migration already completed")
+        }
+    }
     
-    /// Generates smart inventory code based on category (e.g., "A-001", "B-023")
+    // MARK: - Smart Inventory Code Generation
     func generateInventoryCode(for category: String) -> String {
         let inventoryCategory = mapCategoryToInventoryCategory(category)
         let letter = inventoryCategory.inventoryLetter
@@ -47,18 +69,16 @@ class InventoryManager: ObservableObject {
         return code
     }
     
-    /// FIXED: Maps general category string to our smart InventoryCategory enum
+    /// Maps general category string to our smart InventoryCategory enum
     private func mapCategoryToInventoryCategory(_ category: String) -> InventoryCategory {
         let lowercased = category.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
         
         print("🏷️ Mapping category: '\(category)' -> lowercased: '\(lowercased)'")
         
-        // FIXED: Much more comprehensive and accurate category mapping
-        
-        // CLOTHING CATEGORIES
+        // Comprehensive category mapping
         if lowercased.contains("shirt") || lowercased.contains("tee") || lowercased.contains("t-shirt") ||
            lowercased.contains("tank") || lowercased.contains("blouse") || lowercased.contains("top") ||
-           lowercased == "clothing" { // Generic clothing goes to shirts
+           lowercased == "clothing" {
             print("🏷️ Mapped to T-SHIRTS (A)")
             return .tshirts
         }
@@ -87,16 +107,15 @@ class InventoryManager: ObservableObject {
             return .dresses
         }
         
-        // FOOTWEAR
         if lowercased.contains("shoe") || lowercased.contains("sneaker") || lowercased.contains("boot") ||
            lowercased.contains("sandal") || lowercased.contains("jordan") || lowercased.contains("nike") ||
            lowercased.contains("adidas") || lowercased.contains("footwear") || lowercased.contains("loafer") ||
-           lowercased.contains("heel") || lowercased.contains("pump") || lowercased == "shoes" {
+           lowercased.contains("heel") || lowercased.contains("pump") || lowercased == "shoes" ||
+           lowercased == "sneakers" {
             print("🏷️ Mapped to SHOES (F)")
             return .shoes
         }
         
-        // ACCESSORIES
         if lowercased.contains("accessory") || lowercased.contains("jewelry") || lowercased.contains("watch") ||
            lowercased.contains("bag") || lowercased.contains("belt") || lowercased.contains("hat") ||
            lowercased.contains("scarf") || lowercased.contains("wallet") || lowercased.contains("purse") ||
@@ -105,7 +124,6 @@ class InventoryManager: ObservableObject {
             return .accessories
         }
         
-        // ELECTRONICS
         if lowercased.contains("electronic") || lowercased.contains("computer") || lowercased.contains("phone") ||
            lowercased.contains("gaming") || lowercased.contains("laptop") || lowercased.contains("tablet") ||
            lowercased.contains("apple") || lowercased.contains("samsung") || lowercased.contains("iphone") ||
@@ -115,7 +133,6 @@ class InventoryManager: ObservableObject {
             return .electronics
         }
         
-        // COLLECTIBLES
         if lowercased.contains("collectible") || lowercased.contains("vintage") || lowercased.contains("antique") ||
            lowercased.contains("card") || lowercased.contains("figure") || lowercased.contains("memorabilia") ||
            lowercased.contains("comic") || lowercased.contains("coin") {
@@ -123,7 +140,6 @@ class InventoryManager: ObservableObject {
             return .collectibles
         }
         
-        // HOME & GARDEN
         if lowercased.contains("home") || lowercased.contains("garden") || lowercased.contains("furniture") ||
            lowercased.contains("kitchen") || lowercased.contains("decor") || lowercased.contains("appliance") ||
            lowercased.contains("mug") || lowercased.contains("cup") || lowercased.contains("plate") ||
@@ -132,7 +148,6 @@ class InventoryManager: ObservableObject {
             return .home
         }
         
-        // BOOKS
         if lowercased.contains("book") || lowercased.contains("novel") || lowercased.contains("magazine") ||
            lowercased.contains("textbook") || lowercased.contains("guide") || lowercased.contains("manual") ||
            lowercased == "books" {
@@ -140,7 +155,6 @@ class InventoryManager: ObservableObject {
             return .books
         }
         
-        // TOYS & GAMES
         if lowercased.contains("toy") || lowercased.contains("game") || lowercased.contains("puzzle") ||
            lowercased.contains("doll") || lowercased.contains("action figure") || lowercased.contains("board game") ||
            lowercased.contains("video game") || lowercased == "toys" {
@@ -148,7 +162,6 @@ class InventoryManager: ObservableObject {
             return .toys
         }
         
-        // SPORTS & OUTDOORS
         if lowercased.contains("sport") || lowercased.contains("fitness") || lowercased.contains("outdoor") ||
            lowercased.contains("golf") || lowercased.contains("baseball") || lowercased.contains("basketball") ||
            lowercased.contains("camping") || lowercased.contains("hiking") {
@@ -156,7 +169,7 @@ class InventoryManager: ObservableObject {
             return .sports
         }
         
-        // DEFAULT - Only truly unmatched items get Z
+        // Default - Only truly unmatched items get Z
         print("🏷️ Mapped to OTHER (Z) - no specific match found for: '\(category)'")
         return .other
     }
@@ -194,7 +207,7 @@ class InventoryManager: ObservableObject {
         return overview.sorted { $0.letter < $1.letter }
     }
     
-    // MARK: - Data Persistence for Category Counters
+    // MARK: - Data Persistence with Better Error Handling
     private func saveCategoryCounters() {
         do {
             let data = try JSONEncoder().encode(categoryCounters)
@@ -218,25 +231,6 @@ class InventoryManager: ObservableObject {
             print("❌ Error loading category counters: \(error)")
             categoryCounters = [:]
         }
-    }
-    
-    // MARK: - Data Migration
-    private func performDataMigrationIfNeeded() {
-        guard !userDefaults.bool(forKey: migrationKey) else {
-            print("✅ Data migration already completed")
-            return
-        }
-        
-        print("🔄 Performing data migration V3...")
-        
-        // Clear old corrupted data
-        userDefaults.removeObject(forKey: itemsKey)
-        userDefaults.removeObject(forKey: categoryCountersKey)
-        
-        // Mark migration as completed
-        userDefaults.set(true, forKey: migrationKey)
-        
-        print("✅ Data migration V3 completed - fresh start with fixed category mapping!")
     }
     
     // MARK: - Computed Properties
@@ -278,7 +272,7 @@ class InventoryManager: ObservableObject {
         items.sorted { $0.dateAdded > $1.dateAdded }
     }
     
-    // MARK: - CRUD Operations with Smart Coding
+    // MARK: - CRUD Operations
     func addItem(_ item: InventoryItem) -> InventoryItem {
         var updatedItem = item
         
@@ -316,7 +310,7 @@ class InventoryManager: ObservableObject {
         }
     }
     
-    // MARK: - Data Persistence with Error Handling
+    // MARK: - FIXED Data Persistence with Error Recovery
     private func saveItems() {
         do {
             let data = try JSONEncoder().encode(items)
@@ -334,17 +328,130 @@ class InventoryManager: ObservableObject {
         }
         
         do {
-            items = try JSONDecoder().decode([InventoryItem].self, from: data)
+            let decoder = JSONDecoder()
+            items = try decoder.decode([InventoryItem].self, from: data)
             print("📂 Loaded \(items.count) items from UserDefaults")
             
             // Rebuild category counters from existing items
             rebuildCategoryCounters()
         } catch {
             print("❌ Error loading items: \(error)")
-            print("🔄 Clearing corrupted data and starting fresh")
+            print("🔄 Data appears corrupted, clearing and starting fresh")
+            
+            // Clear corrupted data
             userDefaults.removeObject(forKey: itemsKey)
             items = []
+            
+            // Try to salvage what we can by attempting to decode individual items
+            attemptDataRecovery(from: data)
         }
+    }
+    
+    // MARK: - Data Recovery
+    private func attemptDataRecovery(from data: Data) {
+        print("🔧 Attempting data recovery...")
+        
+        // Try to parse as array of dictionaries and fix known issues
+        do {
+            if let jsonArray = try JSONSerialization.jsonObject(with: data) as? [[String: Any]] {
+                var recoveredItems: [InventoryItem] = []
+                
+                for (index, itemDict) in jsonArray.enumerated() {
+                    if let recoveredItem = attemptItemRecovery(from: itemDict, index: index) {
+                        recoveredItems.append(recoveredItem)
+                    }
+                }
+                
+                if !recoveredItems.isEmpty {
+                    items = recoveredItems
+                    saveItems() // Save the cleaned data
+                    print("✅ Recovered \(recoveredItems.count) items")
+                } else {
+                    print("❌ Could not recover any items")
+                }
+            }
+        } catch {
+            print("❌ Data recovery failed: \(error)")
+        }
+    }
+    
+    private func attemptItemRecovery(from dict: [String: Any], index: Int) -> InventoryItem? {
+        // Extract basic required fields
+        guard let itemNumber = dict["itemNumber"] as? Int,
+              let name = dict["name"] as? String,
+              let category = dict["category"] as? String,
+              let purchasePrice = dict["purchasePrice"] as? Double,
+              let suggestedPrice = dict["suggestedPrice"] as? Double,
+              let source = dict["source"] as? String,
+              let condition = dict["condition"] as? String,
+              let title = dict["title"] as? String,
+              let description = dict["description"] as? String,
+              let keywords = dict["keywords"] as? [String] else {
+            print("❌ Missing required fields for item \(index)")
+            return nil
+        }
+        
+        // Handle status with fallback for corrupted values
+        var status: ItemStatus = .sourced
+        if let statusString = dict["status"] as? String {
+            // Try to decode with our fixed ItemStatus enum
+            if let validStatus = ItemStatus(rawValue: statusString) {
+                status = validStatus
+            } else {
+                // Handle known corrupted values
+                switch statusString {
+                case "🧠 AI Analyzed", "AI Analyzed":
+                    status = .analyzed
+                case "📸 Photographed":
+                    status = .photographed
+                case "📋 To List":
+                    status = .toList
+                case "🏪 Listed":
+                    status = .listed
+                case "💰 Sold":
+                    status = .sold
+                default:
+                    print("⚠️ Unknown status '\(statusString)' for item \(name), defaulting to 'Sourced'")
+                    status = .sourced
+                }
+            }
+        }
+        
+        // Handle date
+        var dateAdded = Date()
+        if let dateString = dict["dateAdded"] as? String {
+            let formatter = ISO8601DateFormatter()
+            dateAdded = formatter.date(from: dateString) ?? Date()
+        } else if let dateInterval = dict["dateAdded"] as? TimeInterval {
+            dateAdded = Date(timeIntervalSince1970: dateInterval)
+        }
+        
+        // Create recovered item with safe defaults
+        return InventoryItem(
+            itemNumber: itemNumber,
+            name: name,
+            category: category,
+            purchasePrice: purchasePrice,
+            suggestedPrice: suggestedPrice,
+            source: source,
+            condition: condition,
+            title: title,
+            description: description,
+            keywords: keywords,
+            status: status,
+            dateAdded: dateAdded,
+            // Optional fields with safe defaults
+            actualPrice: dict["actualPrice"] as? Double,
+            dateListed: dict["dateListed"] as? Date,
+            dateSold: dict["dateSold"] as? Date,
+            imageData: dict["imageData"] as? Data,
+            ebayURL: dict["ebayURL"] as? String,
+            brand: dict["brand"] as? String ?? "",
+            exactModel: dict["exactModel"] as? String ?? "",
+            size: dict["size"] as? String ?? "",
+            colorway: dict["colorway"] as? String ?? "",
+            storageLocation: dict["storageLocation"] as? String ?? ""
+        )
     }
     
     /// Rebuilds category counters from existing inventory codes

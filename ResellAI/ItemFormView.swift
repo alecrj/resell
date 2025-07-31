@@ -164,11 +164,11 @@ struct ItemFormView: View {
             competitorCount: analysis.competitorCount,
             demandLevel: analysis.demandLevel,
             brand: brand,
+            exactModel: analysis.itemName,
+            styleCode: analysis.identificationResult.styleCode,
             size: size,
             colorway: colorway,
             storageLocation: storageLocation,
-            exactModel: analysis.itemName,
-            styleCode: analysis.identificationResult.styleCode,
             ebayCondition: analysis.ebayCondition
         )
         
