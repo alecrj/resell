@@ -66,13 +66,15 @@ struct InventoryItem: Identifiable, Codable {
          resalePotential: Int? = nil, marketNotes: String? = nil,
          aiConfidence: Double? = nil, competitorCount: Int? = nil, demandLevel: String? = nil,
          listingStrategy: String? = nil, sourcingTips: [String]? = nil,
-         barcode: String? = nil, brand: String = "", size: String = "",
-         colorway: String = "", releaseYear: String = "", subcategory: String = "",
-         authenticationNotes: String = "", inventoryCode: String = "",
-         storageLocation: String = "", binNumber: String = "",
-         exactModel: String = "", styleCode: String = "", ebayCondition: EbayCondition? = nil) {
+         barcode: String? = nil, brand: String = "", exactModel: String = "",
+         styleCode: String = "", size: String = "", colorway: String = "",
+         releaseYear: String = "", subcategory: String = "", authenticationNotes: String = "",
+         storageLocation: String = "", binNumber: String = "", isPackaged: Bool = false,
+         packagedDate: Date? = nil, ebayCondition: EbayCondition? = nil,
+         marketConfidence: Double? = nil, soldListingsCount: Int? = nil,
+         priceRange: EbayPriceRange? = nil, lastMarketUpdate: Date? = nil) {
+        
         self.itemNumber = itemNumber
-        self.inventoryCode = inventoryCode
         self.name = name
         self.category = category
         self.purchasePrice = purchasePrice
@@ -99,6 +101,8 @@ struct InventoryItem: Identifiable, Codable {
         self.sourcingTips = sourcingTips
         self.barcode = barcode
         self.brand = brand
+        self.exactModel = exactModel
+        self.styleCode = styleCode
         self.size = size
         self.colorway = colorway
         self.releaseYear = releaseYear
@@ -106,9 +110,13 @@ struct InventoryItem: Identifiable, Codable {
         self.authenticationNotes = authenticationNotes
         self.storageLocation = storageLocation
         self.binNumber = binNumber
-        self.exactModel = exactModel
-        self.styleCode = styleCode
+        self.isPackaged = isPackaged
+        self.packagedDate = packagedDate
         self.ebayCondition = ebayCondition
+        self.marketConfidence = marketConfidence
+        self.soldListingsCount = soldListingsCount
+        self.priceRange = priceRange
+        self.lastMarketUpdate = lastMarketUpdate
     }
     
     var profit: Double {
@@ -133,29 +141,25 @@ struct InventoryItem: Identifiable, Codable {
     }
 }
 
-// MARK: - FIXED: Added Missing InventoryStatistics
-struct InventoryStatistics {
-    let totalItems: Int
-    let listedItems: Int
-    let soldItems: Int
-    let totalInvestment: Double
-    let totalProfit: Double
-    let averageROI: Double
-    let estimatedValue: Double
+enum ItemStatus: String, CaseIterable, Codable {
+    case sourced = "Sourced"
+    case analyzed = "Analyzed"
+    case photographed = "Photographed"
+    case listed = "Listed"
+    case sold = "Sold"
+    case returned = "Returned"
+    case donated = "Donated"
     
-    var successRate: Double {
-        guard totalItems > 0 else { return 0 }
-        return (Double(soldItems) / Double(totalItems)) * 100
-    }
-    
-    var averageItemValue: Double {
-        guard totalItems > 0 else { return 0 }
-        return estimatedValue / Double(totalItems)
-    }
-    
-    var averageProfit: Double {
-        guard soldItems > 0 else { return 0 }
-        return totalProfit / Double(soldItems)
+    var color: Color {
+        switch self {
+        case .sourced: return .orange
+        case .analyzed: return .blue
+        case .photographed: return .purple
+        case .listed: return .green
+        case .sold: return .black
+        case .returned: return .red
+        case .donated: return .gray
+        }
     }
 }
 
@@ -252,6 +256,7 @@ struct EbayPriceRange: Codable {
     }
 }
 
+// MARK: - SINGLE Definition of EbaySoldListing (was duplicated)
 struct EbaySoldListing: Codable {
     let title: String
     let price: Double
@@ -298,6 +303,42 @@ enum ProductCategory: String, CaseIterable {
     case toys = "Toys"
     case sports = "Sports"
     case other = "Other"
+    
+    // Helper function to automatically categorize based on item name
+    static func fromItemName(_ name: String) -> ProductCategory {
+        let lowercased = name.lowercased()
+        
+        if lowercased.contains("shoe") || lowercased.contains("sneaker") || lowercased.contains("jordan") ||
+           lowercased.contains("nike") || lowercased.contains("adidas") || lowercased.contains("yeezy") {
+            return .sneakers
+        } else if lowercased.contains("shirt") || lowercased.contains("jacket") || lowercased.contains("hoodie") ||
+                  lowercased.contains("dress") || lowercased.contains("pants") || lowercased.contains("jeans") {
+            return .clothing
+        } else if lowercased.contains("phone") || lowercased.contains("laptop") || lowercased.contains("iphone") ||
+                  lowercased.contains("ipad") || lowercased.contains("watch") || lowercased.contains("electronics") {
+            return .electronics
+        } else if lowercased.contains("bag") || lowercased.contains("wallet") || lowercased.contains("jewelry") ||
+                  lowercased.contains("sunglasses") || lowercased.contains("belt") {
+            return .accessories
+        } else if lowercased.contains("furniture") || lowercased.contains("decor") || lowercased.contains("kitchen") ||
+                  lowercased.contains("lamp") || lowercased.contains("table") {
+            return .home
+        } else if lowercased.contains("collectible") || lowercased.contains("vintage") || lowercased.contains("antique") ||
+                  lowercased.contains("card") || lowercased.contains("comic") {
+            return .collectibles
+        } else if lowercased.contains("book") || lowercased.contains("novel") || lowercased.contains("magazine") ||
+                  lowercased.contains("textbook") || lowercased.contains("guide") {
+            return .books
+        } else if lowercased.contains("toy") || lowercased.contains("game") || lowercased.contains("puzzle") ||
+                  lowercased.contains("doll") || lowercased.contains("action figure") {
+            return .toys
+        } else if lowercased.contains("sport") || lowercased.contains("fitness") || lowercased.contains("outdoor") ||
+                  lowercased.contains("golf") || lowercased.contains("baseball") || lowercased.contains("basketball") {
+            return .sports
+        } else {
+            return .other
+        }
+    }
 }
 
 // MARK: - NEW: Market Analysis Result with Real eBay Data
@@ -329,7 +370,7 @@ struct EbayConditionAssessment {
 
 struct ConditionFactor {
     let area: String          // "Toe box", "Heel", "Upper"
-    let issue: String?        // "Creasing", "Scuff", "Stain"
+    let issue: String         // "Creasing", "Scuff", "Stain"
     let severity: Severity    // .minor, .moderate, .major
     let impactOnValue: Double // -5% to -30%
 }
@@ -384,12 +425,11 @@ enum TrendStrength {
     case strong, moderate, weak
 }
 
-// MARK: - FIXED: DemandIndicators struct
 struct DemandIndicators {
     let watchersPerListing: Double
     let viewsPerListing: Double
     let timeToSell: TimeToSell
-    let searchVolume: SearchVolume  // FIXED: Changed from 'case' to 'let'
+    let searchVolume: SearchVolume
 }
 
 enum TimeToSell {
@@ -421,170 +461,7 @@ enum DataQuality {
     case good       // 20-49 recent sales
     case fair       // 5-19 recent sales
     case limited    // 1-4 recent sales
-    case insufficient // No recent sales
-}
-
-// MARK: - Keep existing enums
-enum ItemStatus: String, CaseIterable, Codable {
-    case photographed = "📷 Photographed"
-    case analyzed = "🧠 AI Analyzed"
-    case toList = "📋 Ready to List"
-    case listed = "🏪 Listed"
-    case sold = "💰 Sold"
-    case prospecting = "🔍 Prospecting"
-    
-    init(from decoder: Decoder) throws {
-        let container = try decoder.singleValueContainer()
-        let rawValue = try container.decode(String.self)
-        
-        switch rawValue {
-        case "Analyzed", "analyzed", "🧠 AI Analyzed":
-            self = .analyzed
-        case "Photographed", "photographed", "📷 Photographed":
-            self = .photographed
-        case "Ready to List", "toList", "📋 Ready to List":
-            self = .toList
-        case "Listed", "listed", "🏪 Listed":
-            self = .listed
-        case "Sold", "sold", "💰 Sold":
-            self = .sold
-        case "Prospecting", "prospecting", "🔍 Prospecting":
-            self = .prospecting
-        default:
-            print("⚠️ Unknown ItemStatus: '\(rawValue)', defaulting to analyzed")
-            self = .analyzed
-        }
-    }
-    
-    var color: Color {
-        switch self {
-        case .photographed: return .orange
-        case .analyzed: return .blue
-        case .toList: return .red
-        case .listed: return .yellow
-        case .sold: return .green
-        case .prospecting: return .purple
-        }
-    }
-}
-
-// MARK: - Keep existing InventoryCategory with fixed mapping
-enum InventoryCategory: String, CaseIterable {
-    case tshirts = "T-Shirts"
-    case jackets = "Jackets & Outerwear"
-    case jeans = "Jeans & Denim"
-    case workPants = "Work Pants"
-    case dresses = "Dresses"
-    case shoes = "Shoes & Footwear"
-    case accessories = "Accessories"
-    case electronics = "Electronics"
-    case collectibles = "Collectibles"
-    case home = "Home & Garden"
-    case books = "Books"
-    case toys = "Toys & Games"
-    case sports = "Sports & Outdoors"
-    case other = "Other"
-    
-    var inventoryLetter: String {
-        switch self {
-        case .tshirts: return "A"
-        case .jackets: return "B"
-        case .jeans: return "C"
-        case .workPants: return "D"
-        case .dresses: return "E"
-        case .shoes: return "F"
-        case .accessories: return "G"
-        case .electronics: return "H"
-        case .collectibles: return "I"
-        case .home: return "J"
-        case .books: return "K"
-        case .toys: return "L"
-        case .sports: return "M"
-        case .other: return "Z"
-        }
-    }
-    
-    var storageTips: [String] {
-        switch self {
-        case .tshirts:
-            return ["Fold neatly", "Store flat to prevent wrinkles", "Group by size"]
-        case .jackets:
-            return ["Hang to prevent creasing", "Use garment bags for expensive items", "Store in cool, dry place"]
-        case .jeans:
-            return ["Fold along seams", "Stack by size", "Keep heavy items separate"]
-        case .workPants:
-            return ["Hang or fold carefully", "Check for stains before storing", "Group by brand"]
-        case .dresses:
-            return ["Hang on padded hangers", "Use garment bags for delicate items", "Store by length"]
-        case .shoes:
-            return ["Clean before storing", "Use shoe boxes when possible", "Stuff with paper to maintain shape"]
-        case .accessories:
-            return ["Use small containers", "Keep sets together", "Protect delicate items"]
-        case .electronics:
-            return ["Original boxes preferred", "Anti-static protection", "Temperature controlled area"]
-        case .collectibles:
-            return ["Handle with extreme care", "Use protective sleeves", "Climate controlled storage"]
-        case .home:
-            return ["Wrap fragile items", "Clean thoroughly", "Check for chips or cracks"]
-        case .books:
-            return ["Store upright when possible", "Protect from moisture", "Check for damage"]
-        case .toys:
-            return ["Check for missing pieces", "Clean thoroughly", "Test moving parts"]
-        case .sports:
-            return ["Clean equipment thoroughly", "Check for damage", "Test functionality"]
-        case .other:
-            return ["Handle with care", "Clean before storing", "Label clearly"]
-        }
-    }
-    
-    static func fromCategoryString(_ categoryString: String) -> InventoryCategory {
-        let lowercased = categoryString.lowercased()
-        
-        if lowercased.contains("jacket") || lowercased.contains("coat") || lowercased.contains("hoodie") ||
-           lowercased.contains("sweatshirt") || lowercased.contains("blazer") || lowercased.contains("outerwear") {
-            return .jackets
-        } else if lowercased.contains("shirt") || lowercased.contains("tee") || lowercased.contains("tank") ||
-                  lowercased.contains("blouse") || lowercased.contains("top") {
-            return .tshirts
-        } else if lowercased.contains("jean") || lowercased.contains("denim") {
-            return .jeans
-        } else if lowercased.contains("work") && lowercased.contains("pant") {
-            return .workPants
-        } else if lowercased.contains("dress") || lowercased.contains("gown") || lowercased.contains("skirt") {
-            return .dresses
-        } else if lowercased.contains("shoe") || lowercased.contains("sneaker") || lowercased.contains("boot") ||
-                  lowercased.contains("sandal") || lowercased.contains("jordan") || lowercased.contains("nike") ||
-                  lowercased.contains("adidas") || lowercased.contains("vans") || lowercased.contains("footwear") {
-            return .shoes
-        } else if lowercased.contains("accessory") || lowercased.contains("jewelry") || lowercased.contains("watch") ||
-                  lowercased.contains("bag") || lowercased.contains("belt") || lowercased.contains("hat") ||
-                  lowercased.contains("scarf") || lowercased.contains("wallet") {
-            return .accessories
-        } else if lowercased.contains("electronic") || lowercased.contains("computer") || lowercased.contains("phone") ||
-                  lowercased.contains("gaming") || lowercased.contains("laptop") || lowercased.contains("tablet") ||
-                  lowercased.contains("apple") || lowercased.contains("samsung") || lowercased.contains("iphone") ||
-                  lowercased.contains("ipad") || lowercased.contains("macbook") {
-            return .electronics
-        } else if lowercased.contains("collectible") || lowercased.contains("vintage") || lowercased.contains("antique") ||
-                  lowercased.contains("card") || lowercased.contains("figure") || lowercased.contains("memorabilia") {
-            return .collectibles
-        } else if lowercased.contains("home") || lowercased.contains("garden") || lowercased.contains("furniture") ||
-                  lowercased.contains("kitchen") || lowercased.contains("decor") || lowercased.contains("appliance") ||
-                  lowercased.contains("mug") || lowercased.contains("cup") || lowercased.contains("plate") {
-            return .home
-        } else if lowercased.contains("book") || lowercased.contains("novel") || lowercased.contains("magazine") ||
-                  lowercased.contains("textbook") || lowercased.contains("guide") {
-            return .books
-        } else if lowercased.contains("toy") || lowercased.contains("game") || lowercased.contains("puzzle") ||
-                  lowercased.contains("doll") || lowercased.contains("action figure") {
-            return .toys
-        } else if lowercased.contains("sport") || lowercased.contains("fitness") || lowercased.contains("outdoor") ||
-                  lowercased.contains("golf") || lowercased.contains("baseball") || lowercased.contains("basketball") {
-            return .sports
-        } else {
-            return .other
-        }
-    }
+    case insufficient // 0 recent sales
 }
 
 // MARK: - Updated Analysis Result for eBay Standards
@@ -704,138 +581,62 @@ struct ProspectAnalysis {
     var estimatedSellPrice: Double { marketAnalysis.pricingRecommendation.recommendedPrice }
     var potentialProfit: Double { estimatedSellPrice - maxBuyPrice - (estimatedSellPrice * 0.15) }
     var expectedROI: Double { maxBuyPrice > 0 ? (potentialProfit / maxBuyPrice) * 100 : 0 }
-    var reasons: [String] { marketAnalysis.pricingRecommendation.priceJustification }
-    var riskLevel: String {
+    var resalePotential: Int {
         switch confidence.overall {
-        case 0.8...1.0: return "Low"
-        case 0.6...0.79: return "Medium"
-        default: return "High"
-        }
-    }
-    var demandLevel: String {
-        switch marketAnalysis.marketData.demandIndicators.searchVolume {
-        case .high: return "High"
-        case .medium: return "Medium"
-        case .low: return "Low"
-        }
-    }
-    var competitorCount: Int { marketAnalysis.marketData.soldListings.count }
-    var marketTrend: String {
-        switch marketAnalysis.marketData.marketTrend.direction {
-        case .increasing: return "Increasing"
-        case .stable: return "Stable"
-        case .decreasing: return "Decreasing"
-        }
-    }
-    var sellTimeEstimate: String {
-        switch marketAnalysis.marketData.demandIndicators.timeToSell {
-        case .immediate: return "< 1 day"
-        case .fast: return "1-7 days"
-        case .normal: return "1-4 weeks"
-        case .slow: return "1-3 months"
-        case .difficult: return "3+ months"
-        }
-    }
-    var seasonalFactors: String { marketAnalysis.marketData.marketTrend.seasonalFactors.joined(separator: ", ") }
-    var sourcingTips: [String] { marketAnalysis.listingStrategy.photographyChecklist }
-    var recentSales: [RecentSale] {
-        marketAnalysis.marketData.soldListings.map { listing in
-            RecentSale(
-                price: listing.price,
-                date: listing.soldDate,
-                condition: listing.condition,
-                title: listing.title,
-                soldIn: "Sold"
-            )
-        }
-    }
-    var averageSoldPrice: Double { marketAnalysis.marketData.priceRange.average }
-    var category: String { identificationResult.category.rawValue }
-    var subcategory: String { identificationResult.subcategory }
-    var modelNumber: String { identificationResult.styleCode }
-    var size: String { identificationResult.size }
-    var colorway: String { identificationResult.colorway }
-    var releaseYear: String { "" } // We can add this to identification if needed
-    var retailPrice: Double { 0 } // We can look this up if needed
-    var currentMarketValue: Double { estimatedSellPrice }
-    var quickFlipPotential: Bool {
-        marketAnalysis.marketData.demandIndicators.timeToSell == .immediate ||
-        marketAnalysis.marketData.demandIndicators.timeToSell == .fast
-    }
-    var holidayDemand: Bool { marketAnalysis.marketData.marketTrend.seasonalFactors.contains("Holiday") }
-}
-
-struct RecentSale {
-    let price: Double
-    let date: Date
-    let condition: String
-    let title: String
-    let soldIn: String
-}
-
-enum ProspectDecision {
-    case buy, investigate
-    
-    var emoji: String {
-        switch self {
-        case .buy: return "✅"
-        case .investigate: return "🤔"
-        }
-    }
-    
-    var title: String {
-        switch self {
-        case .buy: return "GOOD DEAL"
-        case .investigate: return "RESEARCH MORE"
-        }
-    }
-    
-    var color: Color {
-        switch self {
-        case .buy: return .green
-        case .investigate: return .orange
+        case 0.9...1.0: return 10
+        case 0.8...0.89: return 8
+        case 0.7...0.79: return 7
+        case 0.6...0.69: return 6
+        case 0.5...0.59: return 5
+        case 0.4...0.49: return 4
+        default: return 3
         }
     }
 }
 
-// MARK: - Error Handling
-enum ResellAIError: Error, LocalizedError {
-    case invalidImage
-    case analysisTimeout
-    case networkError
-    case apiKeyMissing
-    case insufficientData
-    case cameraUnavailable
-    case barcodeInvalid
-    case itemNotFound
-    case ebayAPIError
-    case identificationFailed
-    case noMarketData
+enum ProspectDecision: String {
+    case strongBuy = "Strong Buy"
+    case buy = "Buy"
+    case maybeWorthIt = "Maybe Worth It"
+    case investigate = "Investigate Further"
+    case pass = "Pass"
+}
+
+// MARK: - Inventory Statistics
+struct InventoryStatistics {
+    let totalItems: Int
+    let listedItems: Int
+    let soldItems: Int
+    let totalInvestment: Double
+    let totalProfit: Double
+    let averageROI: Double
+    let estimatedValue: Double
     
-    var errorDescription: String? {
-        switch self {
-        case .invalidImage:
-            return "Invalid image format or size"
-        case .analysisTimeout:
-            return "Analysis timed out - please try again"
-        case .networkError:
-            return "Network connection error"
-        case .apiKeyMissing:
-            return "API key not configured"
-        case .insufficientData:
-            return "Insufficient data for analysis"
-        case .cameraUnavailable:
-            return "Camera not available"
-        case .barcodeInvalid:
-            return "Invalid barcode format"
-        case .itemNotFound:
-            return "Item not found in database"
-        case .ebayAPIError:
-            return "eBay API error"
-        case .identificationFailed:
-            return "Could not identify item precisely"
-        case .noMarketData:
-            return "No recent market data available"
-        }
+    var successRate: Double {
+        guard totalItems > 0 else { return 0 }
+        return (Double(soldItems) / Double(totalItems)) * 100
     }
+    
+    var averageItemValue: Double {
+        guard totalItems > 0 else { return 0 }
+        return estimatedValue / Double(totalItems)
+    }
+    
+    var averageProfit: Double {
+        guard soldItems > 0 else { return 0 }
+        return totalProfit / Double(soldItems)
+    }
+}
+
+// MARK: - Product Data Structure (SINGLE DEFINITION)
+struct RealProductData {
+    let name: String
+    let brand: String
+    let model: String
+    let category: String
+    let size: String
+    let colorway: String
+    let retailPrice: Double
+    let releaseYear: String
+    let confidence: Double
 }
