@@ -29,9 +29,22 @@
 		707297982E35620F002A16B6 /* ResellAIUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ResellAIUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		707B43722E3B3E74009D3D0C /* Exceptions for "ResellAI" folder in "ResellAI" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 707297802E356208002A16B6 /* ResellAI */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		707297832E356208002A16B6 /* ResellAI */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				707B43722E3B3E74009D3D0C /* Exceptions for "ResellAI" folder in "ResellAI" target */,
+			);
 			path = ResellAI;
 			sourceTree = "<group>";
 		};
@@ -400,6 +413,7 @@
 				DEVELOPMENT_TEAM = 874DZM3NCG;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = ResellAI/Info.plist;
 				INFOPLIST_KEY_NSCameraUsageDescription = "Take photos of items to analyze and sell";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
@@ -429,6 +443,7 @@
 				DEVELOPMENT_TEAM = 874DZM3NCG;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = ResellAI/Info.plist;
 				INFOPLIST_KEY_NSCameraUsageDescription = "Take photos of items to analyze and sell";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;

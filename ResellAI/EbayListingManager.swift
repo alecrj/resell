@@ -5,7 +5,6 @@
 //  Created by Alec on 7/31/25.
 //
 
-
 import SwiftUI
 import Foundation
 
@@ -35,9 +34,9 @@ class EbayListingManager: ObservableObject {
         isListing = true
         listingProgress = "Creating eBay listing..."
         
-        // Ensure eBay is authenticated
+        // Ensure eBay is authenticated - FIXED: Using completion parameter
         if !ebayAPIService.isAuthenticated {
-            ebayAPIService.authenticate { [weak self] success in
+            ebayAPIService.authenticate(completion: { [weak self] success in
                 if success {
                     self?.createListing(item: item, analysis: analysis, completion: completion)
                 } else {
@@ -50,7 +49,7 @@ class EbayListingManager: ObservableObject {
                     completion(result)
                     self?.isListing = false
                 }
-            }
+            })
         } else {
             createListing(item: item, analysis: analysis, completion: completion)
         }
@@ -64,7 +63,7 @@ class EbayListingManager: ObservableObject {
         
         listingProgress = "Uploading images..."
         
-        ebayAPIService.createListing(item: item, analysis: analysis) { [weak self] result in
+        ebayAPIService.createListing(item: item, analysis: analysis, completion: { [weak self] result in
             DispatchQueue.main.async {
                 self?.isListing = false
                 self?.listingProgress = result.success ? "✅ Listed successfully!" : "❌ Listing failed"
@@ -79,7 +78,7 @@ class EbayListingManager: ObservableObject {
                 
                 completion(result)
             }
-        }
+        })
     }
     
     private func updateItemWithEbayInfo(item: InventoryItem, result: EbayListingResult) {
@@ -89,7 +88,6 @@ class EbayListingManager: ObservableObject {
         updatedItem.dateListed = Date()
         
         // Update in inventory and sync to Google Sheets
-        // Note: This would need to be called from the InventoryManager
         googleSheetsService.updateItem(updatedItem)
         
         print("✅ Item updated with eBay listing: \(result.listingURL ?? "No URL")")
@@ -105,26 +103,28 @@ class EbayListingManager: ObservableObject {
         
         isListing = true
         var results: [EbayListingResult] = []
-        var completedCount = 0
+        
+        let group = DispatchGroup()
         
         for (index, itemData) in items.enumerated() {
             listingProgress = "Listing item \(index + 1) of \(items.count)..."
             
+            group.enter()
+            
+            // Fixed: Proper completion handler
             listItemToEbay(item: itemData.item, analysis: itemData.analysis) { result in
                 results.append(result)
-                completedCount += 1
-                
-                if completedCount == items.count {
-                    DispatchQueue.main.async {
-                        self.isListing = false
-                        self.listingProgress = "Batch listing complete"
-                        completion(results)
-                    }
-                }
+                group.leave()
             }
             
             // Add delay between listings to avoid rate limiting
             Thread.sleep(forTimeInterval: 1.0)
+        }
+        
+        group.notify(queue: .main) {
+            self.isListing = false
+            self.listingProgress = "Batch listing complete"
+            completion(results)
         }
     }
     
@@ -442,13 +442,13 @@ class EbayListingQueue: ObservableObject {
         
         isProcessing = true
         
-        listingManager.listMultipleItems(items: queuedItems) { [weak self] results in
+        listingManager.listMultipleItems(items: queuedItems, completion: { [weak self] results in
             DispatchQueue.main.async {
                 self?.isProcessing = false
                 self?.queuedItems.removeAll()
                 completion(results)
             }
-        }
+        })
     }
     
     var queueCount: Int { queuedItems.count }
