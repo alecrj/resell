@@ -498,6 +498,7 @@ class GoogleSheetsService: ObservableObject {
         }
     }
     
+    // FIXED: Added explicit type annotation to fix the build error
     private func sendToGoogleSheets(data: [[String: Any]], completion: @escaping (Bool) -> Void) {
         guard let url = URL(string: Configuration.googleScriptURL) else {
             completion(false)
@@ -508,7 +509,8 @@ class GoogleSheetsService: ObservableObject {
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         
-        let payload = [
+        // FIXED: This was the line causing the error - added explicit type annotation
+        let payload: [String: Any] = [
             "action": "updateInventory",
             "data": data
         ]
@@ -533,6 +535,14 @@ class GoogleSheetsService: ObservableObject {
     }
     
     func updateItem(_ item: InventoryItem) {
+        syncInventory([item])
+    }
+    
+    func syncAllItems(_ items: [InventoryItem]) {
+        syncInventory(items)
+    }
+    
+    func uploadItem(_ item: InventoryItem) {
         syncInventory([item])
     }
 }

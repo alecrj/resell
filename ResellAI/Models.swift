@@ -145,6 +145,7 @@ enum ItemStatus: String, CaseIterable, Codable {
     case sourced = "Sourced"
     case analyzed = "Analyzed"
     case photographed = "Photographed"
+    case toList = "To List"
     case listed = "Listed"
     case sold = "Sold"
     case returned = "Returned"
@@ -155,6 +156,7 @@ enum ItemStatus: String, CaseIterable, Codable {
         case .sourced: return .orange
         case .analyzed: return .blue
         case .photographed: return .purple
+        case .toList: return .yellow
         case .listed: return .green
         case .sold: return .black
         case .returned: return .red
@@ -266,6 +268,95 @@ struct EbaySoldListing: Codable {
     let bestOffer: Bool
     let auction: Bool
     let watchers: Int?
+}
+
+// MARK: - NEW: Recent Sale Structure (MISSING TYPE)
+struct RecentSale: Codable {
+    let title: String
+    let price: Double
+    let condition: String
+    let date: Date
+    let shipping: Double?
+    let bestOffer: Bool
+    
+    init(title: String, price: Double, condition: String, date: Date, shipping: Double? = nil, bestOffer: Bool = false) {
+        self.title = title
+        self.price = price
+        self.condition = condition
+        self.date = date
+        self.shipping = shipping
+        self.bestOffer = bestOffer
+    }
+}
+
+// MARK: - NEW: Inventory Category (MISSING TYPE)
+enum InventoryCategory: String, CaseIterable {
+    case tshirts = "T-Shirts & Tops"
+    case jackets = "Jackets & Outerwear"
+    case jeans = "Jeans & Denim"
+    case workPants = "Work Pants"
+    case dresses = "Dresses & Skirts"
+    case shoes = "Shoes & Footwear"
+    case accessories = "Accessories"
+    case electronics = "Electronics"
+    case collectibles = "Collectibles"
+    case home = "Home & Garden"
+    case books = "Books & Media"
+    case toys = "Toys & Games"
+    case sports = "Sports & Outdoors"
+    case other = "Other Items"
+    
+    var inventoryLetter: String {
+        switch self {
+        case .tshirts: return "A"
+        case .jackets: return "B"
+        case .jeans: return "C"
+        case .workPants: return "D"
+        case .dresses: return "E"
+        case .shoes: return "F"
+        case .accessories: return "G"
+        case .electronics: return "H"
+        case .collectibles: return "I"
+        case .home: return "J"
+        case .books: return "K"
+        case .toys: return "L"
+        case .sports: return "M"
+        case .other: return "Z"
+        }
+    }
+    
+    var storageTips: [String] {
+        switch self {
+        case .tshirts:
+            return ["Fold neatly to prevent wrinkles", "Sort by size and brand", "Use clear bins for visibility"]
+        case .jackets:
+            return ["Hang on sturdy hangers", "Use garment bags for premium items", "Store in cool, dry place"]
+        case .jeans:
+            return ["Fold along seams", "Stack by waist size", "Keep premium brands separate"]
+        case .workPants:
+            return ["Hang to maintain crease", "Group by brand", "Check for stains before storing"]
+        case .dresses:
+            return ["Use padded hangers", "Cover with garment bags", "Store by season"]
+        case .shoes:
+            return ["Keep in original boxes when possible", "Stuff with paper to maintain shape", "Take photos of boxes"]
+        case .accessories:
+            return ["Use small compartments", "Keep pairs together", "Store jewelry safely"]
+        case .electronics:
+            return ["Keep in anti-static bags", "Store with all accessories", "Test before storing"]
+        case .collectibles:
+            return ["Use protective cases", "Control temperature and humidity", "Document condition thoroughly"]
+        case .home:
+            return ["Wrap fragile items carefully", "Group by category", "Store upright when possible"]
+        case .books:
+            return ["Store spine up", "Keep away from moisture", "Group by category or value"]
+        case .toys:
+            return ["Keep complete sets together", "Store in protective cases", "Check for all pieces"]
+        case .sports:
+            return ["Clean before storing", "Keep gear together", "Check for wear and damage"]
+        case .other:
+            return ["Label clearly", "Document thoroughly", "Store safely"]
+        }
+    }
 }
 
 // MARK: - NEW: Google Lens-Style Identification Result
@@ -592,6 +683,46 @@ struct ProspectAnalysis {
         default: return 3
         }
     }
+    
+    // NEW: Missing properties for prospecting
+    var recentSales: [RecentSale] {
+        return marketAnalysis.marketData.soldListings.map { listing in
+            RecentSale(
+                title: listing.title,
+                price: listing.price,
+                condition: listing.condition,
+                date: listing.soldDate,
+                shipping: listing.shippingCost,
+                bestOffer: listing.bestOffer
+            )
+        }
+    }
+    
+    var demandLevel: String {
+        switch marketAnalysis.marketData.demandIndicators.searchVolume {
+        case .high: return "High"
+        case .medium: return "Medium"
+        case .low: return "Low"
+        }
+    }
+    
+    var riskLevel: String {
+        switch expectedROI {
+        case 100...: return "Low"
+        case 50..<100: return "Medium"
+        default: return "High"
+        }
+    }
+    
+    var sellTimeEstimate: String {
+        switch marketAnalysis.marketData.demandIndicators.timeToSell {
+        case .immediate: return "< 1 day"
+        case .fast: return "1-7 days"
+        case .normal: return "1-4 weeks"
+        case .slow: return "1-3 months"
+        case .difficult: return "3+ months"
+        }
+    }
 }
 
 enum ProspectDecision: String {
@@ -600,6 +731,30 @@ enum ProspectDecision: String {
     case maybeWorthIt = "Maybe Worth It"
     case investigate = "Investigate Further"
     case pass = "Pass"
+    
+    var emoji: String {
+        switch self {
+        case .strongBuy: return "🔥"
+        case .buy: return "✅"
+        case .maybeWorthIt: return "🤔"
+        case .investigate: return "🔍"
+        case .pass: return "❌"
+        }
+    }
+    
+    var title: String {
+        return rawValue
+    }
+    
+    var color: Color {
+        switch self {
+        case .strongBuy: return .green
+        case .buy: return .blue
+        case .maybeWorthIt: return .orange
+        case .investigate: return .yellow
+        case .pass: return .red
+        }
+    }
 }
 
 // MARK: - Inventory Statistics
